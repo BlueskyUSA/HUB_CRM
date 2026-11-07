@@ -1,0 +1,38 @@
+{% extends "crm_base.html" %}
+{% block title %}Do Not Contact — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>Do Not Contact</h1>
+<p class="muted">Everyone who must not be emailed, called or texted. People get here by clicking <b>Unsubscribe</b> in an email, by being marked on their contact page, by a spam complaint reported by Brevo, or by being typed in below. Blasts and one-to-one emails from a contact's page skip them. Visible to the Owner and Administrators. Only they can turn a flag back off.</p>
+<p><a class="btn secondary" href="{{ url_for('.do_not_contact_csv') }}">Download the list (Excel)</a></p>
+
+<div class="card">
+  <h3 style="margin-top:0">Block an email address</h3>
+  <p class="muted">For someone who wrote "please remove me" from an address that is not in the Hub, or any address you never want to email.</p>
+  <form method="post" action="{{ url_for('.do_not_contact_add') }}" style="display:flex; gap:8px; flex-wrap:wrap; align-items:end">
+    <div class="field"><label>Email address</label><input name="email" type="email" required size="30"></div>
+    <div class="field"><label>Why (optional)</label><input name="reason" size="34"></div>
+    <button class="btn" type="submit">Block this address</button>
+  </form>
+  {% if sup %}<table class="stack" style="margin-top:10px"><tr><th>Address</th><th>Why</th><th>When</th><th>By</th><th></th></tr>
+  {% for s in sup %}<tr><td>{{ s.email }}</td><td data-label="Why">{{ s.reason }}</td><td data-label="When">{{ s.added_at }}</td><td data-label="By">{{ s.added_by }}</td>
+    <td><form method="post" action="{{ url_for('.do_not_contact_remove', sid=s.id) }}" onsubmit="return confirm('Allow this address to be emailed again?');"><button class="btn secondary" type="submit">Remove</button></form></td></tr>{% endfor %}</table>{% endif %}
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">People on the list ({{ people|length }})</h3>
+  {% if people %}<table class="stack"><tr><th>Name</th><th>Email</th><th>Blocked from</th><th>How / note</th><th>When</th><th>By</th></tr>
+  {% for p in people %}<tr><td><a href="{{ url_for('.contact_detail', contact_id=p.id) }}">{{ p.first_name }} {{ p.last_name or '' }}</a></td>
+    <td data-label="Email">{{ p.email or '' }}</td>
+    <td data-label="Blocked from">{% if p.do_not_email %}Email {% endif %}{% if p.do_not_call %}Calls {% endif %}{% if p.do_not_text %}Texts{% endif %}</td>
+    <td data-label="Note">{{ p.dnc_note or '' }}</td><td data-label="When">{{ p.dnc_at or '' }}</td><td data-label="By">{{ p.dnc_by or '' }}</td></tr>{% endfor %}</table>
+  {% else %}<p class="muted">No one yet.</p>{% endif %}
+</div>
+
+{% if complaints %}
+<div class="card">
+  <h3 style="margin-top:0">Reported by Brevo (spam complaints and unsubscribes)</h3>
+  <p class="muted">These addresses are never emailed by blasts.</p>
+  <table class="stack"><tr><th>Address</th><th>Report</th><th>When</th></tr>
+  {% for c in complaints %}<tr><td>{{ c.email }}</td><td data-label="Report">{{ 'Spam complaint' if c.event == 'spam' else 'Unsubscribed' }}</td><td data-label="When">{{ c.happened_at or '' }}</td></tr>{% endfor %}</table>
+</div>{% endif %}
+{% endblock %}

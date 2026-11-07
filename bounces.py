@@ -29,7 +29,8 @@ def hard_bounced_addresses(conn):
     try:
         ensure(conn)
         return {r["e"] for r in conn.execute(
-            "SELECT DISTINCT LOWER(email) AS e FROM email_bounces WHERE resolved = 0 AND event IN ('hard_bounce','blocked','invalid_email')").fetchall()}
+            "SELECT DISTINCT LOWER(email) AS e FROM email_bounces WHERE (resolved = 0 AND event IN ('hard_bounce','blocked','invalid_email')) "
+            "OR event IN ('spam','unsubscribed')").fetchall()}
     except Exception:
         try: conn.rollback()
         except Exception: pass
@@ -48,7 +49,7 @@ def open_rows(conn, important_only=False):
     return conn.execute(q + " ORDER BY b.id DESC LIMIT 500").fetchall()
 
 
-def register(app, crm, leadership_required, get_db):
+def register(app, crm, alerts_required, get_db):
     @app.route("/webhooks/brevo/<key>", methods=["POST"])
     def brevo_webhook(key):
         if not hmac.compare_digest(key, secret(app)):
@@ -90,7 +91,7 @@ def register(app, crm, leadership_required, get_db):
         return jsonify(ok=True)
 
     @crm.route("/email-bounces")
-    @leadership_required
+    @alerts_required
     def email_bounces():
         from flask import session
         conn = get_db()
@@ -102,7 +103,7 @@ def register(app, crm, leadership_required, get_db):
         return render_template("email_bounces.html", rows=rows, nice=NICE, hook=hook)
 
     @crm.route("/email-bounces/<int:bounce_id>/resolve", methods=["POST"])
-    @leadership_required
+    @alerts_required
     def email_bounce_resolve(bounce_id):
         conn = get_db()
         try:

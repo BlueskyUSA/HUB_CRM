@@ -260,6 +260,11 @@ def recipients(conn, aud):
     blocked = {r["e"] for r in conn.execute("SELECT DISTINCT LOWER(email) AS e FROM contacts WHERE COALESCE(do_not_email, 0) = 1 AND email IS NOT NULL").fetchall()}
     blocked |= {r["e"] for r in conn.execute("SELECT DISTINCT LOWER(email) AS e FROM call_volunteers WHERE COALESCE(blast_optout, 0) = 1 AND email IS NOT NULL").fetchall()}
     try:
+        import do_not_contact as _dnc
+        blocked |= _dnc.suppressed_addresses(conn)
+    except Exception:
+        pass
+    try:
         import bounces as _bn
         blocked |= _bn.hard_bounced_addresses(conn)
     except Exception:
@@ -512,7 +517,9 @@ def run_send(get_db, send_id, base_url):
             subject, html, text = build(letter, aud, r["first_name"], r["contact_id"], base_url)
             subject = s["subject"] or subject
             try:
-                cf._send(r["email"], subject, html, text, to_name=r["first_name"] or None)
+                _u = f"{base_url}/unsubscribe/{unsub_token(r['contact_id'])}" if r["contact_id"] else None
+                cf._send(r["email"], subject, html, text, to_name=r["first_name"] or None,
+                         headers=({"List-Unsubscribe": f"<{_u}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"} if _u else None))
                 conn.execute("UPDATE blast_recipients SET status = 'sent', sent_at = ? WHERE id = ?", (cf._ts(cf._utc_now()), r["id"]))
                 conn.execute("UPDATE blast_sends SET sent_count = sent_count + 1 WHERE id = ?", (send_id,))
             except Exception as e:
@@ -888,6 +895,15 @@ def register(app, crm, owner_required, get_db):
         finally:
             conn.close()
 
+    def _record_unsub(conn, where_sql, args):
+        try:
+            import do_not_contact as _dnc
+            _dnc.ensure(conn)
+            _dnc.note_unsubscribed(conn, where_sql, args)
+        except Exception:
+            try: conn.rollback()
+            except Exception: pass
+
     @app.route("/unsubscribe/<token>", methods=["GET", "POST"])
     def public_unsubscribe(token):
         ensure_tables(get_db)
@@ -903,10 +919,12 @@ def register(app, crm, owner_required, get_db):
                     conn.execute("UPDATE call_volunteers SET blast_optout = 1 WHERE LOWER(email) = (SELECT LOWER(email) FROM call_volunteers WHERE id = ?)", (n,))
                     conn.execute("UPDATE contacts SET do_not_email = 1 WHERE email IS NOT NULL AND LOWER(email) = "
                                  "(SELECT LOWER(email) FROM call_volunteers WHERE id = ?)", (n,))
+                    _record_unsub(conn, "email IS NOT NULL AND LOWER(email) = (SELECT LOWER(email) FROM call_volunteers WHERE id = ?)", (n,))
                 else:
                     conn.execute("UPDATE contacts SET do_not_email = 1 WHERE id = ?", (n,))
                     conn.execute("UPDATE contacts SET do_not_email = 1 WHERE email IS NOT NULL AND LOWER(email) = "
                                  "(SELECT LOWER(email) FROM contacts WHERE id = ?)", (n,))
+                    _record_unsub(conn, "id = ? OR (email IS NOT NULL AND LOWER(email) = (SELECT LOWER(email) FROM contacts WHERE id = ?))", (n, n))
                     conn.execute("UPDATE call_volunteers SET blast_optout = 1 WHERE LOWER(email) = "
                                  "(SELECT LOWER(email) FROM contacts WHERE id = ?)", (n,))
                 conn.commit()

@@ -814,9 +814,9 @@ def _pool(conn, program_code):
     return rows
 
 
-def _send(to_email, subject, html, text, to_name=None):
+def _send(to_email, subject, html, text, to_name=None, headers=None):
     from email_utils import send_email
-    return send_email(to_email, subject, html, to_name=to_name, text_content=text)
+    return send_email(to_email, subject, html, to_name=to_name, text_content=text, headers=headers)
 
 
 def _leadership_email():

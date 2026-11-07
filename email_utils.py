@@ -36,7 +36,7 @@ class EmailSendError(Exception):
 
 
 def _send_email_raw(to_email, subject, html_content, to_name=None, text_content=None,
-                from_email=None, from_name=None, reply_to=None, attachments=None, bcc=None):
+                from_email=None, from_name=None, reply_to=None, attachments=None, bcc=None, headers=None):
     """Sends one email through Brevo. Returns Brevo's message id on success.
     Raises EmailSendError on any failure (missing API key, bad request,
     Brevo-side error, network problem) -- callers decide how to handle
@@ -58,6 +58,8 @@ def _send_email_raw(to_email, subject, html_content, to_name=None, text_content=
         payload["replyTo"] = {"email": reply_to}
     if bcc:  # a copy to the sender, so it also shows in their own inbox
         payload["bcc"] = [{"email": bcc}]
+    if headers:  # extra mail headers (for example List-Unsubscribe)
+        payload["headers"] = dict(headers)
     if attachments:  # list of (filename, bytes)
         import base64
         payload["attachment"] = [{"name": n, "content": base64.b64encode(b).decode("ascii")} for n, b in attachments]
@@ -85,6 +87,13 @@ def _send_email_raw(to_email, subject, html_content, to_name=None, text_content=
         except requests.RequestException as e:
             raise EmailSendError(f"Network error contacting Brevo: {e}") from e
 
+    if resp.status_code == 400 and payload.get("headers"):
+        # if Brevo does not accept the extra headers, send the same email without them rather than not at all
+        payload.pop("headers", None)
+        try:
+            resp = requests.post(BREVO_API_URL, json=payload, headers={"api-key": api_key, "Content-Type": "application/json", "Accept": "application/json"}, timeout=15)
+        except requests.RequestException as e2:
+            raise EmailSendError(f"Network error contacting Brevo: {e2}") from e2
     if resp.status_code not in (200, 201):
         raise EmailSendError(f"Brevo rejected the send ({resp.status_code}): {resp.text}")
 
@@ -111,12 +120,12 @@ def _note_send(to_email, subject, html_content, message_id, bcc, status):
 
 
 def send_email(to_email, subject, html_content, to_name=None, text_content=None,
-               from_email=None, from_name=None, reply_to=None, attachments=None, bcc=None):
+               from_email=None, from_name=None, reply_to=None, attachments=None, bcc=None, headers=None):
     """Sends one email through Brevo (see _send_email_raw) and keeps a record of the attempt."""
     try:
         message_id = _send_email_raw(to_email, subject, html_content, to_name=to_name, text_content=text_content,
                                      from_email=from_email, from_name=from_name, reply_to=reply_to,
-                                     attachments=attachments, bcc=bcc)
+                                     attachments=attachments, bcc=bcc, headers=headers)
     except Exception as e:
         _note_send(to_email, subject, html_content, None, bcc, "Failed: " + str(e)[:300])
         raise

@@ -30,6 +30,22 @@
     </div>
   </div>
 </div>
+{% if contact.do_not_email or contact.do_not_call or contact.do_not_text %}
+<div class="card" style="border-color:#c0392b; background:#fdf2f0;"><strong style="color:#c0392b;">DO NOT CONTACT:</strong>
+  {% if contact.do_not_email %}no email{% endif %}{% if contact.do_not_call %}{{ ', ' if contact.do_not_email }}no calls{% endif %}{% if contact.do_not_text %}{{ ', ' if contact.do_not_email or contact.do_not_call }}no texts{% endif %}.
+  {% if contact.dnc_note %}<span class="muted">{{ contact.dnc_note }}{% if contact.dnc_at %} ({{ contact.dnc_at }}){% endif %}</span>{% endif %}</div>
+{% endif %}
+<details class="card" id="dnc"{% if contact.do_not_email or contact.do_not_call or contact.do_not_text %} open{% endif %}>
+  <summary style="cursor:pointer; font-weight:700">Do not contact / unsubscribe &#9662;</summary>
+  <form method="post" action="{{ url_for('.contact_do_not_contact', contact_id=contact.id) }}">
+    <label style="display:block; margin:6px 0"><input type="checkbox" name="do_not_email" value="1" {{ 'checked' if contact.do_not_email }}> Do not email (no blasts, no one-to-one emails)</label>
+    <label style="display:block; margin:6px 0"><input type="checkbox" name="do_not_call" value="1" {{ 'checked' if contact.do_not_call }}> Do not call</label>
+    <label style="display:block; margin:6px 0"><input type="checkbox" name="do_not_text" value="1" {{ 'checked' if contact.do_not_text }}> Do not text</label>
+    <div class="field"><label>Note (for example: "asked by phone on Nov 3")</label><input name="dnc_note" value="{{ contact.dnc_note or '' }}" style="width:100%; max-width:420px"></div>
+    <button class="btn" type="submit">Save</button>
+    <span class="muted">Anyone with Contacts access can turn a flag on. Only the Owner or an Administrator can turn one off.</span>
+  </form>
+</details>
 {% if contact.contact_requested_at %}
 <div class="card" style="border-color:#c0392b; background:#fdf2f0;">
   <strong style="color:#c0392b;">Asked to be personally contacted</strong> &mdash;
