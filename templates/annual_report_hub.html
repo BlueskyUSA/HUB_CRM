@@ -1,0 +1,34 @@
+{% extends "crm_base.html" %}
+{% block title %}Annual Report — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>Annual Report (public Finances page)</h1>
+<p class="muted">Type in the <b>actual</b> revenue and spending for a year, and add a link to that year's Form 990. The <b>Finances</b> button is always on the public About Us page. Until you publish a year, visitors see the current year with every line at $0. Tick "Show on the public site" when a year's figures are ready; they then replace the zeros. Visible to the Owner and Administrators.</p>
+
+<div class="card">
+  <h3 style="margin-top:0">Add a year</h3>
+  <form method="post" action="{{ url_for('.annual_report_save') }}" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap">
+    <div class="field"><label>Year</label><input name="year" value="{{ this_year }}" size="6" required></div>
+    <button class="btn" type="submit">Add this year</button>
+  </form>
+</div>
+
+{% for r in rows %}
+<div class="card" id="y{{ r.year }}">
+  <h3 style="margin-top:0">{{ r.year }} {% if r.published %}<span class="badge good">Public</span>{% else %}<span class="badge warn">Not public</span>{% endif %}</h3>
+  <form method="post" action="{{ url_for('.annual_report_save') }}">
+    <input type="hidden" name="year" value="{{ r.year }}">
+    <div class="field"><label>Revenue (actual): one per line, <code>Label | amount</code></label>
+      <textarea name="revenue_text" rows="6" style="width:100%" placeholder="Training fees | 48,500&#10;Donations | 12,000">{{ r.revenue_text or '' }}</textarea></div>
+    <div class="field"><label>Spending (actual): one per line, <code>Label | amount</code></label>
+      <textarea name="expense_text" rows="6" style="width:100%" placeholder="Venue | 20,000&#10;Food | 9,500">{{ r.expense_text or '' }}</textarea></div>
+    <div class="field"><label>Link to the Form 990 for this year (optional)</label><input name="form990_url" value="{{ r.form990_url or '' }}" style="width:100%" placeholder="https://..."></div>
+    <div class="field"><label>Short note shown with this year (optional)</label><input name="note" value="{{ r.note or '' }}" style="width:100%"></div>
+    <label style="display:block; margin:8px 0"><input type="checkbox" name="published" value="1" {{ 'checked' if r.published }}> Show on the public site</label>
+    <button class="btn" type="submit">Save {{ r.year }}</button>
+    <span class="muted">Last saved {{ r.updated_at or '' }}{% if r.updated_by %} by {{ r.updated_by }}{% endif %}</span>
+  </form>
+  <form method="post" action="{{ url_for('.annual_report_delete', year=r.year) }}" onsubmit="return confirm('Remove {{ r.year }} completely?');" style="margin-top:8px">
+    <button class="btn secondary" type="submit">Remove this year</button></form>
+</div>
+{% else %}<p class="muted">No years yet. Add one above.</p>{% endfor %}
+{% endblock %}
