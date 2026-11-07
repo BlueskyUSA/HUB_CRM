@@ -1,0 +1,19 @@
+{% extends "crm_base.html" %}
+{% block title %}Change History — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>Change History</h1>
+<p class="muted">Who did what in the Hub, newest first. Every save, add, remove, import and sign-in is recorded automatically. What was typed into a form is <b>not</b> copied here, so no passwords or private details appear. The "What the Hub said" column is the message the person saw afterward, so a save that was refused shows that message. Visible to the Owner and Administrators.</p>
+<form method="get" class="card" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap">
+  <div class="field"><label>Find a person or action</label><input name="q" value="{{ q }}" placeholder="e.g. Max, login removed, import" size="32"></div>
+  <button class="btn" type="submit">Search</button>{% if q %}<a class="btn secondary" href="{{ url_for('.change_history') }}">Clear</a>{% endif %}
+  <span class="muted">{{ total }} entr{{ 'y' if total == 1 else 'ies' }}</span>
+</form>
+<div class="card">
+{% if rows %}
+<table class="stack"><tr><th>When</th><th>Who</th><th>Action</th><th>What the Hub said</th><th>Page</th></tr>
+{% for r in rows %}<tr><td data-label="When">{{ r.at }}</td><td data-label="Who">{{ r.staff_name }} <span class="muted">({{ r.staff_role }})</span></td><td data-label="Action">{{ r.action }}</td><td data-label="What the Hub said">{{ r.result }}</td><td data-label="Page" class="muted">{{ r.path }}</td></tr>{% endfor %}
+</table>
+{% if pages > 1 %}<p>{% if page > 1 %}<a href="{{ url_for('.change_history', q=q, page=page-1) }}">&larr; Newer</a>{% endif %} Page {{ page }} of {{ pages }} {% if page < pages %}<a href="{{ url_for('.change_history', q=q, page=page+1) }}">Older &rarr;</a>{% endif %}</p>{% endif %}
+{% else %}<p class="muted">Nothing recorded yet. Entries start from the moment this update goes live.</p>{% endif %}
+</div>
+{% endblock %}
