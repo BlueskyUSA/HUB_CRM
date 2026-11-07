@@ -139,7 +139,7 @@
     </nav>
       {% if session.staff_id %}
       <a href="{{ url_for('.dashboard') }}" class="backbtn" title="Go back to the page you were just on"
-         onclick="if (window.hubBackHook && window.hubBackHook()) { return false; } if (location.pathname === '{{ url_for('.staff_list') }}' &amp;&amp; location.search.indexOf('open=') > -1) { location.replace('{{ url_for('.staff_list') }}'); return false; } if (history.length > 1) { history.back(); return false; }">&larr; Back</a>
+         onclick="if (window.hubBackHook && window.hubBackHook()) { return false; } if (location.pathname === '{{ url_for('.staff_list') }}' &amp;&amp; location.search.indexOf('open=') > -1) { location.replace('{{ url_for('.staff_list') }}'); return false; } if (location.pathname === '{{ url_for('.mission_page') }}' || location.pathname === '{{ url_for('.at_a_glance') }}') { location.href = '{{ url_for('.dashboard') }}'; return false; } if (history.length > 1) { history.back(); return false; }">&larr; Back</a>
       {% endif %}
       {% if session.staff_id %}
       <details class="navmenu account-menu">
