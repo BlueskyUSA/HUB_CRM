@@ -12,10 +12,12 @@
 </style>
 <div class="fin">
   <h1>Finances</h1>
-  <p>Actual revenue and spending for each year, and the nonprofit's Form 990.</p>
+  <p>Actual revenue and spending for each year.</p>
+  {% for title, key, years in reports %}
+  <h2 id="{{ key }}" style="margin-top:34px;border-bottom:2px solid #123e54!important;padding-bottom:4px">{{ title }}</h2>
   {% for y in years %}
   <section>
-    <h2>{{ y.year }}</h2>
+    <h3 style="font-size:1.4rem;margin-top:22px">{{ y.year }}</h3>
     {% if y.note %}<p>{{ y.note }}</p>{% endif %}
     <h3>Revenue</h3>
     <table>{% for l, v in y.revenue %}<tr><td>{{ l }}</td><td class="n">{{ v|money }}</td></tr>{% endfor %}
@@ -26,7 +28,8 @@
     <div class="box"><b>Revenue less spending for {{ y.year }}:</b> {{ y.net|money }}</div>
     {% if y.form990_url %}<p><a href="{{ y.form990_url }}" rel="noopener" target="_blank">Form 990 for {{ y.year }}</a></p>{% endif %}
   </section>
-  {% else %}<p>No annual report has been published yet.</p>{% endfor %}
+  {% endfor %}
+  {% endfor %}
   <a class="back" href="{{ url_for('public_about_program') }}">&larr; Back to About Us</a>
 </div>
 {% endblock %}
