@@ -1,0 +1,18 @@
+{% extends "crm_base.html" %}
+{% block title %}Personal welcome link — {{ program_name }} CRM{% endblock %}
+{% block content %}
+<h1>{{ heading }}</h1>
+<div class="card">
+  <p><b>Their personal link</b> (works once, expires in {{ days }} days). The person opens it and chooses their own password, so no password is ever written down.</p>
+  <input id="lnk" readonly value="{{ link }}" style="width:100%;padding:8px" onclick="this.select()">
+  <p><button class="btn" type="button" onclick="navigator.clipboard.writeText(document.getElementById('lnk').value);this.textContent='Copied'">Copy the link</button></p>
+  <p class="muted" style="margin-bottom:0"><b>This link is shown only now.</b> If you lose it, go to their contact page and press "Make a new welcome link" (the old one stops working).</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">A note to start from</h3>
+  <p class="muted">Rewrite it in your own words, then send it from your own email or phone. Nothing here was sent for you.</p>
+  <textarea id="note" rows="14" style="width:100%">{{ note }}</textarea>
+  <p><button class="btn" type="button" onclick="navigator.clipboard.writeText(document.getElementById('note').value);this.textContent='Copied'">Copy the note</button></p>
+</div>
+<p><a href="{{ url_for('.staff_list') }}">&larr; Back to the team list</a></p>
+{% endblock %}

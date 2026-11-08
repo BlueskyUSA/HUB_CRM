@@ -1340,6 +1340,11 @@ def contact_login_role(contact_id):
         flash("Couldn't create that login. Nothing was changed.")
         return back
     conn.close()
+    if request.form.get("personal") == "1":      # no email: the Owner sends a personal note with a one-time welcome link
+        conn2 = get_db()
+        sid = conn2.execute("SELECT id FROM staff WHERE contact_id = ? ORDER BY active DESC, id DESC LIMIT 1", (contact_id,)).fetchone()["id"]
+        conn2.close()
+        return app.config["PERSONAL_INVITE_AFTER_CREATE"](contact, sid)
     email_sent, email_error, sms_body = _email_team_login(contact["first_name"], contact["full_name"], email, choice, temp_password, "You've been added to the")
     return render_template("staff_new_done.html", heading=f"{contact['full_name']} was given a {role_label(choice)} login",
                            person=contact, email=email, temp_password=temp_password,
@@ -8774,6 +8779,10 @@ import change_history
 change_history.register(app, crm, owner_required, get_db)
 import do_not_contact
 do_not_contact.register(app, crm, area_required("contacts"), owner_required, get_db)
+import hub_backup
+hub_backup.register(app, crm, owner_required, get_db)
+import personal_invite
+personal_invite.register(app, crm, get_db, leadership_required, area_required("assign_logins"), role_label, ROLE_BLURBS, PROGRAM_NAME, _ensure_must_change)
 import glance
 glance.register(app, crm, leadership_required, get_db, _payment_info_for_cohort, _can_handle_money,
                 hidden_lists=lambda: [LEADERSHIP_LIST, *LEADERSHIP_SOURCES] + [n for n, _ in TEAM_LISTS])

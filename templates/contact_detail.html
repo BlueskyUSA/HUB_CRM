@@ -96,17 +96,20 @@
       {% if session.is_owner and not session.is_admin %}<option value="Administrator" {{ 'selected' if cur == 'Administrator' }}>Administrator (backup operator)</option>{% endif %}
     </select>
     <button class="btn" type="submit" id="hubLoginBtn">Save</button>
+    {% if not cur %}<label style="font-size:.9rem"><input type="checkbox" name="personal" value="1" id="hubPersonal"> Don't email them. I'll send a personal note with a welcome link.</label>{% endif %}
   </form>
+  {% if cur and login_staff %}<form method="post" action="{{ url_for('.contact_personal_link', contact_id=contact.id) }}" style="margin-top:8px"><button class="btn secondary" type="submit">Make a new welcome link (no email)</button></form>{% endif %}
   <div id="hubLoginNote" style="display:none; color:#b3412f; font-weight:600; margin-top:6px"></div>
   <script>
   (function(){
     var s=document.getElementById('hubLoginSel'), b=document.getElementById('hubLoginBtn'), n=document.getElementById('hubLoginNote');
     if(!s) return;
+    var pc0=document.getElementById('hubPersonal'); if(pc0) pc0.addEventListener('change', function(){ s.dispatchEvent(new Event('change')); });
     s.addEventListener('change', function(){
       var cur=s.dataset.cur||'', v=s.value, name=s.dataset.name||'this person';
       if (v===cur){ b.textContent='Save'; n.style.display='none'; return; }
       if (!v){ b.textContent='Remove login'; n.textContent='NOT DONE YET. Press "Remove login" to take '+name+' out of the Hub and Site Access (they stay a contact).'; }
-      else if (!cur){ b.textContent='Send login'; n.textContent='NOT DONE YET. Press "Send login" to email '+name+' a login link and a temporary password.'; }
+      else if (!cur){ var pc=document.getElementById('hubPersonal'); if (pc && pc.checked){ b.textContent='Create login (no email)'; n.textContent='NOT DONE YET. Press "Create login (no email)". Nothing is emailed; you get a personal welcome link to send to '+name+'.'; } else { b.textContent='Send login'; n.textContent='NOT DONE YET. Press "Send login" to email '+name+' a login link and a temporary password.'; } }
       else { b.textContent='Change login'; n.textContent='NOT DONE YET. Press "Change login" to switch '+name+' to '+s.options[s.selectedIndex].text+' (no email is sent).'; }
       n.style.display='block';
     });
