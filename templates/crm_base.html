@@ -24,6 +24,9 @@
     <nav>
       {% if session.staff_id %}
       <a href="{{ url_for('.dashboard') }}">HUB Dashboard</a>
+      {% if session.is_owner or session.staff_role == 'Leadership' %}
+      <a href="{{ url_for('.staff_list') }}">HUB Access</a>
+      {% endif %}
       <a href="{{ url_for('.mission_page') }}">Mission</a>
       {% if session.is_owner or session.staff_role == 'Leadership' %}<a href="{{ url_for('.at_a_glance') }}">At a Glance</a>{% endif %}
       {% set is_lead = session.staff_role == 'Leadership' %}
@@ -31,9 +34,6 @@
       {% set show_donations = is_lead or has_donations_access %}
       {% set show_finance = session.is_owner or has_accounting_access %}
       {% if show_contacts %}<a href="{{ url_for('.contacts_list') }}">Contacts</a>{% endif %}
-      {% if session.is_owner or session.staff_role == 'Leadership' %}
-      <a href="{{ url_for('.staff_list') }}">HUB Access</a>
-      {% endif %}
       <details class="navmenu">
         <summary>Correspondence &#9662;</summary>
         <div class="navmenu-items">
