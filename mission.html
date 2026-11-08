@@ -1,0 +1,38 @@
+{% extends "crm_base.html" %}
+{% block title %}Mission — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>Our Mission</h1>
+<div class="card">
+  <h2 style="margin-top:0">Mission Statement</h2>
+  <p>Reflect the love of God by providing a powerful, effective, and emotionally safe environment where individuals can examine and overcome life's challenges, discovering greater freedom, joy, peace, and love.</p>
+</div>
+<div class="card">
+  <h2 style="margin-top:0">Organizational Goals</h2>
+  <p>Build an enduring ministry that outlasts its current leadership by:</p>
+  <ol>
+    <li>Operating profitably, with sufficient reserves to ensure long-term sustainability.</li>
+    <li>Ultimately transferring the ministry's intellectual property, software, equipment, and other essential assets to the next generation of leaders at no cost.</li>
+  </ol>
+</div>
+<div class="card">
+  <h2 style="margin-top:0">HUB &mdash; Goals &amp; Objectives</h2>
+  <p>Use automation to:</p>
+  <ol>
+    <li>Simplify administration and reduce operating costs.</li>
+    <li>Expand marketing and enrollment through trained volunteer Guides and Sponsors.</li>
+    <li>Streamline communication, registration, and participant follow-up.</li>
+  </ol>
+</div>
+<div class="card">
+  <h2 style="margin-top:0">Website &mdash; Goals &amp; Objectives</h2>
+  <ol>
+    <li>Appeal primarily to Generation X, while also welcoming Millennials and Baby Boomers.</li>
+    <li>Communicate the value of experiential personal growth through contemporary design and compelling content.</li>
+    <li>Encourage curiosity, inquiries, and enrollment.</li>
+  </ol>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">Preliminary business plan</h3>
+  <p>To send the plan to interested people, click on Admin / Contacts. <a href="{{ url_for('.business_plan_view') }}">Read the plan &rarr;</a></p>
+</div>
+{% endblock %}
