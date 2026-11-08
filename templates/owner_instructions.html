@@ -99,6 +99,14 @@
   {% if hook %}<input type="text" readonly value="{{ hook }}" style="width:100%" onclick="this.select()"><p class="muted">Keep this address private. It works like a password.</p>{% endif %}
 </details>
 
+<details class="card" id="backup">
+  <summary style="cursor:pointer; font-weight:700; font-size:1.05rem">Download a backup &#9662;</summary>
+  <p>One click gives you a ZIP file with everything in the Hub (contacts, enrollments, payments, letters, logins and more) as spreadsheets. Save it to a private folder such as Dropbox once a month, and before any big change like an import. The Change History records every download.</p>
+  <form method="post" action="{{ url_for('.download_backup') }}"><button class="btn" type="submit">Download a backup now</button></form>
+  <p class="muted"><b>Not included on purpose:</b> passwords and private login links, uploaded photos, videos and music, and Render's own settings. This is a safety copy of your information, not a full database backup. Render's database backups (Render &rarr; your database &rarr; Backups) are the other half; check that they are on, and do one test restore before go-live.</p>
+  <p class="muted" style="margin-bottom:0"><b>Keep the file private.</b> It has private information about contacts, donors and volunteers.</p>
+</details>
+
 <details class="card" id="alerts">
   <summary style="cursor:pointer; font-weight:700; font-size:1.05rem">Error alerts &#9662;</summary>
   <p>If the Hub hits an unexpected error, it emails the Owner (what page, what error, where in the code). The same problem is emailed at most once every 30 minutes, and never more than 10 alert emails an hour. Visitors just see a short apology page. No names, passwords or form contents are in the email.</p>
