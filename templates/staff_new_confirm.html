@@ -19,8 +19,9 @@
           {% if session.is_owner %}<option value="Accounting">Accounting &amp; Legal (view-only)</option>{% endif %}
         </select>
       </div>
-      <div class="field"><label>Temporary password</label><input name="password" required autocomplete="new-password" placeholder="They can change this after logging in"></div>
+      <div class="field"><label>Temporary password</label><input name="password" id="tmpPw" required autocomplete="new-password" placeholder="They can change this after logging in"></div>
     </div>
+    <label style="display:block; margin:10px 0"><input type="checkbox" name="personal" value="1" id="perso" onchange="var p=document.getElementById('tmpPw'); p.required=!this.checked; p.disabled=this.checked;"> Don't email them. I'll send a personal note with a welcome link (they choose their own password, so no temporary password is needed).</label>
     <button class="btn" type="submit">Add account</button>
   </form>
 </div>

@@ -1375,7 +1375,8 @@ def staff_new_for_contact(contact_id):
             flash("Only the Owner can create Accounting & Legal logins. Nothing was added.")
             conn.close()
             return render_template("staff_new_confirm.html", contact=contact)
-        temp_password = request.form["password"]
+        personal = request.form.get("personal") == "1"      # no email: the Owner sends a personal note with a welcome link
+        temp_password = secrets.token_urlsafe(12) if personal else request.form["password"]
         if not email:
             flash("Enter an email to use for their ERP login.")
             conn.close()
@@ -1412,6 +1413,8 @@ def staff_new_for_contact(contact_id):
                 conn.close()
                 return render_template("staff_new_confirm.html", contact=contact)
             conn.close()
+            if personal:
+                return app.config["PERSONAL_INVITE_AFTER_CREATE"](contact, existing["id"])
             email_sent, email_error, sms_body = _email_team_login(
                 contact["first_name"], contact["full_name"], email, role, temp_password,
                 "You've been added to the")
@@ -1436,6 +1439,11 @@ def staff_new_for_contact(contact_id):
             conn.close()
             return render_template("staff_new_confirm.html", contact=contact)
         conn.close()
+        if personal:
+            conn2 = get_db()
+            new_id = conn2.execute("SELECT id FROM staff WHERE contact_id = ? ORDER BY id DESC LIMIT 1", (contact_id,)).fetchone()["id"]
+            conn2.close()
+            return app.config["PERSONAL_INVITE_AFTER_CREATE"](contact, new_id)
         # Account created. Email the new team member their login details automatically.
         email_sent, email_error, sms_body = _email_team_login(
             contact["first_name"], contact["full_name"], email, role, temp_password,

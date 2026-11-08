@@ -162,6 +162,7 @@
         {% endif %}
         {% if not is_self_owner_row and (session.is_owner or (s.role == 'Team' and not s.is_owner)) %}
           {% if s.contact_id %}<a class="btn secondary" href="{{ url_for('.contact_detail', contact_id=s.contact_id) }}#hub-login" title="Remove or change this login on their contact page">Hub Login</a>{% endif %}
+          {% if s.active %}<form method="post" action="{{ url_for('.staff_personal_link', staff_id=s.id) }}" style="display:inline" onsubmit="return confirm('Make a new personal welcome link for {{ s.name }}? Nothing is emailed. Any earlier unused link stops working.');"><button class="btn secondary" type="submit" title="A one-time link they use to choose their own password. Nothing is emailed.">Welcome link</button></form>{% endif %}
           {% if True %}
           <details style="display:inline-block; vertical-align:top">
             <summary class="btn secondary" style="display:inline-block; cursor:pointer">Reset password</summary>

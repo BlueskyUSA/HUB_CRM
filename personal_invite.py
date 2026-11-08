@@ -78,6 +78,27 @@ def register(app, crm, get_db, leadership_required, area_assign_logins, role_lab
             conn.close()
         return _page(staff, c["first_name"] if c else "", token, "New personal welcome link. Nothing was emailed.")
 
+    @crm.route("/staff/<int:staff_id>/personal-link", methods=["POST"])
+    @leadership_required
+    @area_assign_logins
+    def staff_personal_link(staff_id):
+        back = redirect(url_for(".staff_list"))
+        conn = get_db()
+        try:
+            staff = conn.execute("SELECT * FROM staff WHERE id = ? AND active = 1", (staff_id,)).fetchone()
+            if not staff:
+                flash("That login is not active.")
+                return back
+            true_owner = bool(session.get("is_owner")) and not session.get("is_admin")
+            if staff["is_owner"] == 1 or (staff["is_owner"] == 2 and not true_owner) or (not session.get("is_owner") and staff["role"] != "Team"):
+                flash("Only the Owner can make a welcome link for that kind of login.")
+                return back
+            first = (staff["name"] or "").split()[0] if staff["name"] else ""
+            token = make_invite(conn, staff["id"], session.get("staff_name"))
+        finally:
+            conn.close()
+        return _page(staff, first, token, f"New personal welcome link for {staff['name']}. Nothing was emailed.")
+
     def _lookup(conn, token):
         ensure(conn)
         inv = conn.execute("SELECT * FROM staff_invites WHERE token_hash = ?", (_fp(token),)).fetchone()
