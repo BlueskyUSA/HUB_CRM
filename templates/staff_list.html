@@ -14,22 +14,17 @@
   <span class="muted" style="margin-left:10px; font-size:.9rem">Logins are added and removed on the Contacts page (the Hub Login column). Here you choose what each person can open.</span>
 </div>
 {% if session.is_owner %}
-<div class="card" style="margin-bottom:12px; padding:12px 16px">
-  <strong>Everything for all Leadership:</strong>
-  <form method="post" action="{{ url_for('.staff_everything_leadership') }}" style="display:inline; margin-left:8px"
-        onsubmit="return confirm('Give EVERY Leadership account access to everything, including Accounting, Donations, Legal, Marketing, Correspondence and Guides? You can still change any one person afterward.');">
-    <button class="btn" type="submit">Give everything to all Leadership</button>
-  </form>
-  <span class="muted" style="font-size:.85rem; margin-left:6px">Nothing anyone already has is removed. You can still change one person at a time under Modify access.</span>
-</div>
-<div class="card" style="margin-bottom:12px; padding:12px 16px">
+<details class="card" style="margin-bottom:12px; padding:12px 16px">
+  <summary style="cursor:pointer; font-weight:700">Bulk shortcuts &#9662;</summary>
+  <div style="margin-top:8px">
   <strong>Correspondence for all Leadership:</strong>
   <form method="post" action="{{ url_for('.staff_correspondence_leadership') }}" style="display:inline; margin-left:8px">
     <button class="btn" type="submit" name="action" value="give">Give to all Leadership</button>
     <button class="btn secondary" type="submit" name="action" value="remove" onclick="return confirm('Remove Correspondence from every Leadership account?')">Remove from all Leadership</button>
   </form>
   <span class="muted" style="font-size:.85rem; margin-left:6px">You can still tick or untick it for one person in their Ownership access box.</span>
-</div>
+  </div>
+</details>
 {% endif %}
 <div class="card" style="margin-bottom:12px; padding:12px 16px">
   <label for="staffPick"><strong>Find a person:</strong></label>
