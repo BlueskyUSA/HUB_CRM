@@ -34,7 +34,7 @@
 <div class="dm-top">
   <h1 style="margin:0">Database map</h1>
   <button class="btn" id="dmPresent" type="button">Present (full screen)</button>
-  <a class="btn secondary" href="{{ url_for('.database_map_site_access') }}">Site Access Components</a>
+  <a class="btn secondary" href="{{ url_for('.database_map_site_access') }}">HUB Access Components</a>
   <label style="display:flex; gap:6px; align-items:center"><input type="checkbox" id="dmMask" checked style="width:auto"> Hide emails, phones, addresses and notes in samples</label>
 </div>
 <p class="muted" style="margin:0">Owner only. Click a block to see what is inside it, then click a table to see its fields and a few sample rows. Numbers are live. Press Esc to leave full screen.</p>
@@ -91,7 +91,7 @@ function level3(b, t){
   return `<div class="dm-title" style="--c:${b.color}">${esc(T.title || T.name)}</div>${T.title && T.title !== T.name ? `<div class="muted" style="margin:-2px 0 6px">Database table: ${esc(T.name)}</div>` : ''}<p style="font-size:1.1rem; max-width:760px">${esc(T.desc)}</p>
     <p><span class="dm-n ${b.key==='money'?'dm-money-n':''}" style="--c:${b.color}">${fmt(T.count)}</span> <span class="muted">records</span></p>
     <div class="dm-sub" style="--c:${b.color}">Fields (${T.cols.length})</div><div class="dm-cols">${T.cols.map(c=>`<span>${esc(c)}</span>`).join('')}</div>
-    ${T.name === 'access_grants' ? `<p><a class="btn secondary" href="{{ url_for('.database_map_site_access') }}">See how site access is divided (Site Access Components)</a></p><div class="dm-sub" style="--c:${b.color}">Look up one person</div>
+    ${T.name === 'access_grants' ? `<p><a class="btn secondary" href="{{ url_for('.database_map_site_access') }}">See how site access is divided (HUB Access Components)</a></p><div class="dm-sub" style="--c:${b.color}">Look up one person</div>
       <p style="margin:0 0 6px">Choose a team member to see everything they can access.
       <select id="dmStaff" onchange="pickStaff(this.value)" style="font-size:1.05rem; padding:6px 10px; min-width:260px"><option value="">Everyone (newest 5 shown below)</option></select></p>` : ''}
     <div class="dm-sub" id="dmSampleTitle" style="--c:${b.color}">Sample rows (newest 5)</div><div id="dmSample" class="muted">Loading…</div>`;

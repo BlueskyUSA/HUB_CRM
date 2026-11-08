@@ -28,7 +28,7 @@
   </ul>
   <p class="muted">Anyone else's records are kept. Their name, email and profile are not touched unless you also choose to delete the contact.</p>
   {% if has_staff_link %}
-  <p class="muted"><strong>Note:</strong> this contact is linked to an ERP login. You can clear history, but to delete the contact you must unlink the login on the Site Access page first.</p>
+  <p class="muted"><strong>Note:</strong> this contact is linked to an ERP login. You can clear history, but to delete the contact you must unlink the login on the HUB Access page first.</p>
   {% endif %}
   <form method="post" action="{{ url_for('.contact_clear_history', contact_id=contact.id) }}" style="margin-bottom:12px">
     <label for="confirm_name_clear">To confirm, type the full name: <strong>{{ contact.full_name }}</strong></label>

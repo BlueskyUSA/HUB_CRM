@@ -32,7 +32,7 @@
       {% set show_finance = session.is_owner or has_accounting_access %}
       {% if show_contacts %}<a href="{{ url_for('.contacts_list') }}">Contacts</a>{% endif %}
       {% if session.is_owner or session.staff_role == 'Leadership' %}
-      <a href="{{ url_for('.staff_list') }}">Site Access</a>
+      <a href="{{ url_for('.staff_list') }}">HUB Access</a>
       {% endif %}
       <details class="navmenu">
         <summary>Correspondence &#9662;</summary>

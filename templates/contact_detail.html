@@ -85,7 +85,7 @@
   <h3 style="margin-top:0">Hub Login <span class="muted" style="font-weight:400; font-size:.85rem">(can this person log in to the Hub?)</span></h3>
   {% set cur = (('Administrator' if login_staff.is_owner == 2 else login_staff.role) if (login_staff and login_staff.active) else '') %}
   {% if login_staff and (login_staff.is_owner == 1 or (login_staff.is_owner == 2 and session.is_admin)) %}
-  <p>{{ 'Owner' if login_staff.is_owner == 1 else 'Administrator' }}. Managed by the Owner under Site Access.</p>
+  <p>{{ 'Owner' if login_staff.is_owner == 1 else 'Administrator' }}. Managed by the Owner under HUB Access.</p>
   {% else %}
   <form method="post" action="{{ url_for('.contact_login_role', contact_id=contact.id) }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
     <select name="login_role" id="hubLoginSel" data-cur="{{ cur }}" data-name="{{ contact.full_name|e }}">
@@ -108,7 +108,7 @@
     s.addEventListener('change', function(){
       var cur=s.dataset.cur||'', v=s.value, name=s.dataset.name||'this person';
       if (v===cur){ b.textContent='Save'; n.style.display='none'; return; }
-      if (!v){ b.textContent='Remove login'; n.textContent='NOT DONE YET. Press "Remove login" to take '+name+' out of the Hub and Site Access (they stay a contact).'; }
+      if (!v){ b.textContent='Remove login'; n.textContent='NOT DONE YET. Press "Remove login" to take '+name+' out of the Hub and HUB Access (they stay a contact).'; }
       else if (!cur){ var pc=document.getElementById('hubPersonal'); if (pc && pc.checked){ b.textContent='Create login (no email)'; n.textContent='NOT DONE YET. Press "Create login (no email)". Nothing is emailed; you get a personal welcome link to send to '+name+'.'; } else { b.textContent='Send login'; n.textContent='NOT DONE YET. Press "Send login" to email '+name+' a login link and a temporary password.'; } }
       else { b.textContent='Change login'; n.textContent='NOT DONE YET. Press "Change login" to switch '+name+' to '+s.options[s.selectedIndex].text+' (no email is sent).'; }
       n.style.display='block';
@@ -119,7 +119,7 @@
     No login: a contact only. They get letters and invitations but can't open the Hub.<br>
     Volunteer Team: views and updates contacts and session information.
     {% if session.is_owner %}<br>Leadership: helps run the Hub day to day.<br>Accounting &amp; Legal: view-only access to the areas you choose.{% endif %}{% if session.is_owner and not session.is_admin %}<br>Administrator: can run everything when you are away, except making or removing Owners.{% endif %}<br>
-    <strong>Nothing changes until you press Save.</strong> Choosing a login for someone emails them a login link and a temporary password (they pick their own password when they first log in). Choosing <strong>No login</strong> removes their Hub login and clears their Site Access; they stay a contact. Fine-tune their areas under Site Access.
+    <strong>Nothing changes until you press Save.</strong> Choosing a login for someone emails them a login link and a temporary password (they pick their own password when they first log in). Choosing <strong>No login</strong> removes their Hub login and clears their HUB Access; they stay a contact. Fine-tune their areas under HUB Access.
   </p>
   {% endif %}
 </div>

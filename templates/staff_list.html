@@ -1,7 +1,7 @@
 {% extends "crm_base.html" %}
-{% block title %}Site Access — {{ program_name }}{% endblock %}
+{% block title %}HUB Access — {{ program_name }}{% endblock %}
 {% block content %}
-<h1>Site Access</h1>
+<h1>HUB Access</h1>
 <p class="muted">
   The Owner and Administrators see this page{% if not session.is_owner %}, along with Leadership{% endif %}. It controls who can log in{% if session.is_owner %} and what each person can open{% else %}. Leadership can reset passwords for Volunteer Team accounts; the Owner handles everything else{% endif %}.
   <br><br><strong>Administrators</strong> have the same Hub access as the Owner, with these exceptions. An Administrator cannot change the program code, transfer or change ownership, change the Owner's login or password, create, change or remove another Administrator, or open Owner's Corner (in the Administrator menu).
@@ -221,7 +221,7 @@
     show(pick.value);
   });
   // The top "Back" button first steps out of one person's view (open Modify access box, or a person picked
-  // in "Find a person") back to the full Site Access list, instead of leaving the page.
+  // in "Find a person") back to the full HUB Access list, instead of leaving the page.
   window.hubBackHook = function(){
     var openBox = document.querySelector('#staffTable tr[data-staff] details:not(.acc-view)[open]');
     if (openBox) { openBox.open = false; pick.value = ''; show(''); window.scrollTo(0, 0); return true; }

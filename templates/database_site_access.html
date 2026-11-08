@@ -1,5 +1,5 @@
 {% extends "crm_base.html" %}
-{% block title %}Site Access Components — {{ program_name }}{% endblock %}
+{% block title %}HUB Access Components — {{ program_name }}{% endblock %}
 {% block content %}
 <style>
   .sa-sub { display:block; margin:26px 0 10px; padding:9px 14px; border-radius:8px; background:#334a5e; color:#fff; font-size:1.2rem; font-weight:800 }
@@ -14,7 +14,7 @@
   table.sa-t th { background:#eef3f8 }
 </style>
 <p><a href="{{ url_for('.database_map') }}">&larr; Database map</a></p>
-<h1 style="margin:0 0 4px">Site Access Components</h1>
+<h1 style="margin:0 0 4px">HUB Access Components</h1>
 <p style="font-size:1.1rem; max-width:800px">How access to the site and the programs is divided. Access works in two layers: <strong>who you are</strong> (your role) and <strong>which areas you have been given</strong>. The people shown are live.</p>
 
 <div class="sa-sub">1. Who: the four kinds of login</div>
@@ -49,5 +49,5 @@
   {% endfor %}
 </table>
 </div>
-<p class="muted" style="margin-top:16px">To change who has access, use <strong>Site Access</strong> in the top menu. To look up one person, open the Site Access table in the Database map.</p>
+<p class="muted" style="margin-top:16px">To change who has access, use <strong>HUB Access</strong> in the top menu. To look up one person, open the HUB Access table in the Database map.</p>
 {% endblock %}

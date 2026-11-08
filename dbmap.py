@@ -86,7 +86,7 @@ FIXED_DESC = {
 
 # Plain-English names shown on the map (the technical table name stays visible underneath).
 TITLES = {
-    "access_grants": "Site Access",
+    "access_grants": "HUB Access",
     "cohorts": "Sessions (Cohorts)",
     "call_volunteers": "Guides",
     "blast_audiences": "Correspondence Groups",

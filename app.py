@@ -635,7 +635,7 @@ def _headings_needed(conn, program_id, kwargs):
 def program_area_required(view):
     """Gates a program's confidential training materials. The Owner sees
     everything; anyone else needs a grant for each heading involved
-    (e.g. "D1:Syllabus"), set by the Owner from Site Access. Every wrapped
+    (e.g. "D1:Syllabus"), set by the Owner from HUB Access. Every wrapped
     route must take program_id as a URL argument. Sets g.allowed_headings."""
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -655,7 +655,7 @@ def program_area_required(view):
                 return redirect(request.referrer or url_for(".programs_list"))
             g.allowed_headings = allowed
             return view(*args, **kwargs)
-        flash("You don't have access to that part of this program's training materials. Ask the Owner to grant it from Site Access.")
+        flash("You don't have access to that part of this program's training materials. Ask the Owner to grant it from HUB Access.")
         return redirect(_sched_home())
     return wrapped
 
@@ -1275,7 +1275,7 @@ def contact_login_role(contact_id):
     true_owner = owner and not session.get("is_admin")
     if staff and staff["is_owner"] == 1:
         conn.close()
-        flash("This person is an Owner. Owner logins are managed under Site Access.")
+        flash("This person is an Owner. Owner logins are managed under HUB Access.")
         return back
     is_admin_login = bool(staff and staff["active"] and staff["is_owner"] == 2)
     if (choice == "Administrator" or is_admin_login) and not true_owner:
@@ -1302,7 +1302,7 @@ def contact_login_role(contact_id):
             conn.execute("DELETE FROM access_grants WHERE staff_id = ?", (staff["id"],))
             conn.commit()
         conn.close()
-        flash("Login removed. They no longer appear in Site Access, their access was cleared, and they can no longer log in. They are still a contact.")
+        flash("Login removed. They no longer appear in HUB Access, their access was cleared, and they can no longer log in. They are still a contact.")
         return back
     new_role = "Leadership" if choice == "Administrator" else choice
     new_flag = 2 if choice == "Administrator" else 0
@@ -2603,11 +2603,11 @@ def _sync_login_email(conn, contact_id, old_email, new_email):
         if not st:
             return
         if st["is_owner"] == 1 or st["role"] == ACCOUNTING_ROLE or (st["is_owner"] == 2 and session.get("is_admin")):
-            flash("Note: their team login still uses the old email. Only the Owner can change that one, under Site Access.")
+            flash("Note: their team login still uses the old email. Only the Owner can change that one, under HUB Access.")
             return
         allowed = session.get("is_owner") or (session.get("staff_role") == "Leadership" and st["role"] == "Team")
         if not allowed:
-            flash("Note: their team login still uses the old email. Ask the Owner (or Leadership, for a Team account) to update it under Site Access.")
+            flash("Note: their team login still uses the old email. Ask the Owner (or Leadership, for a Team account) to update it under HUB Access.")
             return
         if conn.execute("SELECT 1 FROM staff WHERE LOWER(email) = ? AND id <> ?", (new, st["id"])).fetchone():
             flash("Their team login was not changed because another account already uses that email.")
@@ -3777,7 +3777,7 @@ def _contact_delete_blockers(conn, contact_id):
         reasons.append("is recorded as the Sponsor of other people")
     staff_row = conn.execute("SELECT 1 FROM staff WHERE contact_id = ?", (contact_id,)).fetchone()
     if staff_row:
-        reasons.append("is linked to an ERP login (unlink it from Site Access first)")
+        reasons.append("is linked to an ERP login (unlink it from HUB Access first)")
     return reasons
 
 
@@ -3922,7 +3922,7 @@ def contact_delete(contact_id):
             return redirect(url_for(".contact_delete_confirm", contact_id=contact_id))
         if conn.execute("SELECT 1 FROM staff WHERE contact_id = ?", (contact_id,)).fetchone():
             conn.close()
-            flash("This contact is linked to an ERP login -- unlink it from Site Access first. Nothing was changed.")
+            flash("This contact is linked to an ERP login -- unlink it from HUB Access first. Nothing was changed.")
             return redirect(url_for(".contact_delete_confirm", contact_id=contact_id))
         history = _contact_history_counts(conn, contact_id)
         _clear_contact_history(conn, contact_id)
@@ -8359,7 +8359,7 @@ def _nav_sessions():
 app.jinja_env.globals["role_label"] = role_label
 def _has_guides_access():
     """Choosing and changing the Guides: the Owner always; a Leadership account only when the Owner has
-    ticked Guides for them under Site Access."""
+    ticked Guides for them under HUB Access."""
     if session.get("is_owner"):
         return True
     if session.get("staff_role") != "Leadership" or not session.get("staff_id"):
@@ -8730,7 +8730,7 @@ def website_team_remove(wid):
 import blasts
 def correspondence_access(view):
     """Correspondence is an Ownership-access area: the Owner always, anyone else only when the
-    Owner has ticked Correspondence for them under Site Access."""
+    Owner has ticked Correspondence for them under HUB Access."""
     @wraps(view)
     def wrapped(*args, **kwargs):
         if _has_area_access("correspondence"):

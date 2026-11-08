@@ -7,7 +7,7 @@ function hubLoginChange(sel){
   var cur = f.dataset.cur || '', v = sel.value, name = f.dataset.name || 'this person';
   if (v === cur) { b.className = 'btn secondary'; b.textContent = 'Set'; if (n) n.style.display = 'none'; return; }
   var label, note;
-  if (!v) { label = 'Remove login'; note = 'NOT DONE YET. Press "Remove login" to take ' + name + ' out of the Hub and Site Access (they stay a contact).'; }
+  if (!v) { label = 'Remove login'; note = 'NOT DONE YET. Press "Remove login" to take ' + name + ' out of the Hub and HUB Access (they stay a contact).'; }
   else if (!cur) { label = 'Send login'; note = 'NOT DONE YET. Press "Send login" to email ' + name + ' a login link and a temporary password.'; }
   else { label = 'Change login'; note = 'NOT DONE YET. Press "Change login" to switch ' + name + ' to ' + sel.options[sel.selectedIndex].text + ' (no email is sent).'; }
   b.className = 'btn'; b.textContent = label;
@@ -98,7 +98,7 @@ function hubLoginChange(sel){
 {% if can_assign_logins %}<div class="card" style="margin:6px 0; padding:10px 14px; border-left:4px solid #3d5a3d; font-size:.92rem">
   <strong>Hub Login:</strong> pick a choice in a person's row. A red note and a green button then appear: <strong>press the green button</strong> (Send login, Change login or Remove login) to make it happen. Nothing changes until you do.<br>
   &bull; <strong>Volunteer Team / Leadership / Accounting &amp; Legal</strong>: they are emailed a login link and a <strong>temporary password</strong>, and choose their own password the first time they log in.<br>
-  &bull; <strong>No login</strong>: removes their Hub login and clears their Site Access. They stay in Contacts.
+  &bull; <strong>No login</strong>: removes their Hub login and clears their HUB Access. They stay in Contacts.
 </div>{% endif %}
 <p class="muted" style="margin:6px 0">Tip: click a heading (First, Last, Email, Cell or Relationship) to sort the list. Click it again to reverse.</p>
 <div class="sortbar">
