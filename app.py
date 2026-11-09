@@ -420,13 +420,14 @@ FIXED_ACCESS_AREAS = [
     ("budgets", "Budgets (view only; Admin menu)"),
     ("alerts", "Dashboard alerts (the \"Needs attention\" list and email bounces)"),
     ("assign_logins", "Assign logins (give a contact a Volunteer Team login, or remove one)"),
+    ("checkin", "Check-in table (greeters: see a session's couples and take couple photos)"),
 ]
 # Ticking either session box also gives Contacts automatically, since the session pages
 # live under Contacts. These two (and the Contacts that comes with them) have no 4-person limit.
 SESSION_VIEW_AREAS = ("session_team", "trainee_roster")
 # "Grant full access" does not include these; only the Owner switches them on, person by person.
 FULL_ACCESS_EXCLUDED_AREAS = ("accounting", "donations", "contracts", "marketing", "correspondence", "guides", "budgets")
-UNCAPPED_AREAS = set(SESSION_VIEW_AREAS) | {"correspondence", "guides", "budgets", "alerts", "assign_logins"}
+UNCAPPED_AREAS = set(SESSION_VIEW_AREAS) | {"correspondence", "guides", "budgets", "alerts", "assign_logins", "checkin"}
 
 
 def _can_see_session_part(part):
@@ -5422,6 +5423,7 @@ def cohort_detail(cohort_id):
         f"""SELECT e.*, {full_name_sql('ct')} AS full_name,
                    ct.id AS contact_id, sg.label AS group_label,
                    fr.id AS feedback_response_id,
+                   (SELECT 1 FROM training_profiles tp WHERE tp.enrollment_id = e.id LIMIT 1) AS has_profile,
                    {full_name_sql('eb')} AS enrolled_by_name
            FROM enrollments e
            JOIN contacts ct ON ct.id = e.contact_id
@@ -8291,7 +8293,7 @@ def inject_area_access():
     if not session.get("staff_id"):
         return {"has_contacts_access": False, "has_program_access": False, "has_donations_access": False,
                 "has_contracts_access": False, "has_accounting_access": False,
-                "has_correspondence_access": False, "has_budgets_access": False, "nav_sessions": [], "nav_programs": []}
+                "has_correspondence_access": False, "has_budgets_access": False, "has_checkin_access": False, "nav_sessions": [], "nav_programs": []}
     return {
         "has_contacts_access": _has_area_access("contacts"),
         "has_program_access": _has_any_program_access(),
@@ -8300,6 +8302,7 @@ def inject_area_access():
         "has_accounting_access": _has_area_access("accounting"),
         "has_correspondence_access": _has_area_access("correspondence"),
         "has_budgets_access": _has_area_access("budgets"),
+        "has_checkin_access": _has_area_access("checkin") or _has_area_access("trainee_roster") or _has_area_access("session_team"),
         "nav_sessions": _nav_sessions(),
         "nav_programs": _nav_programs(),
     }
@@ -8766,6 +8769,10 @@ import hub_backup
 hub_backup.register(app, crm, owner_required, get_db)
 import personal_invite
 personal_invite.register(app, crm, get_db, leadership_required, area_required("assign_logins"), role_label, ROLE_BLURBS, PROGRAM_NAME, _ensure_must_change)
+import couple_photos
+couple_photos.register(app, crm, area_required("contacts"), get_db, process_contact_photo)
+import checkin
+checkin.register(app, crm, get_db, _has_area_access, _auto_link_couples, full_name_sql, process_contact_photo, couple_photos)
 import glance
 glance.register(app, crm, leadership_required, get_db, _payment_info_for_cohort, _can_handle_money,
                 hidden_lists=lambda: [LEADERSHIP_LIST, *LEADERSHIP_SOURCES] + [n for n, _ in TEAM_LISTS])

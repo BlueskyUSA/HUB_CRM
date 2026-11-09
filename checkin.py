@@ -1,0 +1,135 @@
+"""Greeter check-in table: the greeter logs in, opens the session, taps a couple, takes the couple photo with the computer's or
+iPad's camera, and it is saved on both partners' pages. Also shows what is still missing (payment, questionnaire, profile).
+A 'Photo board' page shows every couple's photo for the session so TAs can remember who they are visiting with."""
+from datetime import datetime, timedelta
+from flask import render_template, request, session, redirect, url_for, flash, jsonify, abort, make_response
+
+FULL_AREAS = ("checkin", "contacts")                      # may take photos
+VIEW_AREAS = ("checkin", "contacts", "trainee_roster", "session_team")   # may see the photo board
+
+
+def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, process_photo, cp):
+    def _allowed(areas):
+        return bool(session.get("is_owner")) or any(has_area_access(a) for a in areas)
+
+    def _need(areas):
+        if _allowed(areas):
+            return None
+        flash("This area is restricted. Ask the Owner to give you Check-in access under HUB Access.")
+        return redirect(url_for(".dashboard"))
+
+    def _couples(conn, cohort_id):
+        try:
+            auto_link(conn, cohort_id)
+        except Exception:
+            try: conn.rollback()
+            except Exception: pass
+        rows = conn.execute(f"""SELECT e.id AS eid, e.partner_enrollment_id AS pe, e.questionnaire_completed_at AS quest, e.payment_completed_at AS paid,
+                   ct.id AS cid, ct.first_name, ct.last_name, {full_name_sql('ct')} AS full_name,
+                   (SELECT 1 FROM training_profiles tp WHERE tp.enrollment_id = e.id LIMIT 1) AS has_profile,
+                   cpx.updated_at AS photo_ts
+            FROM enrollments e JOIN contacts ct ON ct.id = e.contact_id
+            LEFT JOIN couple_photos cpx ON cpx.contact_id = ct.id
+            WHERE e.cohort_id = ? ORDER BY ct.last_name, ct.first_name""", (cohort_id,)).fetchall()
+        byid = {r["eid"]: r for r in rows}
+        seen, groups = set(), []
+        for r in rows:
+            if r["eid"] in seen:
+                continue
+            seen.add(r["eid"])
+            mates = [r]
+            pr = byid.get(r["pe"]) if r["pe"] else None
+            if pr and pr["eid"] not in seen:
+                seen.add(pr["eid"]); mates.append(pr)
+            ts = next((m["photo_ts"] for m in mates if m["photo_ts"]), None)
+            missing = []
+            for m in mates:
+                bits = [w for w, ok in (("profile", m["has_profile"]), ("questionnaire", m["quest"]), ("payment", m["paid"])) if not ok]
+                if bits:
+                    missing.append(m["first_name"] + ": " + ", ".join(bits))
+            groups.append(dict(people=mates, photo_ts=ts, missing=missing, ready=not missing, photo_cid=next((m["cid"] for m in mates if m["photo_ts"]), mates[0]["cid"]),
+                               names=" & ".join(m["first_name"] for m in mates) + " " + (mates[0]["last_name"] or "")))
+        groups.sort(key=lambda g: (g["people"][0]["last_name"] or "").lower())
+        return groups
+
+    def _cohort(conn, cohort_id):
+        return conn.execute("""SELECT c.*, p.code, p.name FROM cohorts c JOIN programs p ON p.id = c.program_id WHERE c.id = ?""", (cohort_id,)).fetchone()
+
+    @crm.route("/check-in")
+    def checkin_home():
+        r = _need(VIEW_AREAS)
+        if r: return r
+        since = (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d")
+        conn = get_db()
+        try:
+            rows = conn.execute("""SELECT c.id, c.session_number, c.session_date, c.end_date, c.status, p.code, p.name,
+                       (SELECT COUNT(*) FROM enrollments e WHERE e.cohort_id = c.id) AS n
+                FROM cohorts c JOIN programs p ON p.id = c.program_id
+                WHERE c.session_date >= ? AND c.status <> 'Cancelled' ORDER BY c.session_date, p.code""", (since,)).fetchall()
+        finally:
+            conn.close()
+        return render_template("checkin_home.html", rows=rows, can_photo=_allowed(FULL_AREAS))
+
+    @crm.route("/check-in/<int:cohort_id>")
+    def checkin_session(cohort_id):
+        r = _need(FULL_AREAS)
+        if r: return r
+        conn = get_db()
+        try:
+            cohort = _cohort(conn, cohort_id)
+            if not cohort:
+                abort(404)
+            groups = _couples(conn, cohort_id)
+        finally:
+            conn.close()
+        return render_template("checkin_session.html", cohort=cohort, groups=groups)
+
+    @crm.route("/check-in/<int:cohort_id>/photos")
+    def checkin_photos(cohort_id):
+        r = _need(VIEW_AREAS)
+        if r: return r
+        conn = get_db()
+        try:
+            cohort = _cohort(conn, cohort_id)
+            if not cohort:
+                abort(404)
+            groups = _couples(conn, cohort_id)
+        finally:
+            conn.close()
+        return render_template("checkin_photos.html", cohort=cohort, groups=groups, can_photo=_allowed(FULL_AREAS))
+
+    @crm.route("/check-in/<int:cohort_id>/photo/<int:contact_id>", methods=["POST"])
+    def checkin_photo_save(cohort_id, contact_id):
+        if not _allowed(FULL_AREAS):
+            return jsonify(ok=False, error="Not allowed"), 403
+        res = process_photo(request.files.get("photo"))
+        if not res:
+            return jsonify(ok=False, error="That photo could not be read. Please try again."), 400
+        conn = get_db()
+        try:
+            ok = conn.execute("SELECT 1 FROM enrollments WHERE cohort_id = ? AND contact_id = ?", (cohort_id, contact_id)).fetchone()
+            if not ok:
+                return jsonify(ok=False, error="That person is not in this session."), 404
+            pid = cp.save_couple_photo(conn, contact_id, res[0], res[1], session.get("staff_name"))
+            ts = conn.execute("SELECT updated_at FROM couple_photos WHERE contact_id = ?", (contact_id,)).fetchone()["updated_at"]
+        finally:
+            conn.close()
+        return jsonify(ok=True, both=bool(pid), url=url_for(".checkin_photo_file", cohort_id=cohort_id, contact_id=contact_id, v=ts))
+
+    @crm.route("/check-in/<int:cohort_id>/photo-file/<int:contact_id>")
+    def checkin_photo_file(cohort_id, contact_id):
+        if not _allowed(VIEW_AREAS):
+            abort(403)
+        conn = get_db()
+        try:
+            row = conn.execute("""SELECT cp.data, cp.content_type FROM couple_photos cp
+                                  WHERE cp.contact_id = ? AND EXISTS (SELECT 1 FROM enrollments e WHERE e.cohort_id = ? AND e.contact_id = cp.contact_id)""",
+                               (contact_id, cohort_id)).fetchone()
+        finally:
+            conn.close()
+        if not row:
+            abort(404)
+        resp = make_response(bytes(row["data"]))
+        resp.headers["Content-Type"] = row["content_type"] or "image/jpeg"
+        resp.headers["Cache-Control"] = "private, max-age=3600"
+        return resp

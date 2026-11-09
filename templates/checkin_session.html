@@ -1,0 +1,77 @@
+{% extends "crm_base.html" %}
+{% block title %}Check-in table — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Check-in &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
+<p class="muted">{{ cohort.session_date|fdate }}{% if cohort.end_date %} &ndash; {{ cohort.end_date|fdate }}{% endif %}. Find the couple, check that nothing is missing, then tap <b>Take couple photo</b>. The photo is saved for both partners. &nbsp;<a href="{{ url_for('.checkin_photos', cohort_id=cohort.id) }}">Photo board</a></p>
+{% set ns = namespace(ready=0, total=0) %}{% for g in groups %}{% set ns.total = ns.total + 1 %}{% if g.ready %}{% set ns.ready = ns.ready + 1 %}{% endif %}{% endfor %}
+<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px">
+  <input id="q" type="search" placeholder="Find a name (or just scroll the list)" autofocus style="flex:1; min-width:220px; max-width:360px; padding:12px; font-size:1.1rem">
+  <label style="margin:0; font-size:1rem"><input type="checkbox" id="onlyMissing"> Show only couples with something missing</label>
+  <span class="muted"><b>{{ ns.ready }}</b> of {{ ns.total }} couples are fully ready</span>
+</div>
+{% for g in groups %}
+<div class="card row" data-name="{{ g.names|lower }}" data-ready="{{ 1 if g.ready else 0 }}" data-cid="{{ g.people[0].cid }}" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap">
+  <div class="thumbwrap" style="width:150px">
+    {% if g.photo_ts %}<img class="thumb" src="{{ url_for('.checkin_photo_file', cohort_id=cohort.id, contact_id=g.photo_cid, v=g.photo_ts) }}" alt="" style="width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px">
+    {% else %}<div class="thumb ph" style="width:100%; aspect-ratio:4/3; border-radius:10px; background:#f1f4f7; border:1px dashed #c7d0d9; display:flex; align-items:center; justify-content:center; color:#6b7782; font-size:.85rem">No photo</div>{% endif %}
+  </div>
+  <div style="flex:1; min-width:240px">
+    <strong style="font-size:1.15rem">{{ g.names }}</strong>
+    {% if g.ready %}<div style="margin:2px 0 4px"><span class="badge good">&#10003; Ready: profile, questionnaire and payment complete</span></div>
+    {% else %}<div style="margin:2px 0 4px"><span class="badge warn">Missing: {{ g.missing|join('; ') }}</span></div>{% endif %}
+    {% for m in g.people %}
+    <div style="margin-top:4px; font-size:.95rem"><span style="display:inline-block; min-width:90px">{{ m.first_name }}</span>
+      <span class="badge {{ 'good' if m.paid else 'warn' }}">{{ 'Paid' if m.paid else 'Payment due' }}</span>
+      <span class="badge {{ 'good' if m.quest else 'warn' }}">{{ 'Questionnaire done' if m.quest else 'Questionnaire needed' }}</span>
+      <span class="badge {{ 'good' if m.has_profile else 'warn' }}">{{ 'Profile in' if m.has_profile else 'Profile needed' }}</span></div>
+    {% endfor %}
+  </div>
+  <div><button class="btn snap" type="button" style="font-size:1.05rem; padding:12px 18px">{{ 'Retake' if g.photo_ts else 'Take' }} couple photo</button></div>
+</div>
+{% else %}<p class="muted">No one is enrolled in this session yet.</p>{% endfor %}
+
+<div id="cam" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:1000; flex-direction:column; align-items:center; justify-content:center; padding:12px">
+  <div id="camTitle" style="color:#fff; font-size:1.2rem; margin-bottom:8px"></div>
+  <video id="vid" autoplay playsinline muted style="max-width:100%; max-height:62vh; border-radius:12px; background:#000"></video>
+  <img id="shot" alt="" style="display:none; max-width:100%; max-height:62vh; border-radius:12px">
+  <div id="camMsg" style="color:#ffd; margin:8px; min-height:1.4em; text-align:center"></div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center">
+    <button class="btn" id="bSnap" type="button" style="font-size:1.1rem; padding:12px 22px">Take photo</button>
+    <button class="btn" id="bSave" type="button" style="display:none; font-size:1.1rem; padding:12px 22px">Save this photo</button>
+    <button class="btn secondary" id="bRetake" type="button" style="display:none; font-size:1.1rem; padding:12px 22px">Retake</button>
+    <button class="btn secondary" id="bFlip" type="button">Flip camera</button>
+    <label class="btn secondary" style="cursor:pointer; margin:0">Use a photo from this device<input id="bFile" type="file" accept="image/*" capture="environment" style="display:none"></label>
+    <button class="btn secondary" id="bClose" type="button">Close</button>
+  </div>
+</div>
+<canvas id="cv" style="display:none"></canvas>
+<script>
+(function(){
+  var q=document.getElementById('q'), om=document.getElementById('onlyMissing');
+  function filt(){ var v=q.value.toLowerCase(); document.querySelectorAll('.row').forEach(function(r){ var ok=r.dataset.name.indexOf(v)>-1 && !(om.checked && r.dataset.ready==='1'); r.style.display=ok?'':'none'; }); }
+  q.addEventListener('input',filt); om.addEventListener('change',filt);
+  var cam=document.getElementById('cam'), vid=document.getElementById('vid'), shot=document.getElementById('shot'), msg=document.getElementById('camMsg'),
+      cv=document.getElementById('cv'), stream=null, facing='user', cur=null, blob=null;
+  var saveUrl="{{ url_for('.checkin_photo_save', cohort_id=cohort.id, contact_id=0) }}".replace(/0$/,'');
+  function stop(){ if(stream){ stream.getTracks().forEach(function(t){t.stop();}); stream=null; } }
+  function start(){ stop(); msg.textContent='';
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ msg.textContent='This browser cannot open the camera here. Use "Use a photo from this device".'; return; }
+    navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1920},height:{ideal:1080}},audio:false}).then(function(s){ stream=s; vid.srcObject=s; vid.style.display=''; shot.style.display='none'; }).catch(function(){ msg.textContent='The camera did not open. Allow camera access for this site, or use "Use a photo from this device".'; });
+  }
+  function mode(preview){ document.getElementById('bSnap').style.display=preview?'none':''; document.getElementById('bSave').style.display=preview?'':'none'; document.getElementById('bRetake').style.display=preview?'':'none'; vid.style.display=preview?'none':''; shot.style.display=preview?'':'none'; }
+  document.querySelectorAll('.snap').forEach(function(b){ b.addEventListener('click',function(){ var row=b.closest('.row'); cur=row; document.getElementById('camTitle').textContent='Couple photo: '+row.querySelector('strong').textContent; blob=null; mode(false); cam.style.display='flex'; start(); }); });
+  document.getElementById('bSnap').addEventListener('click',function(){ if(!vid.videoWidth){ msg.textContent='Camera is not ready yet.'; return; } cv.width=vid.videoWidth; cv.height=vid.videoHeight; cv.getContext('2d').drawImage(vid,0,0); cv.toBlob(function(b){ blob=b; shot.src=URL.createObjectURL(b); mode(true); msg.textContent='Happy with it? Save, or retake.'; },'image/jpeg',0.88); });
+  document.getElementById('bRetake').addEventListener('click',function(){ blob=null; mode(false); msg.textContent=''; if(!stream) start(); });
+  document.getElementById('bFlip').addEventListener('click',function(){ facing=(facing==='user')?'environment':'user'; start(); });
+  document.getElementById('bFile').addEventListener('change',function(){ if(this.files&&this.files[0]){ blob=this.files[0]; shot.src=URL.createObjectURL(blob); mode(true); msg.textContent='Happy with it? Save, or retake.'; } this.value=''; });
+  document.getElementById('bClose').addEventListener('click',function(){ stop(); cam.style.display='none'; });
+  document.getElementById('bSave').addEventListener('click',function(){ if(!blob||!cur) return; var fd=new FormData(); fd.append('photo',blob,'couple.jpg'); msg.textContent='Saving...';
+    fetch(saveUrl+cur.dataset.cid,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(j){
+      if(!j.ok){ msg.textContent=j.error||'Could not save. Please try again.'; return; }
+      var w=cur.querySelector('.thumbwrap'); w.innerHTML='<img class="thumb" src="'+j.url+'" alt="" style="width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px">';
+      cur.querySelector('.snap').textContent='Retake couple photo'; stop(); cam.style.display='none';
+    }).catch(function(){ msg.textContent='Could not save. Check the connection and try again.'; });
+  });
+})();
+</script>
+{% endblock %}
