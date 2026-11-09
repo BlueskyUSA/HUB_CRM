@@ -34,7 +34,6 @@
       {% set show_donations = is_lead or has_donations_access %}
       {% set show_finance = session.is_owner or has_accounting_access %}
       {% if show_contacts %}<a href="{{ url_for('.contacts_list') }}">Contacts</a>{% endif %}
-      {% if session.is_owner or has_checkin_access %}<a href="{{ url_for('.checkin_home') }}">Check-in</a>{% endif %}
       <details class="navmenu">
         <summary>Correspondence &#9662;</summary>
         <div class="navmenu-items">
@@ -130,12 +129,18 @@
           {% endif %}
           <a href="{{ url_for('.calendar_view') }}">Calendar &amp; Quick Schedule</a>
           <div style="padding:8px 16px 2px; color:#cfc9b0; font-size:0.78rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap">Upcoming sessions</div>
-          {% for n in nav_sessions %}<a href="{{ url_for('.cohort_detail', cohort_id=n.id) }}">{{ n.label }} &middot; {{ n.span }}</a>{% endfor %}
+          {% for n in nav_sessions %}<a href="{{ url_for('.cohort_detail', cohort_id=n.id) }}">{{ n.label }} &middot; {{ n.span }}</a>
+          {% if session.is_owner or has_checkin_access %}<a href="{{ url_for('.checkin_session', cohort_id=n.id) }}" style="padding-left:44px; font-size:0.88rem; color:#cfc9b0">&#9654; Check-in</a>{% endif %}{% endfor %}
         </div>
       </details>
+      {% elif session.is_owner or has_checkin_access %}
+      <details class="navmenu"><summary>Programs &#9662;</summary><div class="navmenu-items"><a href="{{ url_for('.programs_list') }}">Training Materials</a><a href="{{ url_for('.checkin_home') }}">Check-in</a></div></details>
       {% else %}
       <a href="{{ url_for('.programs_list') }}">Programs</a>
       {% endif %}
+      {% endif %}
+      {% if not (session.staff_role == 'Leadership' or has_program_access) and has_checkin_access %}
+      <details class="navmenu"><summary>Programs &#9662;</summary><div class="navmenu-items"><a href="{{ url_for('.checkin_home') }}">Check-in</a></div></details>
       {% endif %}
       {% endif %}
       {% if chat_ok %}<a href="{{ url_for('.chat_home') }}">Chat Room{% if chat_new_board or chat_new_room %} <span title="New posts" style="color:#e8554e">&#9679;</span>{% endif %}</a>{% endif %}
