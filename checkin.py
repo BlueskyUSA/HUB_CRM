@@ -55,7 +55,7 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
         except Exception:
             try: conn.rollback()
             except Exception: pass
-        rows = conn.execute(f"""SELECT e.id AS eid, e.partner_enrollment_id AS pe, e.questionnaire_completed_at AS quest, e.payment_completed_at AS paid,
+        rows = conn.execute(f"""SELECT ct.*, e.id AS eid, e.partner_enrollment_id AS pe, e.questionnaire_completed_at AS quest, e.payment_completed_at AS paid,
                    ct.id AS cid, ct.first_name, ct.last_name, {full_name_sql('ct')} AS full_name,
                    (SELECT 1 FROM training_profiles tp WHERE tp.enrollment_id = e.id LIMIT 1) AS has_profile,
                    (SELECT 1 FROM contact_photos cph WHERE cph.contact_id = ct.id LIMIT 1) AS has_photo,
@@ -75,9 +75,16 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
                 seen.add(pr["eid"]); mates.append(pr)
             ts = next((m["photo_ts"] for m in mates if m["photo_ts"]), None)
             missing = []
+            pm_f = app.jinja_env.globals.get("profile_missing"); ps_f = app.jinja_env.globals.get("personal_missing")
+            for m in mates:
+                try:
+                    m["basic_missing"] = [x for x in pm_f(m) if x != "photo"] if pm_f else []
+                    m["personal_missing"] = ps_f(m) if ps_f else []
+                except Exception:
+                    m["basic_missing"], m["personal_missing"] = [], []
             couple_paid = any(m["paid"] for m in mates)      # a couple makes one payment
             for m in mates:
-                bits = [w for w, ok in (("individual photo", m["has_photo"]), ("questionnaire", m["quest"]), ("payment", m["paid"] or couple_paid)) if not ok]
+                bits = [w for w, ok in (("basic info", not m["basic_missing"]), ("personal info", not m["personal_missing"]), ("individual photo", m["has_photo"]), ("questionnaire", m["quest"]), ("payment", m["paid"] or couple_paid)) if not ok]
                 if bits:
                     missing.append((m["first_name"] or "?") + ": " + ", ".join(bits))
             for m in mates:

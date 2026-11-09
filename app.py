@@ -2331,6 +2331,9 @@ def personal_missing(contact):
     return out
 
 
+app.jinja_env.globals["personal_missing"] = personal_missing
+
+
 def history_state(contact):
     """(complete?, note) for the Discovery history section."""
     att = str(contact["discovery_attendance"] or "").strip()
@@ -5434,6 +5437,14 @@ def cohort_detail(cohort_id):
            WHERE e.cohort_id = ? ORDER BY ct.last_name, ct.first_name""",
         (cohort_id,),
     ).fetchall()
+    roster = [dict(r) for r in roster]
+    for _r in roster:
+        try:
+            _c = conn.execute("SELECT * FROM contacts WHERE id = ?", (_r["contact_id"],)).fetchone()
+            _r["basic_missing"] = [x for x in profile_missing(_c) if x != "photo"]
+            _r["personal_missing"] = personal_missing(_c)
+        except Exception:
+            _r["basic_missing"], _r["personal_missing"] = [], []
     partner_names = {e["id"]: e["full_name"] for e in roster}
     needs_rows, needs_total = ([], 0)
     if _is_leader():

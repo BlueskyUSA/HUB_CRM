@@ -17,12 +17,12 @@
   </div>
   <div style="flex:1; min-width:240px">
     <strong style="font-size:1.15rem">{{ g.names }}</strong>
-    {% if g.ready %}<div style="margin:2px 0 4px"><span class="badge good">&#10003; Ready: individual photo, questionnaire and payment complete</span></div>
-    {% else %}<div style="margin:2px 0 4px"><span class="badge warn">Missing: {{ g.missing|join('; ') }}</span></div>{% endif %}
     {% for m in g.people %}
     <div style="margin-top:4px; font-size:.95rem"><span style="display:inline-block; min-width:90px">{{ m.first_name }}</span>
       <span class="badge {{ 'good' if m.paid else 'warn' }}">{{ 'Paid' if m.paid else 'Payment due' }}</span>
       <span class="badge {{ 'good' if m.quest else 'warn' }}">{{ 'Questionnaire done' if m.quest else 'Questionnaire needed' }}</span>
+      <span class="badge {{ 'good' if not m.basic_missing else 'warn' }}" title="{{ m.basic_missing|join(', ') }}">{{ 'Basic info complete' if not m.basic_missing else 'Basic info incomplete' }}</span>
+      <span class="badge {{ 'good' if not m.personal_missing else 'warn' }}" title="{{ m.personal_missing|join(', ') }}">{{ 'Personal info complete' if not m.personal_missing else 'Personal info incomplete' }}</span>
       <span class="badge {{ 'good' if m.has_photo else 'warn' }}">{{ 'Photo in' if m.has_photo else 'Individual photo needed' }}</span>
       <button class="btn secondary snapi" type="button" data-cid="{{ m.cid }}" data-name="{{ m.first_name }}" style="padding:4px 10px; font-size:.85rem">{{ 'Retake' if m.has_photo else 'Take' }} individual photo</button></div>
     {% endfor %}
