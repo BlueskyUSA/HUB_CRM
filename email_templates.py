@@ -643,6 +643,19 @@ SESSION_LETTERS = {
         ],
         "signoff": "Warmly,",
     },
+    "questionnaire_request": {
+        "title": "Questionnaire request",
+        "audience": "Trainees who have not completed the questionnaire",
+        "subject": "Your questionnaire for {training}",
+        "paras": [
+            "We are looking forward to {training}, {dates}{where}. Here is your personal link to the questionnaire. Please take your time and answer it thoughtfully.",
+            "{link}",
+            "You can close it and pick up right where you left off by opening the same link again. "
+            "This link is just for you, so please do not share it. Your answers help us prepare for you, and they are for you alone, so please answer in your own words.",
+            "If you have any questions, just reply to this email.",
+        ],
+        "signoff": "Warmly,",
+    },
     "questionnaire_reminder": {
         "title": "Questionnaire reminder",
         "audience": "Trainees who have not completed the questionnaire",
@@ -746,6 +759,19 @@ SESSION_LETTERS = {
         ],
         "signoff": "Warmly,",
     },
+    "questionnaire_request_other": {
+        "title": "Questionnaire request \u2013 Other Trainings",
+        "audience": "Trainees who have not completed the questionnaire",
+        "subject": "Your questionnaire for {training}",
+        "paras": [
+            "We are looking forward to {training}, {dates}{where}. Here is your personal link to the questionnaire. Please take your time and answer it thoughtfully.",
+            "{link}",
+            "You can close it and pick up right where you left off by opening the same link again. "
+            "This link is just for you, so please do not share it. Your answers help us prepare for you, and they are for you alone, so please answer in your own words.",
+            "If you have any questions, just reply to this email.",
+        ],
+        "signoff": "Warmly,",
+    },
     "questionnaire_reminder_other": {
         "title": "Questionnaire reminder \u2013 Other Trainings",
         "audience": "Trainees who have not completed the questionnaire",
@@ -816,10 +842,10 @@ SESSION_LETTERS = {
         "signoff": "With gratitude,",
     },
 }
-SESSION_TRAINEE_LETTERS = ["seminar_registration", "trainee_confirm", "payment_reminder", "payment_received", "questionnaire_reminder", "what_to_bring"]
+SESSION_TRAINEE_LETTERS = ["seminar_registration", "trainee_confirm", "payment_reminder", "payment_received", "questionnaire_request", "questionnaire_reminder", "what_to_bring"]
 # Each trainee letter above is the one used for The Art of Us (couples; "What to bring" uses its own Art of Us copy).
 # Every other training uses the "_other" copy below. Sending records stay under the letter's main name above.
-OTHER_VARIANTS = {k: k + "_other" for k in ("seminar_registration", "trainee_confirm", "payment_reminder", "payment_received", "questionnaire_reminder")}
+OTHER_VARIANTS = {k: k + "_other" for k in ("seminar_registration", "trainee_confirm", "payment_reminder", "payment_received", "questionnaire_request", "questionnaire_reminder")}
 ART_OF_US_CODE = "D4"
 
 

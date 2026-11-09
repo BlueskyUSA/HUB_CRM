@@ -6056,7 +6056,7 @@ def _session_letter_recipients(conn, cohort_id):
                 continue
             if k == "payment_reminder" and r["p_at"]:
                 continue
-            if k == "questionnaire_reminder" and r["q_at"]:
+            if k in ("questionnaire_request", "questionnaire_reminder") and r["q_at"]:
                 continue
             out[k].append(person)
     people = {}
@@ -6121,7 +6121,7 @@ def _ta_invite_link(cohort_id, person):
 
 
 def _letter_link(person, key):
-    if key == "questionnaire_reminder":
+    if key in ("questionnaire_request", "questionnaire_reminder"):
         return _questionnaire_link(person.get("enrollment_id"))
     if key == "seminar_registration":
         return _personal_link(person["contact_id"])
