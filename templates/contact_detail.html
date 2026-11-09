@@ -51,6 +51,18 @@
   </div>
 </div>
 {% endif %}
+{% set trs = contact_trainings(contact.id) %}
+{% if trs %}
+<div class="card" id="trainings">
+  <strong>Trainings</strong>
+  {% for tr in trs %}
+  <div style="margin-top:6px">{{ tr.label }}{% if tr.date %} &middot; {{ tr.date|fdate }}{% endif %}
+    {% if tr.paid %}<span class="badge good">&#10003; Paid</span>{% if tr.partner %} <span class="muted" style="font-size:.9rem">(one couple payment covers {{ contact.first_name }} and {{ tr.partner }})</span>{% endif %}
+    {% else %}<span class="badge warn">Payment due</span>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% if contact.do_not_email or contact.do_not_call or contact.do_not_text %}
 <div class="card" style="border-color:#c0392b; background:#fdf2f0;"><strong style="color:#c0392b;">DO NOT CONTACT:</strong>
   {% if contact.do_not_email %}no email{% endif %}{% if contact.do_not_call %}{{ ', ' if contact.do_not_email }}no calls{% endif %}{% if contact.do_not_text %}{{ ', ' if contact.do_not_email or contact.do_not_call }}no texts{% endif %}.

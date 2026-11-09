@@ -13,6 +13,31 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
     def _allowed(areas):
         return bool(session.get("is_owner")) or any(has_area_access(a) for a in areas)
 
+    def contact_trainings(contact_id):
+        """Trainings this person is enrolled in, with payment status. A couple makes ONE payment, so if either partner is paid, both show as paid."""
+        try:
+            conn = get_db()
+            try:
+                rows = conn.execute(f"""SELECT p.code, p.name, c.session_number, c.session_date, c.status,
+                           e.payment_completed_at AS own_paid, pe.payment_completed_at AS mate_paid,
+                           {full_name_sql('pct')} AS partner_name
+                    FROM enrollments e JOIN cohorts c ON c.id = e.cohort_id JOIN programs p ON p.id = c.program_id
+                    LEFT JOIN enrollments pe ON pe.id = e.partner_enrollment_id
+                    LEFT JOIN contacts pct ON pct.id = pe.contact_id
+                    WHERE e.contact_id = ? ORDER BY c.session_date DESC""", (contact_id,)).fetchall()
+            finally:
+                conn.close()
+            out = []
+            for r in rows:
+                paid = r["own_paid"] or r["mate_paid"]
+                out.append(dict(label=f"{r['name']} (Session {r['session_number']})", date=r["session_date"], status=r["status"], paid=paid,
+                                with_partner=bool(paid and not r["own_paid"] and r["mate_paid"]) or bool(paid and r["partner_name"]),
+                                partner=r["partner_name"]))
+            return out
+        except Exception:
+            return []
+    app.jinja_env.globals["contact_trainings"] = contact_trainings
+
     def _need(areas):
         if _allowed(areas):
             return None
@@ -50,10 +75,13 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
                 seen.add(pr["eid"]); mates.append(pr)
             ts = next((m["photo_ts"] for m in mates if m["photo_ts"]), None)
             missing = []
+            couple_paid = any(m["paid"] for m in mates)      # a couple makes one payment
             for m in mates:
-                bits = [w for w, ok in (("individual photo", m["has_photo"]), ("questionnaire", m["quest"]), ("payment", m["paid"])) if not ok]
+                bits = [w for w, ok in (("individual photo", m["has_photo"]), ("questionnaire", m["quest"]), ("payment", m["paid"] or couple_paid)) if not ok]
                 if bits:
                     missing.append((m["first_name"] or "?") + ": " + ", ".join(bits))
+            for m in mates:
+                m["paid"] = m["paid"] or (couple_paid and "yes")
             groups.append(dict(people=mates, photo_ts=ts, missing=missing, ready=not missing, photo_cid=next((m["cid"] for m in mates if m["photo_ts"]), mates[0]["cid"]),
                                names=" & ".join((m["first_name"] or "") for m in mates) + " " + (mates[0]["last_name"] or "")))
         groups.sort(key=lambda g: (g["people"][0]["last_name"] or "").lower())
