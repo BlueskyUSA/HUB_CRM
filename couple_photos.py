@@ -61,6 +61,20 @@ def register(app, crm, area_contacts, get_db, process_photo):
             return None
     app.jinja_env.globals["couple_photo_ts"] = couple_photo_ts
 
+    def in_couples_training(contact_id):
+        """True when this person is enrolled in a Relationship Training (D4) session: only then does the contact page show a couple photo."""
+        try:
+            conn = get_db()
+            try:
+                r = conn.execute("""SELECT 1 FROM enrollments e JOIN cohorts c ON c.id = e.cohort_id JOIN programs p ON p.id = c.program_id
+                                    WHERE e.contact_id = ? AND p.code = 'D4' AND c.status <> 'Cancelled' LIMIT 1""", (contact_id,)).fetchone()
+            finally:
+                conn.close()
+            return bool(r)
+        except Exception:
+            return False
+    app.jinja_env.globals["in_couples_training"] = in_couples_training
+
     @crm.route("/contacts/<int:contact_id>/couple-photo", methods=["POST"])
     @area_contacts
     def contact_couple_photo_upload(contact_id):

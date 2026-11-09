@@ -31,6 +31,7 @@
   </div>
 </div>
 {% set cp_ts = couple_photo_ts(contact.id) %}
+{% if cp_ts or in_couples_training(contact.id) %}
 <div class="card" id="couple-photo">
   <strong>Couple photo</strong>
   <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; margin-top:8px">
@@ -49,6 +50,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% if contact.do_not_email or contact.do_not_call or contact.do_not_text %}
 <div class="card" style="border-color:#c0392b; background:#fdf2f0;"><strong style="color:#c0392b;">DO NOT CONTACT:</strong>
   {% if contact.do_not_email %}no email{% endif %}{% if contact.do_not_call %}{{ ', ' if contact.do_not_email }}no calls{% endif %}{% if contact.do_not_text %}{{ ', ' if contact.do_not_email or contact.do_not_call }}no texts{% endif %}.

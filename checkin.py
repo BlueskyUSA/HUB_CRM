@@ -51,7 +51,7 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
             ts = next((m["photo_ts"] for m in mates if m["photo_ts"]), None)
             missing = []
             for m in mates:
-                bits = [w for w, ok in (("profile", m["has_profile"]), ("individual photo", m["has_photo"]), ("questionnaire", m["quest"]), ("payment", m["paid"])) if not ok]
+                bits = [w for w, ok in (("individual photo", m["has_photo"]), ("questionnaire", m["quest"]), ("payment", m["paid"])) if not ok]
                 if bits:
                     missing.append((m["first_name"] or "?") + ": " + ", ".join(bits))
             groups.append(dict(people=mates, photo_ts=ts, missing=missing, ready=not missing, photo_cid=next((m["cid"] for m in mates if m["photo_ts"]), mates[0]["cid"]),
@@ -89,7 +89,7 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
             groups = _couples(conn, cohort_id)
         finally:
             conn.close()
-        return render_template("checkin_session.html", cohort=cohort, groups=groups)
+        return render_template("checkin_session.html", cohort=cohort, groups=groups, is_couples=(cohort["code"] == "D4"))
 
 
     RANK = {"Lead Facilitator": 0, "Support Facilitator": 1, "Team Captain": 2, "TA": 3, "Support Team": 4, "Back-up TA": 5}
