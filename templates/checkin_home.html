@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Check-in</h1>
 <p class="muted">Choose the training session. {% if can_photo %}Open <b>Check-in table</b> to register couples and take their photo.{% endif %} <b>Photo board</b> shows every couple's photo for the weekend.</p>
+{% if can_money %}<p><a class="btn{{ '' if pending_n else ' secondary' }}" href="{{ url_for('.checkin_payments') }}">Payments to confirm{% if pending_n %} ({{ pending_n }}){% endif %}</a></p>{% endif %}
 {% for r in rows %}
 <div class="card" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between">
   <div><strong style="font-size:1.1rem">{{ r.name }} &middot; Session {{ r.session_number }}</strong><br>

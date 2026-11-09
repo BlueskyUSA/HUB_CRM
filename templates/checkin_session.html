@@ -4,6 +4,7 @@
 <h1>Check-in &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
 <p class="muted">{{ cohort.session_date|fdate }}{% if cohort.end_date %} &ndash; {{ cohort.end_date|fdate }}{% endif %}. Find the couple, check that nothing is missing, then tap <b>Take couple photo</b>. The photo is saved for both partners. &nbsp;<a href="{{ url_for('.checkin_photos', cohort_id=cohort.id) }}">Photo board</a> &middot; <a href="{{ url_for('.checkin_team', cohort_id=cohort.id) }}">Team roster (phone numbers)</a></p>
 {% set ns = namespace(ready=0, total=0) %}{% for g in groups %}{% set ns.total = ns.total + 1 %}{% if g.ready %}{% set ns.ready = ns.ready + 1 %}{% endif %}{% endfor %}
+{% if can_money %}<p><a class="btn secondary" href="{{ url_for('.checkin_payments') }}">Payments waiting to be confirmed</a></p>{% endif %}
 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px">
   <input id="q" type="search" placeholder="Find a name (or just scroll the list)" autofocus style="flex:1; min-width:220px; max-width:360px; padding:12px; font-size:1.1rem">
   <label style="margin:0; font-size:1rem"><input type="checkbox" id="onlyMissing"> Show only couples with something missing</label>
@@ -19,13 +20,32 @@
     <strong style="font-size:1.15rem">{{ g.names }}</strong>
     {% for m in g.people %}
     <div style="margin-top:4px; font-size:.95rem"><span style="display:inline-block; min-width:90px">{{ m.first_name }}</span>
-      <span class="badge {{ 'good' if m.paid else 'warn' }}">{{ 'Paid' if m.paid else 'Payment due' }}</span>
+      <span class="badge {{ 'good' if m.pay_state == 'paid' else 'warn' }}">{{ 'Paid' if m.pay_state == 'paid' else ('Paid at table, to be confirmed' if m.pay_state == 'pending' else 'Payment due') }}</span>
       <span class="badge {{ 'good' if m.quest else 'warn' }}">{{ 'Questionnaire done' if m.quest else 'Questionnaire needed' }}</span>
       <span class="badge {{ 'good' if not m.basic_missing else 'warn' }}" title="{{ m.basic_missing|join(', ') }}">{{ 'Basic info complete' if not m.basic_missing else 'Basic info incomplete' }}</span>
       <span class="badge {{ 'good' if not m.personal_missing else 'warn' }}" title="{{ m.personal_missing|join(', ') }}">{{ 'Personal info complete' if not m.personal_missing else 'Personal info incomplete' }}</span>
       <span class="badge {{ 'good' if m.has_photo else 'warn' }}">{{ 'Photo in' if m.has_photo else 'Individual photo needed' }}</span>
-      <button class="btn secondary snapi" type="button" data-cid="{{ m.cid }}" data-name="{{ m.first_name }}" style="padding:4px 10px; font-size:.85rem">{{ 'Retake' if m.has_photo else 'Take' }} individual photo</button></div>
+      <button class="btn secondary snapi" type="button" data-cid="{{ m.cid }}" data-name="{{ m.first_name }}" style="padding:4px 10px; font-size:.85rem">{{ 'Retake' if m.has_photo else 'Take' }} individual photo</button>
+      {% if not m.quest or m.basic_missing or m.personal_missing %}<div style="margin:4px 0 8px 90px; font-size:.85rem" class="muted">
+        {% if not m.quest %}Questionnaire link:
+          <form method="post" action="{{ url_for('.checkin_send_link', cohort_id=cohort.id, enrollment_id=m.eid, kind='questionnaire') }}" style="display:inline"><button class="btn secondary" style="padding:3px 9px; font-size:.82rem" {{ '' if m.email_masked else 'disabled' }}>Email{% if m.email_masked %} to {{ m.email_masked }}{% else %} (no email on file){% endif %}</button></form>
+          <a class="btn secondary" style="padding:3px 9px; font-size:.82rem" href="{{ url_for('.checkin_qr', cohort_id=cohort.id, enrollment_id=m.eid, kind='questionnaire') }}">Show QR code</a>
+          {% if m.q_log %}<span>&middot; last {{ m.q_log.how }} {{ m.q_log.sent_at[11:16] }}</span>{% endif %}<br>{% endif %}
+        {% if m.basic_missing or m.personal_missing %}Profile link:
+          <form method="post" action="{{ url_for('.checkin_send_link', cohort_id=cohort.id, enrollment_id=m.eid, kind='profile') }}" style="display:inline"><button class="btn secondary" style="padding:3px 9px; font-size:.82rem" {{ '' if m.email_masked else 'disabled' }}>Email{% if m.email_masked %} to {{ m.email_masked }}{% else %} (no email on file){% endif %}</button></form>
+          <a class="btn secondary" style="padding:3px 9px; font-size:.82rem" href="{{ url_for('.checkin_qr', cohort_id=cohort.id, enrollment_id=m.eid, kind='profile') }}">Show QR code</a>
+          {% if m.p_log %}<span>&middot; last {{ m.p_log.how }} {{ m.p_log.sent_at[11:16] }}</span>{% endif %}{% endif %}
+      </div>{% endif %}</div>
     {% endfor %}
+    {% if g.pending %}<div style="margin-top:6px"><span class="badge warn">Payment noted: ${{ '%.2f'|format(g.pending.amount) }}{% if g.pending.method %} ({{ g.pending.method }}){% endif %} by {{ g.pending.noted_by }}. Waiting for confirmation.</span>
+      <form method="post" action="{{ url_for('.checkin_pay_cancel', cohort_id=cohort.id, pay_id=g.pending.id) }}" style="display:inline"><button class="btn secondary" style="padding:3px 9px; font-size:.82rem">Remove (entered by mistake)</button></form></div>
+    {% elif g.pay_due %}<details style="margin-top:6px"><summary class="btn secondary" style="display:inline-block; padding:4px 12px; font-size:.9rem; cursor:pointer">Payment received at the table</summary>
+      <form method="post" action="{{ url_for('.checkin_pay_note', cohort_id=cohort.id, enrollment_id=g.pay_eid) }}" style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+        <input name="amount" inputmode="decimal" placeholder="Amount" value="{{ '%.2f'|format(fee) if fee else '' }}" style="width:110px; padding:8px" required>
+        <select name="method" style="padding:8px">{% for mt in methods %}<option>{{ mt }}</option>{% endfor %}</select>
+        <input name="reference" placeholder="Check number (optional)" style="width:190px; padding:8px">
+        <button class="btn" type="submit">Note payment</button></form>
+      <div class="muted" style="font-size:.82rem">This only notes it. Leadership or accounting confirms it.</div></details>{% endif %}
   </div>
   {% if is_couples %}<div><button class="btn snap" type="button" style="font-size:1.05rem; padding:12px 18px">{{ 'Retake' if g.photo_ts else 'Take' }} couple photo</button></div>{% endif %}
 </div>

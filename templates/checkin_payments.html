@@ -1,0 +1,20 @@
+{% extends "crm_base.html" %}
+{% block title %}Payments to confirm{% endblock %}
+{% block content %}
+<h1>Payments noted at check-in</h1>
+<p class="muted">A greeter noted these at the table. Confirm each one once the money is really in hand (it is then recorded as a normal payment and the couple shows as paid), or choose Not confirmed.</p>
+{% for r in rows %}
+<div class="card">
+  <strong>{{ r.full_name }}{% if r.partner_name %} &amp; {{ r.partner_name }}{% endif %}</strong>
+  <span class="muted">&middot; {{ r.program }}, Session {{ r.session_number }} ({{ r.session_date|fdate }})</span><br>
+  <span class="muted">Noted by {{ r.noted_by }} on {{ r.noted_at[:16] }}{% if r.reference %} &middot; Reference: {{ r.reference }}{% endif %}</span>
+  <form method="post" action="{{ url_for('.checkin_pay_confirm', pay_id=r.id) }}" style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+    <label style="margin:0">Amount $ <input name="amount" value="{{ '%.2f'|format(r.amount) }}" style="width:110px"></label>
+    <select name="method">{% for m in methods %}<option {{ 'selected' if m == r.method }}>{{ m }}</option>{% endfor %}</select>
+    <label style="margin:0"><input type="checkbox" name="completes" value="1" checked> This is the full payment</label>
+    <button class="btn" type="submit">Confirm</button></form>
+  <form method="post" action="{{ url_for('.checkin_pay_reject', pay_id=r.id) }}" style="margin-top:6px"><button class="btn secondary" type="submit">Not confirmed</button></form>
+</div>
+{% else %}<p class="muted">Nothing is waiting to be confirmed.</p>{% endfor %}
+<p><a href="{{ url_for('.checkin_home') }}">Back to Check-in</a></p>
+{% endblock %}

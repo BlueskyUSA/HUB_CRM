@@ -345,7 +345,7 @@ ACCOUNTING_AREAS = ["accounting", "donations", "contracts", "contacts"]
 ACCOUNTING_WRITE_ALLOWED = ("crm.login", "crm.team_login", "crm.leadership_login", "crm.accounting_login", "crm.administrator_login", "crm.owner_login",
                             "crm.logout", "crm.change_password",
                             # money entry -- each of these also checks the Accounting / Donations area grant
-                            "crm.enrollment_payment", "crm.finance_record_payment", "crm.payment_void",
+                            "crm.enrollment_payment", "crm.finance_record_payment", "crm.payment_void", "crm.checkin_pay_confirm", "crm.checkin_pay_reject",
                             "crm.donations_list", "crm.donation_void")
 
 
@@ -8784,7 +8784,11 @@ personal_invite.register(app, crm, get_db, leadership_required, area_required("a
 import couple_photos
 couple_photos.register(app, crm, area_required("contacts"), get_db, process_contact_photo)
 import checkin
-checkin.register(app, crm, get_db, _has_area_access, _auto_link_couples, full_name_sql, process_contact_photo, couple_photos, upsert_contact_photo)
+checkin.register(app, crm, get_db, _has_area_access, _auto_link_couples, full_name_sql, process_contact_photo, couple_photos, upsert_contact_photo,
+                 hooks=dict(money_required=money_required, record=_record_payment, can_money=_can_handle_money,
+                            ensure=lambda: (_ensure_enrollment_extras(), _ensure_finance_tables()), fees=TRAINING_FEES, methods=PAYMENT_METHODS,
+                            letter_for=_session_letter_for, q_link=_questionnaire_link, p_link=_personal_link, live=_session_letters_live,
+                            send_email=send_email, email_err=EmailSendError))
 import glance
 glance.register(app, crm, leadership_required, get_db, _payment_info_for_cohort, _can_handle_money,
                 hidden_lists=lambda: [LEADERSHIP_LIST, *LEADERSHIP_SOURCES] + [n for n, _ in TEAM_LISTS])
