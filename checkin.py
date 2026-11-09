@@ -9,7 +9,7 @@ FULL_AREAS = ("checkin", "contacts")                      # may take photos
 VIEW_AREAS = ("checkin", "contacts", "trainee_roster", "session_team")   # may see the photo board
 
 
-def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, process_photo, cp):
+def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, process_photo, cp, upsert_photo=None):
     def _allowed(areas):
         return bool(session.get("is_owner")) or any(has_area_access(a) for a in areas)
 
@@ -155,6 +155,25 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
         finally:
             conn.close()
         return jsonify(ok=True, both=bool(pid), url=url_for(".checkin_photo_file", cohort_id=cohort_id, contact_id=contact_id, v=ts))
+
+    @crm.route("/check-in/<int:cohort_id>/individual/<int:contact_id>", methods=["POST"])
+    def checkin_individual_save(cohort_id, contact_id):
+        """Greeter takes the person's own (individual) photo; it is saved on their contact page."""
+        if not _allowed(FULL_AREAS) or upsert_photo is None:
+            return jsonify(ok=False, error="Not allowed"), 403
+        res = process_photo(request.files.get("photo"))
+        if not res:
+            return jsonify(ok=False, error="That photo could not be read. Please try again."), 400
+        conn = get_db()
+        try:
+            ok = conn.execute("SELECT 1 FROM enrollments WHERE cohort_id = ? AND contact_id = ?", (cohort_id, contact_id)).fetchone()
+            if not ok:
+                return jsonify(ok=False, error="That person is not in this session."), 404
+            upsert_photo(conn, contact_id, res[0], res[1])
+            conn.commit()
+        finally:
+            conn.close()
+        return jsonify(ok=True)
 
     @crm.route("/check-in/<int:cohort_id>/photo-file/<int:contact_id>")
     def checkin_photo_file(cohort_id, contact_id):

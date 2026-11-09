@@ -8773,7 +8773,7 @@ personal_invite.register(app, crm, get_db, leadership_required, area_required("a
 import couple_photos
 couple_photos.register(app, crm, area_required("contacts"), get_db, process_contact_photo)
 import checkin
-checkin.register(app, crm, get_db, _has_area_access, _auto_link_couples, full_name_sql, process_contact_photo, couple_photos)
+checkin.register(app, crm, get_db, _has_area_access, _auto_link_couples, full_name_sql, process_contact_photo, couple_photos, upsert_contact_photo)
 import glance
 glance.register(app, crm, leadership_required, get_db, _payment_info_for_cohort, _can_handle_money,
                 hidden_lists=lambda: [LEADERSHIP_LIST, *LEADERSHIP_SOURCES] + [n for n, _ in TEAM_LISTS])

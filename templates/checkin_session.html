@@ -23,7 +23,8 @@
     <div style="margin-top:4px; font-size:.95rem"><span style="display:inline-block; min-width:90px">{{ m.first_name }}</span>
       <span class="badge {{ 'good' if m.paid else 'warn' }}">{{ 'Paid' if m.paid else 'Payment due' }}</span>
       <span class="badge {{ 'good' if m.quest else 'warn' }}">{{ 'Questionnaire done' if m.quest else 'Questionnaire needed' }}</span>
-      <span class="badge {{ 'good' if m.has_photo else 'warn' }}">{{ 'Photo in' if m.has_photo else 'Individual photo needed' }}</span></div>
+      <span class="badge {{ 'good' if m.has_photo else 'warn' }}">{{ 'Photo in' if m.has_photo else 'Individual photo needed' }}</span>
+      <button class="btn secondary snapi" type="button" data-cid="{{ m.cid }}" data-name="{{ m.first_name }}" style="padding:4px 10px; font-size:.85rem">{{ 'Retake' if m.has_photo else 'Take' }} individual photo</button></div>
     {% endfor %}
   </div>
   {% if is_couples %}<div><button class="btn snap" type="button" style="font-size:1.05rem; padding:12px 18px">{{ 'Retake' if g.photo_ts else 'Take' }} couple photo</button></div>{% endif %}
@@ -51,23 +52,26 @@
   function filt(){ var v=q.value.toLowerCase(); document.querySelectorAll('.row').forEach(function(r){ var ok=r.dataset.name.indexOf(v)>-1 && !(om.checked && r.dataset.ready==='1'); r.style.display=ok?'':'none'; }); }
   q.addEventListener('input',filt); om.addEventListener('change',filt);
   var cam=document.getElementById('cam'), vid=document.getElementById('vid'), shot=document.getElementById('shot'), msg=document.getElementById('camMsg'),
-      cv=document.getElementById('cv'), stream=null, facing='user', cur=null, blob=null;
+      cv=document.getElementById('cv'), stream=null, facing='user', cur=null, blob=null, kind='couple', tcid=null;
   var saveUrl="{{ url_for('.checkin_photo_save', cohort_id=cohort.id, contact_id=0) }}".replace(/0$/,'');
+  var indUrl="{{ url_for('.checkin_individual_save', cohort_id=cohort.id, contact_id=0) }}".replace(/0$/,'');
   function stop(){ if(stream){ stream.getTracks().forEach(function(t){t.stop();}); stream=null; } }
   function start(){ stop(); msg.textContent='';
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ msg.textContent='This browser cannot open the camera here. Use "Use a photo from this device".'; return; }
     navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1920},height:{ideal:1080}},audio:false}).then(function(s){ stream=s; vid.srcObject=s; vid.style.display=''; shot.style.display='none'; }).catch(function(){ msg.textContent='The camera did not open. Allow camera access for this site, or use "Use a photo from this device".'; });
   }
   function mode(preview){ document.getElementById('bSnap').style.display=preview?'none':''; document.getElementById('bSave').style.display=preview?'':'none'; document.getElementById('bRetake').style.display=preview?'':'none'; vid.style.display=preview?'none':''; shot.style.display=preview?'':'none'; }
-  document.querySelectorAll('.snap').forEach(function(b){ b.addEventListener('click',function(){ var row=b.closest('.row'); cur=row; document.getElementById('camTitle').textContent='Couple photo: '+row.querySelector('strong').textContent; blob=null; mode(false); cam.style.display='flex'; start(); }); });
+  document.querySelectorAll('.snap').forEach(function(b){ b.addEventListener('click',function(){ var row=b.closest('.row'); cur=row; kind='couple'; tcid=row.dataset.cid; document.getElementById('camTitle').textContent='Couple photo: '+row.querySelector('strong').textContent; blob=null; mode(false); cam.style.display='flex'; start(); }); });
+  document.querySelectorAll('.snapi').forEach(function(b){ b.addEventListener('click',function(){ cur=b.closest('.row'); kind='indiv'; tcid=b.dataset.cid; document.getElementById('camTitle').textContent='Individual photo: '+b.dataset.name; blob=null; mode(false); cam.style.display='flex'; start(); }); });
   document.getElementById('bSnap').addEventListener('click',function(){ if(!vid.videoWidth){ msg.textContent='Camera is not ready yet.'; return; } cv.width=vid.videoWidth; cv.height=vid.videoHeight; cv.getContext('2d').drawImage(vid,0,0); cv.toBlob(function(b){ blob=b; shot.src=URL.createObjectURL(b); mode(true); msg.textContent='Happy with it? Save, or retake.'; },'image/jpeg',0.88); });
   document.getElementById('bRetake').addEventListener('click',function(){ blob=null; mode(false); msg.textContent=''; if(!stream) start(); });
   document.getElementById('bFlip').addEventListener('click',function(){ facing=(facing==='user')?'environment':'user'; start(); });
   document.getElementById('bFile').addEventListener('change',function(){ if(this.files&&this.files[0]){ blob=this.files[0]; shot.src=URL.createObjectURL(blob); mode(true); msg.textContent='Happy with it? Save, or retake.'; } this.value=''; });
   document.getElementById('bClose').addEventListener('click',function(){ stop(); cam.style.display='none'; });
   document.getElementById('bSave').addEventListener('click',function(){ if(!blob||!cur) return; var fd=new FormData(); fd.append('photo',blob,'couple.jpg'); msg.textContent='Saving...';
-    fetch(saveUrl+cur.dataset.cid,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(j){
+    fetch((kind==='indiv'?indUrl:saveUrl)+tcid,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(j){
       if(!j.ok){ msg.textContent=j.error||'Could not save. Please try again.'; return; }
+      if(kind==='indiv'){ stop(); cam.style.display='none'; location.reload(); return; }
       var w=cur.querySelector('.thumbwrap'); w.innerHTML='<img class="thumb" src="'+j.url+'" alt="" style="width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px">';
       cur.querySelector('.snap').textContent='Retake couple photo'; stop(); cam.style.display='none';
     }).catch(function(){ msg.textContent='Could not save. Check the connection and try again.'; });
