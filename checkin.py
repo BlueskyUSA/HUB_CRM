@@ -21,6 +21,11 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
 
     def _couples(conn, cohort_id):
         try:
+            cp.ensure(conn)          # the couple-photo table is created the first time it is needed
+        except Exception:
+            try: conn.rollback()
+            except Exception: pass
+        try:
             auto_link(conn, cohort_id)
         except Exception:
             try: conn.rollback()
@@ -47,9 +52,9 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
             for m in mates:
                 bits = [w for w, ok in (("profile", m["has_profile"]), ("questionnaire", m["quest"]), ("payment", m["paid"])) if not ok]
                 if bits:
-                    missing.append(m["first_name"] + ": " + ", ".join(bits))
+                    missing.append((m["first_name"] or "?") + ": " + ", ".join(bits))
             groups.append(dict(people=mates, photo_ts=ts, missing=missing, ready=not missing, photo_cid=next((m["cid"] for m in mates if m["photo_ts"]), mates[0]["cid"]),
-                               names=" & ".join(m["first_name"] for m in mates) + " " + (mates[0]["last_name"] or "")))
+                               names=" & ".join((m["first_name"] or "") for m in mates) + " " + (mates[0]["last_name"] or "")))
         groups.sort(key=lambda g: (g["people"][0]["last_name"] or "").lower())
         return groups
 
