@@ -17,13 +17,14 @@
   </div>
   <div style="flex:1; min-width:240px">
     <strong style="font-size:1.15rem">{{ g.names }}</strong>
-    {% if g.ready %}<div style="margin:2px 0 4px"><span class="badge good">&#10003; Ready: profile, questionnaire and payment complete</span></div>
+    {% if g.ready %}<div style="margin:2px 0 4px"><span class="badge good">&#10003; Ready: profile, individual photo, questionnaire and payment complete</span></div>
     {% else %}<div style="margin:2px 0 4px"><span class="badge warn">Missing: {{ g.missing|join('; ') }}</span></div>{% endif %}
     {% for m in g.people %}
     <div style="margin-top:4px; font-size:.95rem"><span style="display:inline-block; min-width:90px">{{ m.first_name }}</span>
       <span class="badge {{ 'good' if m.paid else 'warn' }}">{{ 'Paid' if m.paid else 'Payment due' }}</span>
       <span class="badge {{ 'good' if m.quest else 'warn' }}">{{ 'Questionnaire done' if m.quest else 'Questionnaire needed' }}</span>
-      <span class="badge {{ 'good' if m.has_profile else 'warn' }}">{{ 'Profile in' if m.has_profile else 'Profile needed' }}</span></div>
+      <span class="badge {{ 'good' if m.has_profile else 'warn' }}">{{ 'Profile in' if m.has_profile else 'Profile needed' }}</span>
+      <span class="badge {{ 'good' if m.has_photo else 'warn' }}">{{ 'Photo in' if m.has_photo else 'Individual photo needed' }}</span></div>
     {% endfor %}
   </div>
   <div><button class="btn snap" type="button" style="font-size:1.05rem; padding:12px 18px">{{ 'Retake' if g.photo_ts else 'Take' }} couple photo</button></div>

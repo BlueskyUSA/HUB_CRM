@@ -33,6 +33,7 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
         rows = conn.execute(f"""SELECT e.id AS eid, e.partner_enrollment_id AS pe, e.questionnaire_completed_at AS quest, e.payment_completed_at AS paid,
                    ct.id AS cid, ct.first_name, ct.last_name, {full_name_sql('ct')} AS full_name,
                    (SELECT 1 FROM training_profiles tp WHERE tp.enrollment_id = e.id LIMIT 1) AS has_profile,
+                   (SELECT 1 FROM contact_photos cph WHERE cph.contact_id = ct.id LIMIT 1) AS has_photo,
                    cpx.updated_at AS photo_ts
             FROM enrollments e JOIN contacts ct ON ct.id = e.contact_id
             LEFT JOIN couple_photos cpx ON cpx.contact_id = ct.id
@@ -50,7 +51,7 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
             ts = next((m["photo_ts"] for m in mates if m["photo_ts"]), None)
             missing = []
             for m in mates:
-                bits = [w for w, ok in (("profile", m["has_profile"]), ("questionnaire", m["quest"]), ("payment", m["paid"])) if not ok]
+                bits = [w for w, ok in (("profile", m["has_profile"]), ("individual photo", m["has_photo"]), ("questionnaire", m["quest"]), ("payment", m["paid"])) if not ok]
                 if bits:
                     missing.append((m["first_name"] or "?") + ": " + ", ".join(bits))
             groups.append(dict(people=mates, photo_ts=ts, missing=missing, ready=not missing, photo_cid=next((m["cid"] for m in mates if m["photo_ts"]), mates[0]["cid"]),

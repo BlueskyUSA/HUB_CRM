@@ -5424,6 +5424,7 @@ def cohort_detail(cohort_id):
                    ct.id AS contact_id, sg.label AS group_label,
                    fr.id AS feedback_response_id,
                    (SELECT 1 FROM training_profiles tp WHERE tp.enrollment_id = e.id LIMIT 1) AS has_profile,
+                   (SELECT 1 FROM contact_photos cph WHERE cph.contact_id = ct.id LIMIT 1) AS has_photo,
                    {full_name_sql('eb')} AS enrolled_by_name
            FROM enrollments e
            JOIN contacts ct ON ct.id = e.contact_id

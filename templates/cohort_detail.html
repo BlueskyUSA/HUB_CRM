@@ -41,8 +41,8 @@
     {% for e in roster %}
     <tr class="{{ 'band' if bands[e.id] }}" data-name="{{ (e.full_name ~ ' ' ~ (partner_names.get(e.partner_enrollment_id) or ''))|lower }}">
       <td style="font-weight:600"><a href="{{ url_for('.contact_detail', contact_id=e.contact_id) }}">{{ e.full_name }}</a></td>
-      {% set miss = [] %}{% if not e.has_profile %}{% set _ = miss.append('profile') %}{% endif %}{% if not e.questionnaire_completed_at %}{% set _ = miss.append('questionnaire') %}{% endif %}{% if not e.payment_completed_at %}{% set _ = miss.append('payment') %}{% endif %}
-      <td data-label="Check-in note">{% if miss %}<span class="badge warn">Missing: {{ miss|join(', ') }}</span>{% else %}<span class="badge good">&#10003; Ready: profile, questionnaire and payment complete</span>{% endif %}</td>
+      {% set miss = [] %}{% if not e.has_profile %}{% set _ = miss.append('profile') %}{% endif %}{% if not e.has_photo %}{% set _ = miss.append('individual photo') %}{% endif %}{% if not e.questionnaire_completed_at %}{% set _ = miss.append('questionnaire') %}{% endif %}{% if not e.payment_completed_at %}{% set _ = miss.append('payment') %}{% endif %}
+      <td data-label="Check-in note">{% if miss %}<span class="badge warn">Missing: {{ miss|join(', ') }}</span>{% else %}<span class="badge good">&#10003; Ready: profile, individual photo, questionnaire and payment complete</span>{% endif %}</td>
       <td data-label="Partner">
         <form class="inline" method="post" action="{{ url_for('.enrollment_partner', enrollment_id=e.id) }}" style="margin:0">
           <select name="partner_enrollment_id" onchange="this.form.submit()" style="max-width:170px">
