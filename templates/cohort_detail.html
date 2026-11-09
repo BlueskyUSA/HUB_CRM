@@ -340,6 +340,9 @@
   </form>
 </div>
 </details>
+{% if session.is_owner or has_checkin_access %}
+<h2 class="bandhead" style="padding:0"><a href="{{ url_for('.checkin_session', cohort_id=cohort.id) }}" style="display:block; width:100%; box-sizing:border-box; padding:16px 22px 16px 52px; color:#fff !important; font-size:inherit !important; text-decoration:none">Check-in <span style="color:#ffe08a">&rarr;</span></a></h2>
+{% endif %}
 {% if is_leader %}
 <details class="bandsec" id="sec-materials"><summary class="bandhead">Materials in effect for this training <span class="bandcnt">({{ materials_in_effect|length }})</span></summary>
 <div class="card">

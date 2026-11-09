@@ -128,9 +128,9 @@
           <a href="{{ url_for('.programs_list') }}">Training Materials</a>
           {% endif %}
           <a href="{{ url_for('.calendar_view') }}">Calendar &amp; Quick Schedule</a>
+          {% if session.is_owner or has_checkin_access %}<a href="{{ url_for('.checkin_home') }}">Check-in</a>{% endif %}
           <div style="padding:8px 16px 2px; color:#cfc9b0; font-size:0.78rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap">Upcoming sessions</div>
-          {% for n in nav_sessions %}<a href="{{ url_for('.cohort_detail', cohort_id=n.id) }}">{{ n.label }} &middot; {{ n.span }}</a>
-          {% if session.is_owner or has_checkin_access %}<a href="{{ url_for('.checkin_session', cohort_id=n.id) }}" style="padding-left:44px; font-size:0.88rem; color:#cfc9b0">&#9654; Check-in</a>{% endif %}{% endfor %}
+          {% for n in nav_sessions %}<a href="{{ url_for('.cohort_detail', cohort_id=n.id) }}">{{ n.label }} &middot; {{ n.span }}</a>{% endfor %}
         </div>
       </details>
       {% elif session.is_owner or has_checkin_access %}
