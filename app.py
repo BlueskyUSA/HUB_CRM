@@ -5938,7 +5938,7 @@ def _order_team(members):
 SESSION_ROLES = ["Lead Facilitator", "Support Facilitator", "TA", "Support Team", "Back-up TA", "Audio/Visual", "Check-in / Greeter", "Security", "Office Support", "Trainee"]
 SESSION_DUTIES = ["Sound Equipment", "Large Group Leader", "Team Captain", "Microphone 1", "Microphone 2",
                   "Lights", "Doors", "Signs / Security", "Mail & Name Tags", "Housekeeping", "Male Runner",
-                  "Female Runner", "Time Keeper", "Chairs", "Chair Counter", "Troubleshooter / Misc", "Not confirmed"]
+                  "Female Runner", "Time Keeper", "Chairs", "Chair Counter", "Troubleshooter / Misc", "Hub Coordinator", "Not confirmed"]
 
 
 # ---------- session letters (confirmations to trainees / facilitators / TAs / back-up TAs) ----------
