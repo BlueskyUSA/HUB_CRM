@@ -2,7 +2,7 @@
 {% block title %}Check-in table — {{ program_name }}{% endblock %}
 {% block content %}
 <h1>Check-in &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
-<p class="muted">{{ cohort.session_date|fdate }}{% if cohort.end_date %} &ndash; {{ cohort.end_date|fdate }}{% endif %}. Find the couple, check that nothing is missing, then tap <b>Take couple photo</b>. The photo is saved for both partners. &nbsp;<a href="{{ url_for('.checkin_photos', cohort_id=cohort.id) }}">Photo board</a></p>
+<p class="muted">{{ cohort.session_date|fdate }}{% if cohort.end_date %} &ndash; {{ cohort.end_date|fdate }}{% endif %}. Find the couple, check that nothing is missing, then tap <b>Take couple photo</b>. The photo is saved for both partners. &nbsp;<a href="{{ url_for('.checkin_photos', cohort_id=cohort.id) }}">Photo board</a> &middot; <a href="{{ url_for('.checkin_team', cohort_id=cohort.id) }}">Team roster (phone numbers)</a></p>
 {% set ns = namespace(ready=0, total=0) %}{% for g in groups %}{% set ns.total = ns.total + 1 %}{% if g.ready %}{% set ns.ready = ns.ready + 1 %}{% endif %}{% endfor %}
 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px">
   <input id="q" type="search" placeholder="Find a name (or just scroll the list)" autofocus style="flex:1; min-width:220px; max-width:360px; padding:12px; font-size:1.1rem">

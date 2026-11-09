@@ -1,0 +1,17 @@
+{% extends "crm_base.html" %}
+{% block title %}Photo board — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Photo board &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
+<p class="muted">Couple photos for the weekend. {% if can_photo %}<a href="{{ url_for('.checkin_session', cohort_id=cohort.id) }}">Back to the check-in table</a> &middot; {% endif %}<a href="{{ url_for('.checkin_team', cohort_id=cohort.id) }}">Team roster (phone numbers)</a></p>
+<input id="q" type="search" placeholder="Find a name" style="width:100%; max-width:360px; padding:10px; font-size:1rem; margin-bottom:12px">
+<div id="grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px">
+{% for g in groups %}
+  <div class="card tile" data-name="{{ g.names|lower }}" style="margin:0; padding:10px; text-align:center">
+    {% if g.photo_ts %}<img src="{{ url_for('.checkin_photo_file', cohort_id=cohort.id, contact_id=g.photo_cid, v=g.photo_ts) }}" alt="{{ g.names }}" loading="lazy" style="width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px">
+    {% else %}<div style="width:100%; aspect-ratio:4/3; border-radius:10px; background:#f1f4f7; border:1px dashed #c7d0d9; display:flex; align-items:center; justify-content:center; color:#6b7782">No photo yet</div>{% endif %}
+    <div style="margin-top:6px; font-weight:700">{{ g.names }}</div>
+  </div>
+{% endfor %}
+</div>
+<script>document.getElementById('q').addEventListener('input',function(){var v=this.value.toLowerCase();document.querySelectorAll('.tile').forEach(function(t){t.style.display=t.dataset.name.indexOf(v)>-1?'':'none';});});</script>
+{% endblock %}

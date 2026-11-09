@@ -1,0 +1,15 @@
+{% extends "crm_base.html" %}
+{% block title %}Check-in — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Check-in</h1>
+<p class="muted">Choose the training session. {% if can_photo %}Open <b>Check-in table</b> to register couples and take their photo.{% endif %} <b>Photo board</b> shows every couple's photo for the weekend.</p>
+{% for r in rows %}
+<div class="card" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between">
+  <div><strong style="font-size:1.1rem">{{ r.name }} &middot; Session {{ r.session_number }}</strong><br>
+    <span class="muted">{{ r.session_date|fdate }}{% if r.end_date %} &ndash; {{ r.end_date|fdate }}{% endif %} &middot; {{ r.n }} enrolled</span></div>
+  <div>{% if can_photo %}<a class="btn" href="{{ url_for('.checkin_session', cohort_id=r.id) }}">Check-in table</a>{% endif %}
+       <a class="btn secondary" href="{{ url_for('.checkin_photos', cohort_id=r.id) }}">Photo board</a>
+       <a class="btn secondary" href="{{ url_for('.checkin_team', cohort_id=r.id) }}">Team roster</a></div>
+</div>
+{% else %}<p class="muted">No upcoming sessions.</p>{% endfor %}
+{% endblock %}

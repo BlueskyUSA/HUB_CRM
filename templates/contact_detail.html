@@ -30,6 +30,25 @@
     </div>
   </div>
 </div>
+{% set cp_ts = couple_photo_ts(contact.id) %}
+<div class="card" id="couple-photo">
+  <strong>Couple photo</strong>
+  <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; margin-top:8px">
+    {% if cp_ts %}
+    <img src="{{ url_for('.contact_couple_photo_file', contact_id=contact.id, v=cp_ts) }}" alt="Couple photo of {{ contact.full_name }}" style="max-width:360px; width:100%; border-radius:14px; border:1px solid #d7dde3">
+    {% else %}
+    <div style="width:360px; max-width:100%; height:240px; border-radius:14px; border:1px dashed #c7d0d9; background:#f1f4f7; display:flex; align-items:center; justify-content:center; color:#6b7782; text-align:center; padding:12px">No couple photo yet</div>
+    {% endif %}
+    <div>
+      <form method="post" action="{{ url_for('.contact_couple_photo_upload', contact_id=contact.id) }}" enctype="multipart/form-data">
+        <input type="file" name="photo" accept="image/*" required>
+        <button class="btn" type="submit">{{ 'Replace' if cp_ts else 'Add' }} couple photo</button>
+      </form>
+      {% if cp_ts %}<form method="post" action="{{ url_for('.contact_couple_photo_remove', contact_id=contact.id) }}" style="margin-top:8px" onsubmit="return confirm('Remove the couple photo from this page?');"><button class="btn secondary" type="submit">Remove</button></form>{% endif %}
+      <p class="muted" style="max-width:340px">This is separate from {{ contact.first_name }}'s individual photo. If their partner is linked (as a couple in a session, or by the partner email on their record), the photo is saved on the partner's page too.</p>
+    </div>
+  </div>
+</div>
 {% if contact.do_not_email or contact.do_not_call or contact.do_not_text %}
 <div class="card" style="border-color:#c0392b; background:#fdf2f0;"><strong style="color:#c0392b;">DO NOT CONTACT:</strong>
   {% if contact.do_not_email %}no email{% endif %}{% if contact.do_not_call %}{{ ', ' if contact.do_not_email }}no calls{% endif %}{% if contact.do_not_text %}{{ ', ' if contact.do_not_email or contact.do_not_call }}no texts{% endif %}.

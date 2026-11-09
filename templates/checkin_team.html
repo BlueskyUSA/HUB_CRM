@@ -1,0 +1,21 @@
+{% extends "crm_base.html" %}
+{% block title %}Team roster — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Team roster &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
+<p class="muted">Tap a number to call, or <b>Text</b> to send a message. {% if can_photo %}<a href="{{ url_for('.checkin_session', cohort_id=cohort.id) }}">Back to the check-in table</a> &middot; {% endif %}<a href="{{ url_for('.checkin_photos', cohort_id=cohort.id) }}">Photo board</a></p>
+<input id="q" type="search" placeholder="Find a team member" style="width:100%; max-width:360px; padding:12px; font-size:1.1rem; margin-bottom:12px">
+{% for p in team %}
+<div class="card tm" data-name="{{ p.name|lower }}" style="display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap">
+  <div style="min-width:220px"><strong style="font-size:1.1rem">{{ p.name }}</strong><br>
+    <span class="muted">{{ p.roles|join(', ') }}{% if p.duties %} &middot; {{ p.duties|join(', ') }}{% endif %}</span></div>
+  <div>
+    {% for lbl, shown, digits in p.phones %}
+    <div style="margin:3px 0"><span class="muted" style="display:inline-block; width:48px">{{ lbl }}</span>
+      <a class="btn" href="tel:{{ digits }}" style="padding:8px 14px">{{ shown }}</a>
+      {% if lbl == 'Cell' %}<a class="btn secondary" href="sms:{{ digits }}" style="padding:8px 14px">Text</a>{% endif %}</div>
+    {% else %}<span class="muted">No phone number on file</span>{% endfor %}
+  </div>
+</div>
+{% else %}<p class="muted">No session team has been assigned yet.</p>{% endfor %}
+<script>document.getElementById('q').addEventListener('input',function(){var v=this.value.toLowerCase();document.querySelectorAll('.tm').forEach(function(t){t.style.display=t.dataset.name.indexOf(v)>-1?'':'none';});});</script>
+{% endblock %}

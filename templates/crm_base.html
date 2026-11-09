@@ -34,6 +34,7 @@
       {% set show_donations = is_lead or has_donations_access %}
       {% set show_finance = session.is_owner or has_accounting_access %}
       {% if show_contacts %}<a href="{{ url_for('.contacts_list') }}">Contacts</a>{% endif %}
+      {% if session.is_owner or has_checkin_access %}<a href="{{ url_for('.checkin_home') }}">Check-in</a>{% endif %}
       <details class="navmenu">
         <summary>Correspondence &#9662;</summary>
         <div class="navmenu-items">

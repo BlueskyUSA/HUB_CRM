@@ -1,6 +1,7 @@
 """Greeter check-in table: the greeter logs in, opens the session, taps a couple, takes the couple photo with the computer's or
 iPad's camera, and it is saved on both partners' pages. Also shows what is still missing (payment, questionnaire, profile).
 A 'Photo board' page shows every couple's photo for the session so TAs can remember who they are visiting with."""
+import re
 from datetime import datetime, timedelta
 from flask import render_template, request, session, redirect, url_for, flash, jsonify, abort, make_response
 
@@ -83,6 +84,39 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
         finally:
             conn.close()
         return render_template("checkin_session.html", cohort=cohort, groups=groups)
+
+
+    RANK = {"Lead Facilitator": 0, "Support Facilitator": 1, "Team Captain": 2, "TA": 3, "Support Team": 4, "Back-up TA": 5}
+
+    @crm.route("/check-in/<int:cohort_id>/team")
+    def checkin_team(cohort_id):
+        r = _need(VIEW_AREAS)
+        if r: return r
+        conn = get_db()
+        try:
+            cohort = _cohort(conn, cohort_id)
+            if not cohort:
+                abort(404)
+            rows = conn.execute(f"""SELECT cs.role, cs.duty, ct.id AS cid, ct.first_name, ct.last_name, {full_name_sql('ct')} AS full_name,
+                       ct.cell_phone, ct.home_phone, ct.work_phone
+                FROM cohort_staffing cs JOIN contacts ct ON ct.id = cs.contact_id
+                WHERE cs.cohort_id = ? AND cs.role <> 'Trainee'""", (cohort_id,)).fetchall()
+        finally:
+            conn.close()
+        people = {}
+        for r_ in rows:
+            p = people.setdefault(r_["cid"], dict(name=r_["full_name"], last=(r_["last_name"] or "").lower(), first=(r_["first_name"] or "").lower(),
+                                                  roles=[], duties=[], rank=9,
+                                                  phones=[(lbl, v) for lbl, v in (("Cell", r_["cell_phone"]), ("Home", r_["home_phone"]), ("Work", r_["work_phone"])) if (v or "").strip()]))
+            if r_["role"] not in p["roles"]:
+                p["roles"].append(r_["role"])
+            if r_["duty"] and r_["duty"] not in p["duties"] and r_["duty"] != "Not confirmed":
+                p["duties"].append(r_["duty"])
+            p["rank"] = min(p["rank"], RANK.get(r_["role"], 8), 2 if (r_["duty"] or "").strip().lower() == "team captain" else 9)
+        team = sorted(people.values(), key=lambda p: (p["rank"], p["last"], p["first"]))
+        for p in team:
+            p["phones"] = [(lbl, v, re.sub(r"[^\d+]", "", v)) for lbl, v in p["phones"]]
+        return render_template("checkin_team.html", cohort=cohort, team=team, can_photo=_allowed(FULL_AREAS))
 
     @crm.route("/check-in/<int:cohort_id>/photos")
     def checkin_photos(cohort_id):

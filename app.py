@@ -420,7 +420,7 @@ FIXED_ACCESS_AREAS = [
     ("budgets", "Budgets (view only; Admin menu)"),
     ("alerts", "Dashboard alerts (the \"Needs attention\" list and email bounces)"),
     ("assign_logins", "Assign logins (give a contact a Volunteer Team login, or remove one)"),
-    ("checkin", "Check-in table (greeters: see a session's couples and take couple photos)"),
+    ("checkin", "Check-in table (greeters: see a session's couples, take couple photos, and see the team phone list)"),
 ]
 # Ticking either session box also gives Contacts automatically, since the session pages
 # live under Contacts. These two (and the Contacts that comes with them) have no 4-person limit.
