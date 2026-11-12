@@ -2274,10 +2274,33 @@ def dashboard():
     except Exception as e:
         conn.rollback()
         print(f"dashboard alerts skipped: {e}", flush=True)
+    chat_ok = bool(session.get("staff_id")) and not (session.get("staff_role") == ACCOUNTING_ROLE and not session.get("is_owner"))
+    if chat_ok:
+        try:
+            _ensure_chat_tables(conn)
+            sid = session["staff_id"]
+            seen = conn.execute("SELECT * FROM chat_seen WHERE staff_id = ?", (sid,)).fetchone()
+            if seen:
+                b = conn.execute(
+                    "SELECT (SELECT COUNT(*) FROM chat_topics WHERE created_at > ? AND author_id <> ?) + "
+                    "(SELECT COUNT(*) FROM chat_replies WHERE created_at > ? AND author_id <> ?) AS n",
+                    (seen["board_seen"], sid, seen["board_seen"], sid)).fetchone()["n"]
+                r = conn.execute("SELECT COUNT(*) AS n FROM chat_messages WHERE id > ? AND author_id <> ?",
+                                 (seen["room_seen_id"], sid)).fetchone()["n"]
+                if b:
+                    alerts.append(dict(level="note", cat="Chat", url=url_for(".chat_home"), cta="Open the board",
+                                       text=f"{b} new {'post' if b == 1 else 'posts'} on the discussion board."))
+                if r:
+                    alerts.append(dict(level="note", cat="Chat", url=url_for(".chat_room"), cta="Open the chat room",
+                                       text=f"{r} new {'message' if r == 1 else 'messages'} in the live chat room."))
+        except Exception as e:
+            conn.rollback()
+            print(f"dashboard chat alert skipped: {e}", flush=True)
     conn.close()
+    full_alerts = bool(_has_area_access("alerts") or _can_handle_money())
     return render_template("dashboard.html", contact_count=contact_count, upcoming=upcoming, programs=programs,
-                           next_sessions=next_sessions, alerts=alerts,
-                           show_alerts=bool(_has_area_access("alerts") or _can_handle_money()))
+                           next_sessions=next_sessions, alerts=alerts, full_alerts=full_alerts, chat_alerts_ok=chat_ok,
+                           show_alerts=bool(full_alerts or chat_ok))
 
 
 # ---------- contacts ----------

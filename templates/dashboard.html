@@ -7,10 +7,10 @@
 {% if show_alerts %}
 <div class="card" style="max-width:860px; border-left:5px solid {{ '#b3412f' if alerts and alerts|selectattr('level','equalto','urgent')|list else ('#a8892f' if alerts else '#6b8f71') }}">
   <h2 style="margin-top:0">Hub Alerts {% if alerts %}<span class="muted" style="font-weight:400; font-size:.95rem">({{ alerts|length }})</span>{% endif %}</h2>
-  {% for cat in ['Email', 'Call requests', 'Sessions and team', 'Trainees and payments', 'Letters and testimonials', 'Other'] %}
+  {% for cat in ['Email', 'Chat', 'Call requests', 'Sessions and team', 'Trainees and payments', 'Letters and testimonials', 'Other'] %}
   {% set items = alerts|selectattr('cat','equalto',cat)|list %}
   {% if not items %}
-  {% if cat != 'Other' and (cat != 'Letters and testimonials' or session.is_owner) %}
+  {% if cat != 'Other' and ((cat == 'Chat' and chat_alerts_ok) or (cat != 'Chat' and full_alerts and (cat != 'Letters and testimonials' or session.is_owner))) %}
   <div style="border-top:1px solid var(--border); padding:10px 0 6px"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#6b8f71; margin-right:6px"></span><strong>{{ cat }}</strong> <span class="muted">&mdash; None</span></div>
   {% endif %}
   {% else %}
