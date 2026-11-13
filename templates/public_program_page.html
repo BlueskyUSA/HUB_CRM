@@ -12,12 +12,12 @@
 .pg-body p{font-size:1.05rem}.pg-pts{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:24px 0}
 .pg-pt{background:#f2f9f8;border-radius:12px;padding:18px 20px}.pg-pt h3{margin:0 0 6px;font-size:1.15rem}.pg-pt p{margin:0;font-size:.97rem}
 .pg-box{background:#edf7f7;border-radius:12px;padding:18px 22px;margin:18px 0}
-.pg .btn{display:inline-block;background:#006d86;color:#fff!important;text-decoration:none;border-radius:40px;padding:13px 28px;font-weight:700;font-size:.85rem;letter-spacing:.05em;margin:6px 8px 0 0}
+.pg .btn{display:inline-block;background:#006d86;color:#fff!important;text-decoration:none;border-radius:40px;padding:9px 22px;font-weight:700;font-size:.78rem;letter-spacing:.05em;margin:6px 8px 0 0}
 .pg .btn.alt{background:transparent;color:#006d86!important;border:1px solid #006d86}
 .pg-hero{padding-top:26px}
 .pg-nav{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:8px 22px;margin-bottom:clamp(30px,4vw,56px)}
 .pg-nav a{color:#fff!important;text-decoration:none;font-weight:700;font-size:clamp(13px,1.3vw,18px);text-align:center}
-.pg-nav a.reg{background:#fff;color:#06405c!important;padding:.4em 1.1em;border-radius:40px}
+.pg-nav a.reg{background:#fff;color:#06405c!important;padding:.18em .8em;font-size:.9em;border-radius:40px}
 .pg-nav .nav-sub{display:block;font-size:max(13px,.8em);font-weight:400;margin-top:3px;line-height:1.2;opacity:.95}
 .pg-brand{display:block;font-family:Georgia,serif;font-size:clamp(28px,3vw,44px);color:#fff!important;text-decoration:none;margin-bottom:18px}
 .pg-brand em{font-size:.7em}
@@ -27,7 +27,7 @@
 .dd .hx-nav>a,.aou-nav .aou-links>a,.pg-nav>a,.wi-nav>a{font-size:15px!important;line-height:1.2;white-space:normal!important}
 .dd .hx-nav>a:nth-child(1),.aou-links>a:nth-child(1),.pg-nav>a:nth-child(1),.wi-nav>a:nth-child(1){grid-column:1/3;grid-row:1;align-self:center}
 .dd .hx-nav>a:nth-child(6),.aou-links>a:nth-child(6),.pg-nav>a:nth-child(6),.wi-nav>a:nth-child(6){grid-column:3/5;grid-row:1;align-self:center}
-.dd .hx-nav>a:nth-child(7),.aou-links>a:nth-child(7),.pg-nav>a:nth-child(7),.wi-nav>a:nth-child(7){grid-column:5/7;grid-row:1;font-size:14px!important;padding:.45em 1.2em!important}
+.dd .hx-nav>a:nth-child(7),.aou-links>a:nth-child(7),.pg-nav>a:nth-child(7),.wi-nav>a:nth-child(7){grid-column:5/7;grid-row:1;font-size:14px!important;padding:.3em .95em!important}
 .dd .hx-nav>a:nth-child(2),.aou-links>a:nth-child(2),.pg-nav>a:nth-child(2),.wi-nav>a:nth-child(2){grid-column:1/4;grid-row:2}
 .dd .hx-nav>a:nth-child(3),.aou-links>a:nth-child(3),.pg-nav>a:nth-child(3),.wi-nav>a:nth-child(3){grid-column:4/7;grid-row:2}
 .dd .hx-nav>a:nth-child(4),.aou-links>a:nth-child(4),.pg-nav>a:nth-child(4),.wi-nav>a:nth-child(4){grid-column:1/4;grid-row:3}
@@ -54,7 +54,7 @@ section.pg-hero{position:relative}
 }
 </style>
 <div class="pg">
-<section class="pg-hero"{% if p.code in ('D2','D3') %} style="padding-bottom:18px!important;min-height:0"{% endif %}><nav class="pg-nav" aria-label="Main navigation"><a href="{{ url_for('public_home') }}">Home</a><a href="{{ url_for('public_program_page', slug='the-art-of-us') }}">The Art of Us<span class="nav-sub">For Committed<br>Relationships</span></a><a href="{{ url_for('public_program_page', slug='the-beginning') }}">The Beginning<span class="nav-sub">A Personal Journey,<br>Just for You</span></a><a href="{{ url_for('public_program_page', slug='awakening') }}">Awakening<span class="nav-sub">Awareness Is<br>Where Change Begins</span></a><a href="{{ url_for('public_program_page', slug='vision') }}">Vision<span class="nav-sub">Dreams Worth<br>Pursuing</span></a><a href="{{ url_for('public_about_program') }}">About</a><a class="reg" style="background:#fff;color:#06405c!important;padding:.4em 1.1em;border-radius:40px" href="{{ url_for('public_register') }}#interested">Register</a></nav><a class="team-login" href="{{ url_for('crm.dashboard') }}">Team Login</a>{% if p.code not in ('D2','D3') %}<a class="pg-brand" href="{{ url_for('public_home') }}">Discovery<em>!</em></a><div class="k">{{ p.num }}</div><h1>{{ p.title }}</h1><p>{{ p.tagline }}</p>{% endif %}</section>
+<section class="pg-hero"{% if p.code in ('D2','D3') %} style="padding-bottom:18px!important;min-height:0"{% endif %}><nav class="pg-nav" aria-label="Main navigation"><a href="{{ url_for('public_home') }}">Home</a><a href="{{ url_for('public_program_page', slug='the-art-of-us') }}">The Art of Us<span class="nav-sub">For Committed<br>Relationships</span></a><a href="{{ url_for('public_program_page', slug='the-beginning') }}">The Beginning<span class="nav-sub">A Personal Journey,<br>Just for You</span></a><a href="{{ url_for('public_program_page', slug='awakening') }}">Awakening<span class="nav-sub">Awareness Is<br>Where Change Begins</span></a><a href="{{ url_for('public_program_page', slug='vision') }}">Vision<span class="nav-sub">Dreams Worth<br>Pursuing</span></a><a href="{{ url_for('public_about_program') }}">About</a><a class="reg" style="background:#fff;color:#06405c!important;padding:.18em .8em;font-size:.9em;border-radius:40px" href="{{ url_for('public_register') }}#interested">Register</a></nav><a class="team-login" href="{{ url_for('crm.dashboard') }}">Team Login</a>{% if p.code not in ('D2','D3') %}<a class="pg-brand" href="{{ url_for('public_home') }}">Discovery<em>!</em></a><div class="k">{{ p.num }}</div><h1>{{ p.title }}</h1><p>{{ p.tagline }}</p>{% endif %}</section>
 {% if p.code not in ('D2','D3') %}<section class="pg-body">
   <p>{{ p.intro }}</p>
   {% if p.points %}<div class="pg-pts">{% for t, d in p.points %}<div class="pg-pt"><h3>{{ t }}</h3><p>{{ d }}</p></div>{% endfor %}</div>{% endif %}
