@@ -52,6 +52,12 @@
       <td data-label="Access">
         {% if s.is_owner %}
         <span class="muted">Everything ({{ 'Owner' if s.is_owner == 1 else 'Administrator' }})</span>
+        {% if s.is_owner == 2 and session.is_owner and not session.is_admin %}
+        <form method="post" action="{{ url_for('.staff_remove_owner', staff_id=s.id) }}" onsubmit="return confirm('Remove Administrator access from {{ s.name|e }}? They stay on the team as a Leadership login, and you can then choose what they can open.');" style="margin-top:6px">
+          <input type="hidden" name="redirect_to" value="staff_list">
+          <button class="btn danger" type="submit" style="padding:2px 8px; font-size:.85rem">Remove Administrator access</button>
+        </form>
+        {% endif %}
         {% else %}
           {% set groups = access_groups_by_staff.get(s.id, []) %}
           {% set n_access = namespace(n=0) %}{% for h, items in groups %}{% set n_access.n = n_access.n + items|length %}{% endfor %}

@@ -1802,6 +1802,9 @@ def staff_remove_owner(staff_id):
         conn.execute("UPDATE staff SET is_owner = 0 WHERE id = ?", (staff_id,))
         conn.commit()
         flash(f"{staff['name']} is no longer an Administrator. They are now a Leadership login.")
+        if request.form.get("redirect_to") == "staff_list":
+            conn.close()
+            return redirect(url_for(".staff_list"))
     elif staff:
         conn.execute("UPDATE staff SET is_owner = 0 WHERE id = ?", (staff_id,))
         conn.commit()
