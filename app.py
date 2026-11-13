@@ -2281,17 +2281,24 @@ def dashboard():
             sid = session["staff_id"]
             seen = conn.execute("SELECT * FROM chat_seen WHERE staff_id = ?", (sid,)).fetchone()
             if seen:
+                old_cut = conn.execute("SELECT to_char((now() AT TIME ZONE 'America/Chicago') - interval '1 day', 'YYYY-MM-DD HH24:MI:SS') AS c").fetchone()["c"]
                 b = conn.execute(
                     "SELECT (SELECT COUNT(*) FROM chat_topics WHERE created_at > ? AND author_id <> ?) + "
                     "(SELECT COUNT(*) FROM chat_replies WHERE created_at > ? AND author_id <> ?) AS n",
                     (seen["board_seen"], sid, seen["board_seen"], sid)).fetchone()["n"]
+                b_old = conn.execute(
+                    "SELECT (SELECT COUNT(*) FROM chat_topics WHERE created_at > ? AND created_at < ? AND author_id <> ?) + "
+                    "(SELECT COUNT(*) FROM chat_replies WHERE created_at > ? AND created_at < ? AND author_id <> ?) AS n",
+                    (seen["board_seen"], old_cut, sid, seen["board_seen"], old_cut, sid)).fetchone()["n"]
                 r = conn.execute("SELECT COUNT(*) AS n FROM chat_messages WHERE id > ? AND author_id <> ?",
                                  (seen["room_seen_id"], sid)).fetchone()["n"]
+                r_old = conn.execute("SELECT COUNT(*) AS n FROM chat_messages WHERE id > ? AND created_at < ? AND author_id <> ?",
+                                     (seen["room_seen_id"], old_cut, sid)).fetchone()["n"]
                 if b:
-                    alerts.append(dict(level="note", cat="Chat", url=url_for(".chat_home"), cta="Open the board",
+                    alerts.append(dict(level="urgent" if b_old else "note", cat="Chat", url=url_for(".chat_home"), cta="Open the board",
                                        text=f"{b} new {'post' if b == 1 else 'posts'} on the discussion board."))
                 if r:
-                    alerts.append(dict(level="note", cat="Chat", url=url_for(".chat_room"), cta="Open the chat room",
+                    alerts.append(dict(level="urgent" if r_old else "note", cat="Chat", url=url_for(".chat_room"), cta="Open the chat room",
                                        text=f"{r} new {'message' if r == 1 else 'messages'} in the live chat room."))
         except Exception as e:
             conn.rollback()
