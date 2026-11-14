@@ -1,11 +1,19 @@
 {% extends "crm_base.html" %}
 {% block title %}Letter: {{ name }}{% endblock %}
 {% block content %}
-<p><a href="{{ url_for('.correspondence_all') }}">&larr; All Letters</a></p>
+<style>
+@media print {
+  body * { visibility: hidden !important; }
+  #printableLetter, #printableLetter * { visibility: visible !important; }
+  #printableLetter { position: absolute; left: 0; top: 0; width: 100%; max-width: none !important; border: 0 !important; box-shadow: none !important; background: #fff !important; padding: 0.5in !important; font-family: Georgia, "Times New Roman", serif; font-size: 12pt; color: #000; }
+}
+</style>
+<p class="no-print"><a href="{{ url_for('.correspondence_all') }}">&larr; All Letters</a>
+{% if letter_html %}<button type="button" class="btn secondary" style="margin-left:14px" onclick="window.print()">Print this letter</button>{% endif %}</p>
 <h1>{{ name }}</h1>
 <p class="muted">{% if delivery %}<span class="badge">{{ delivery }}</span> {{ when }}<br>{% endif %}This is the letter as written, with [First name] standing in for the person's name. Nothing has been sent. Its wording is still in the program code, so changes are made by the Owner through the program team. Suggested changes are welcomed from the All Letters page.</p>
 {% if letter_html %}
-<div class="card" style="max-width:720px">
+<div class="card" id="printableLetter" style="max-width:720px">
   <p style="margin:0 0 14px"><span class="muted">Subject:</span> <strong>{{ subject }}</strong></p>
   <hr style="border:0; border-top:1px solid var(--border); margin:0 0 14px">
   <div style="line-height:1.55">{{ letter_html|safe }}</div>
