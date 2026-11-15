@@ -1,0 +1,354 @@
+{% extends "crm_base.html" %}
+{% block title %}{{ 'Contact Information' if contact else 'Add Contact' }} — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>{{ 'Contact Information: ' ~ contact.full_name if contact else 'Add contact' }}</h1>
+{% if for_team_login %}
+<p class="muted">Once this contact is saved, you'll pick their role and set a temporary password to finish adding them as a team member.</p>
+{% endif %}
+<div class="card" id="edit-wrap">
+  <form method="post" autocomplete="off" enctype="multipart/form-data" id="contact-form">
+    {% if not contact %}
+    {% if for_team_login %}<input type="hidden" name="for_team_login" value="1">{% endif %}
+    {% if link_staff_id %}<input type="hidden" name="link_staff_id" value="{{ link_staff_id }}">{% endif %}
+    {% endif %}
+    <datalist id="sponsor-picks">
+      {% for c in sponsor_choices %}<option value="{{ c.full_name }} [#{{ c.id }}]"></option>{% endfor %}
+    </datalist>
+
+{% if not contact %}
+<div id="dupe-warn" style="display:none; background:#fdf0d5; border:1px solid #e0c27a; border-radius:8px; padding:10px 14px; margin:0 0 10px"></div>
+<script>
+(function(){
+  var f=document.getElementById('contact-form'); if(!f) return;
+  function v(n){var e=f.querySelector('[name="'+n+'"]'); return e?e.value:'';}
+  var box=document.getElementById('dupe-warn'), t=null;
+  function check(){
+    var u=new URL({{ url_for('.contact_check_duplicate')|tojson }}, location.origin);
+    u.searchParams.set('first',v('first_name')); u.searchParams.set('last',v('last_name')); u.searchParams.set('email',v('email')); u.searchParams.set('cell',v('cell_phone'));
+    fetch(u,{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(h){
+      if(!h.length){box.style.display='none';return;}
+      box.innerHTML='<strong>Already in the Hub?</strong> '+h.map(function(x){return '<a href="'+x.url+'" target="_blank">'+x.name.replace(/</g,'&lt;')+'</a> ('+x.why+')';}).join(' &middot; ')+'. Open that contact instead, or keep going if this is a different person.';
+      box.style.display='block';
+    }).catch(function(){});
+  }
+  ['first_name','last_name','email','cell_phone'].forEach(function(n){var e=f.querySelector('[name="'+n+'"]'); if(e) e.addEventListener('blur',function(){clearTimeout(t); t=setTimeout(check,200);});});
+})();
+</script>
+{% endif %}
+<div id="basic-complete" class="stage-banner" style="display:none">&#10003; Basic Info Completed. Thank you!</div>
+<p class="muted" style="margin:0 0 6px">The green area is the basic information we ask everyone for.</p>
+
+<div class="basic-area">
+<h2 style="margin:0 0 4px">Basic information</h2>
+<h3 id="stage-basics">Basics <span class="stage-note" data-stage="basics"></span></h3>
+<div class="grid2" data-stage-box="basics">
+  <div class="field"><label class="req">First name *</label><input name="first_name" autocomplete="off" required value="{{ contact.first_name if contact and contact.first_name else (prefill.first_name if prefill else '') }}"></div>
+  <div class="field"><label class="req">Last name</label><input name="last_name" autocomplete="off" value="{{ contact.last_name if contact and contact.last_name else (prefill.last_name if prefill else '') }}"></div>
+  <div class="field"><label class="req">Photo</label><input type="file" name="photo" accept="image/*" data-has="{{ '1' if contact and contact.photo_filename else '' }}"></div>
+        {% set roles_set_status = true %}{% include "_roles_field.html" %}
+</div>
+
+<h3 id="stage-contact">Contact information <span class="stage-note" data-stage="contact"></span></h3>
+<div class="grid2" data-stage-box="contact">
+  <div class="field" style="grid-column: 1 / -1;"><label class="req">Email</label><input type="email" name="email" style="width:100%" autocomplete="off" value="{{ contact.email if contact and contact.email else '' }}"></div>
+  <div class="field"><label class="req">Cell number</label><input name="cell_phone" class="phone-input" placeholder="000-000-0000" maxlength="12" autocomplete="new-password" data-lpignore="true" value="{{ contact.cell_phone if contact and contact.cell_phone else '' }}"></div>
+  <div class="field"><label>Home number</label><input name="home_phone" class="phone-input" placeholder="000-000-0000" maxlength="12" autocomplete="new-password" data-lpignore="true" value="{{ contact.home_phone if contact and contact.home_phone else '' }}"></div>
+  <div class="field"><label>Work number</label><input name="work_phone" class="phone-input" placeholder="000-000-0000" maxlength="12" autocomplete="new-password" data-lpignore="true" value="{{ contact.work_phone if contact and contact.work_phone else '' }}"></div>
+  <div class="field"><label class="req">Street address</label><input name="street_address" autocomplete="off" value="{{ contact.street_address if contact and contact.street_address else '' }}"></div>
+  <div class="field"><label>Address line 2 <span class="muted">(apt/suite/unit)</span></label><input name="street_address_2" autocomplete="off" value="{{ contact.street_address_2 if contact and contact.street_address_2 else '' }}"></div>
+  <div class="field"><label class="req">City</label><input name="city" autocomplete="off" value="{{ contact.city if contact and contact.city else '' }}"></div>
+  <div class="field"><label class="req">State</label>
+    <select name="state">
+      <option value="">Select a state&hellip;</option>
+      {% for code, label in us_states %}
+      <option value="{{ code }}" {% if contact and contact.state == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field"><label class="req">Zip</label><input name="zip" autocomplete="off" value="{{ contact.zip if contact and contact.zip else '' }}"></div>
+</div>
+
+<h3 id="stage-family">Family &amp; emergency contact <span class="stage-note" data-stage="family"></span></h3>
+{% set _pn = (contact.partner_name or '').split() if contact else [] %}
+<div class="grid2" data-stage-box="family">
+  <div class="field" style="grid-column: 1 / -1;"><label style="display:flex; gap:8px; align-items:center; font-weight:600"><input type="checkbox" name="no_partner" value="1" id="no_partner" {% if contact and contact.no_partner %}checked{% endif %}> No partner</label></div>
+  <div class="field"><label>Partner's first name</label><input name="partner_first_name" autocomplete="off" value="{{ (contact.partner_first_name or (_pn[0] if _pn else '')) if contact else '' }}"></div>
+  <div class="field"><label>Partner's last name</label><input name="partner_last_name" autocomplete="off" value="{{ (contact.partner_last_name or (_pn[1:]|join(' '))) if contact else '' }}"></div>
+  <div class="field"><label>Partner's cell</label><input name="partner_cell" class="phone-input" placeholder="000-000-0000" maxlength="12" autocomplete="new-password" data-lpignore="true" value="{{ contact.partner_cell if contact and contact.partner_cell else '' }}"></div>
+  <div class="field"><label>Partner's email</label><input type="email" name="partner_email" style="width:100%" autocomplete="off" value="{{ contact.partner_email if contact and contact.partner_email else '' }}"></div>
+  <div class="field"><label class="req">Emergency contact name</label><input name="emergency_contact_name" autocomplete="off" value="{{ contact.emergency_contact_name if contact and contact.emergency_contact_name else '' }}"></div>
+  <div class="field"><label class="req">Emergency contact number</label><input name="emergency_contact_cell" class="phone-input" placeholder="000-000-0000" maxlength="12" autocomplete="new-password" data-lpignore="true" value="{{ contact.emergency_contact_cell if contact and contact.emergency_contact_cell else '' }}"></div>
+  <input type="hidden" name="emergency_contact_home" value="{{ contact.emergency_contact_home if contact and contact.emergency_contact_home else '' }}">
+</div>
+</div>
+
+    <div class="personal-area">
+    <div style="margin-bottom:14px">
+      <h3>Personal background <span class="muted" style="font-weight:400">(gender, age, health, work and more)</span></h3>
+      <div class="grid2" style="margin-top:10px">
+      <div class="field">
+        <label>Gender</label>
+        <select name="gender" class="self-describe-toggle" data-describe-target="gender_self_describe_box">
+          <option value="" {% if contact and contact.gender == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.gender == 'Man' %}selected{% endif %}>Man</option>
+          <option {% if contact and contact.gender == 'Woman' %}selected{% endif %}>Woman</option>
+          <option {% if contact and contact.gender == 'Non-binary' %}selected{% endif %}>Non-binary</option>
+          <option {% if contact and contact.gender == 'Prefer to self-describe' %}selected{% endif %}>Prefer to self-describe</option>
+          <option {% if contact and contact.gender == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+        <div id="gender_self_describe_box" style="display:none; margin-top:6px">
+          <input name="gender_self_description" placeholder="Self-described gender" value="{{ contact.gender_self_description if contact and contact.gender_self_description else '' }}">
+        </div>
+      </div>
+      <div class="field"><label>Age</label><input name="age" type="number" min="0" step="1" value="{{ contact.age if contact and contact.age else '' }}"></div>
+      <div class="field"><label>DOB</label><input name="dob" class="dob-input" placeholder="MM/DD/YYYY" inputmode="numeric" maxlength="10" autocomplete="off" value="{{ contact.dob if contact and contact.dob else '' }}"></div>
+      <div class="field">
+        <label>Ethnicity</label>
+        <select name="ethnicity" class="self-describe-toggle" data-describe-target="ethnicity_self_describe_box">
+          <option value="" {% if contact and contact.ethnicity == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.ethnicity == 'American Indian or Alaska Native' %}selected{% endif %}>American Indian or Alaska Native</option>
+          <option {% if contact and contact.ethnicity == 'Asian' %}selected{% endif %}>Asian</option>
+          <option {% if contact and contact.ethnicity == 'Black or African American' %}selected{% endif %}>Black or African American</option>
+          <option {% if contact and contact.ethnicity == 'Hispanic or Latino' %}selected{% endif %}>Hispanic or Latino</option>
+          <option {% if contact and contact.ethnicity == 'Native Hawaiian or Other Pacific Islander' %}selected{% endif %}>Native Hawaiian or Other Pacific Islander</option>
+          <option {% if contact and contact.ethnicity == 'White' %}selected{% endif %}>White</option>
+          <option {% if contact and contact.ethnicity == 'Prefer to self-describe' %}selected{% endif %}>Prefer to self-describe</option>
+          <option {% if contact and contact.ethnicity == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+        <div id="ethnicity_self_describe_box" style="display:none; margin-top:6px">
+          <input name="ethnicity_self_description" placeholder="Self-described ethnicity" value="{{ contact.ethnicity_self_description if contact and contact.ethnicity_self_description else '' }}">
+        </div>
+      </div>
+      <div class="field"><label>Marital status</label>
+        <select name="marital_status">
+          <option value="" {% if contact and contact.marital_status == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.marital_status == 'Single, never married' %}selected{% endif %}>Single, never married</option>
+          <option {% if contact and contact.marital_status == 'Engaged' %}selected{% endif %}>Engaged</option>
+          <option {% if contact and contact.marital_status == 'Married' %}selected{% endif %}>Married</option>
+          <option {% if contact and contact.marital_status == 'Separated' %}selected{% endif %}>Separated</option>
+          <option {% if contact and contact.marital_status == 'Divorced' %}selected{% endif %}>Divorced</option>
+          <option {% if contact and contact.marital_status == 'Widowed' %}selected{% endif %}>Widowed</option>
+          <option {% if contact and contact.marital_status == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+      </div>
+      <div class="field"><label>Living with partner?</label>
+        <select name="living_with_partner">
+          <option value="" {% if contact and contact.living_with_partner == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.living_with_partner == 'Yes' %}selected{% endif %}>Yes</option>
+          <option {% if contact and contact.living_with_partner == 'No' %}selected{% endif %}>No</option>
+        </select>
+      </div>
+      <div class="field"><label>Children (ages)</label><input name="children_ages" placeholder="e.g. 8, 12, 15" value="{{ contact.children_ages if contact and contact.children_ages else '' }}"></div>
+      <div class="field"><label>Employment Status</label>
+        <select name="employment_status">
+          <option value="" {% if contact and contact.employment_status == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.employment_status == 'Employed Full-Time' %}selected{% endif %}>Employed Full-Time</option>
+          <option {% if contact and contact.employment_status == 'Employed Part-Time' %}selected{% endif %}>Employed Part-Time</option>
+          <option {% if contact and contact.employment_status == 'Self-Employed / Business Owner' %}selected{% endif %}>Self-Employed / Business Owner</option>
+          <option {% if contact and contact.employment_status == 'Retired' %}selected{% endif %}>Retired</option>
+          <option {% if contact and contact.employment_status == 'Student' %}selected{% endif %}>Student</option>
+          <option {% if contact and contact.employment_status == 'Homemaker' %}selected{% endif %}>Homemaker</option>
+          <option {% if contact and contact.employment_status == 'Unemployed' %}selected{% endif %}>Unemployed</option>
+          <option {% if contact and contact.employment_status == 'Disabled / Unable to Work' %}selected{% endif %}>Disabled / Unable to Work</option>
+          <option {% if contact and contact.employment_status == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Occupation</label>
+        <select name="occupation" class="self-describe-toggle" data-describe-target="occupation_self_describe_box">
+          <option value="" {% if contact and contact.occupation == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.occupation == 'Management / Business' %}selected{% endif %}>Management / Business</option>
+          <option {% if contact and contact.occupation == 'Professional (Medical, Legal, Education, etc.)' %}selected{% endif %}>Professional (Medical, Legal, Education, etc.)</option>
+          <option {% if contact and contact.occupation == 'Sales' %}selected{% endif %}>Sales</option>
+          <option {% if contact and contact.occupation == 'Entrepreneur' %}selected{% endif %}>Entrepreneur</option>
+          <option {% if contact and contact.occupation == 'Skilled Trades' %}selected{% endif %}>Skilled Trades</option>
+          <option {% if contact and contact.occupation == 'Service' %}selected{% endif %}>Service</option>
+          <option {% if contact and contact.occupation == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+          <option {% if contact and contact.occupation == 'Education' %}selected{% endif %}>Education</option>
+          <option {% if contact and contact.occupation == 'Ministry / Clergy' %}selected{% endif %}>Ministry / Clergy</option>
+          <option {% if contact and contact.occupation == 'Retired' %}selected{% endif %}>Retired</option>
+          <option {% if contact and contact.occupation == 'Student' %}selected{% endif %}>Student</option>
+          <option {% if contact and contact.occupation == 'Homemaker' %}selected{% endif %}>Homemaker</option>
+          <option {% if contact and contact.occupation == 'Prefer to self-describe' %}selected{% endif %}>Prefer to self-describe</option>
+        </select>
+        <div id="occupation_self_describe_box" style="display:none; margin-top:6px">
+          <input name="occupation_self_description" placeholder="Please specify" value="{{ contact.occupation_self_description if contact and contact.occupation_self_description else '' }}">
+        </div>
+      </div>
+      <div class="field"><label>Employer</label><input name="employer" value="{{ contact.employer if contact and contact.employer else '' }}"></div>
+      <div class="field">
+        <label>Spiritual orientation</label>
+        <select name="spiritual_orientation" class="self-describe-toggle" data-describe-target="spiritual_orientation_self_describe_box">
+          <option value="" {% if contact and contact.spiritual_orientation == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.spiritual_orientation == 'Christian' %}selected{% endif %}>Christian</option>
+          <option {% if contact and contact.spiritual_orientation == 'Catholic' %}selected{% endif %}>Catholic</option>
+          <option {% if contact and contact.spiritual_orientation == 'Jewish' %}selected{% endif %}>Jewish</option>
+          <option {% if contact and contact.spiritual_orientation == 'Muslim' %}selected{% endif %}>Muslim</option>
+          <option {% if contact and contact.spiritual_orientation == 'Buddhist' %}selected{% endif %}>Buddhist</option>
+          <option {% if contact and contact.spiritual_orientation == 'Hindu' %}selected{% endif %}>Hindu</option>
+          <option {% if contact and contact.spiritual_orientation == 'Spiritual but not religious' %}selected{% endif %}>Spiritual but not religious</option>
+          <option {% if contact and contact.spiritual_orientation == 'Agnostic' %}selected{% endif %}>Agnostic</option>
+          <option {% if contact and contact.spiritual_orientation == 'Atheist' %}selected{% endif %}>Atheist</option>
+          <option {% if contact and contact.spiritual_orientation == 'Prefer to self-describe' %}selected{% endif %}>Prefer to self-describe</option>
+          <option {% if contact and contact.spiritual_orientation == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+        <div id="spiritual_orientation_self_describe_box" style="display:none; margin-top:6px">
+          <input name="spiritual_orientation_self_description" placeholder="Please specify" value="{{ contact.spiritual_orientation_self_description if contact and contact.spiritual_orientation_self_description else '' }}">
+        </div>
+      </div>
+      <div class="field"><label>Education</label>
+        <select name="education">
+          <option value="" {% if contact and contact.education == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.education == 'Less than high school' %}selected{% endif %}>Less than high school</option>
+          <option {% if contact and contact.education == 'High school diploma / GED' %}selected{% endif %}>High school diploma / GED</option>
+          <option {% if contact and contact.education == 'Some college, no degree' %}selected{% endif %}>Some college, no degree</option>
+          <option {% if contact and contact.education == 'Associate degree' %}selected{% endif %}>Associate degree</option>
+          <option {% if contact and contact.education == "Bachelor's degree" %}selected{% endif %}>Bachelor's degree</option>
+          <option {% if contact and contact.education == "Master's degree" %}selected{% endif %}>Master's degree</option>
+          <option {% if contact and contact.education == 'Doctoral or professional degree' %}selected{% endif %}>Doctoral or professional degree</option>
+          <option {% if contact and contact.education == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column: 1 / -1"><label>Overall health and any health limitations or injuries (optional)</label><textarea name="overall_health" rows="3" style="width:100%">{{ contact.overall_health if contact and contact.overall_health else '' }}</textarea></div>
+      {% if contact %}
+      <div class="field" style="grid-column: 1 / -1"><label>Food allergies or dietary restrictions (for example vegetarian, vegan, gluten-free, a food allergy)</label><textarea name="dietary_needs" rows="2" style="width:100%">{{ contact.dietary_needs if contact and contact.dietary_needs else '' }}</textarea></div>
+      <div class="field" style="grid-column: 1 / -1"><label>Food preferences (foods you love or would rather not eat)</label><textarea name="food_preferences" rows="2" style="width:100%">{{ contact.food_preferences if contact and contact.food_preferences else '' }}</textarea></div>
+      <div class="field" style="grid-column: 1 / -1"><label>Accessibility or room needs (for example a wheelchair-accessible room, mobility, hearing or vision needs)</label><textarea name="access_needs" rows="2" style="width:100%">{{ contact.access_needs if contact and contact.access_needs else '' }}</textarea><div class="muted" style="font-size:.85rem;margin-top:4px">Optional. We share this only with the people planning your meals, rooms and activities.</div></div>
+      <div class="field" style="grid-column: 1 / -1"><label>Injuries that limit everyday activities (for example, a bad knee or cannot sit on the floor)</label><textarea name="activity_limits" placeholder="Example: Bad knee, cannot sit on the floor" rows="2" style="width:100%">{{ contact.activity_limits if contact and contact.activity_limits else '' }}</textarea></div>
+      {% endif %}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>How did you hear about us</label>
+        <select name="marketing_source" class="self-describe-toggle" data-describe-target="marketing_source_self_describe_box">
+          <option value="" {% if contact and contact.marketing_source == '' %}selected{% endif %}>—</option>
+          <option {% if contact and contact.marketing_source == 'Word of Mouth' %}selected{% endif %}>Word of Mouth</option>
+          <option {% if contact and contact.marketing_source == 'Facebook' %}selected{% endif %}>Facebook</option>
+          <option {% if contact and contact.marketing_source == 'Instagram' %}selected{% endif %}>Instagram</option>
+          <option {% if contact and contact.marketing_source == 'Google Search' %}selected{% endif %}>Google Search</option>
+          <option {% if contact and contact.marketing_source == 'Website' %}selected{% endif %}>Website</option>
+          <option {% if contact and contact.marketing_source == 'Church / Community Group' %}selected{% endif %}>Church / Community Group</option>
+          <option {% if contact and contact.marketing_source == 'Past Attendee / Graduate' %}selected{% endif %}>Past Attendee / Graduate</option>
+          <option {% if contact and contact.marketing_source == 'Event or Public Speaking' %}selected{% endif %}>Event or Public Speaking</option>
+          <option {% if contact and contact.marketing_source == 'Prefer to self-describe' %}selected{% endif %}>Prefer to self-describe</option>
+        </select>
+        <div id="marketing_source_self_describe_box" style="display:none; margin-top:6px">
+          <input name="marketing_source_self_description" placeholder="Please specify" value="{{ contact.marketing_source_self_description if contact and contact.marketing_source_self_description else '' }}">
+        </div>
+      </div>
+    </div>
+    <p style="margin:10px 0 6px; font-weight:700">So that we can send a &ldquo;Thank you&rdquo; email or text to your Sponsor:</p>
+    <div class="grid2">
+      <div class="field" style="grid-column: 1 / -1;"><label>Sponsor name <span class="muted">(start typing, then pick from your contacts)</span></label><input name="sponsor_name" list="sponsor-picks" autocomplete="off" placeholder="Who sponsored/recommended them" style="width:100%" value="{{ contact.sponsor_name if contact and contact.sponsor_name else '' }}"></div>
+      <div class="field"><label>Sponsor cell</label><input name="sponsor_phone" class="phone-input" placeholder="000-000-0000" maxlength="12" autocomplete="new-password" data-lpignore="true" value="{{ contact.sponsor_phone if contact and contact.sponsor_phone else '' }}"></div>
+      <div class="field"><label>Sponsor email</label><input type="email" name="sponsor_email" style="width:100%" autocomplete="off" value="{{ contact.sponsor_email if contact and contact.sponsor_email else '' }}"></div>
+    </div>
+    {% if contact %}
+      {% if linked_sponsors %}
+      <p class="muted" style="margin:0 0 8px">Sponsor on a session roster (counts toward their TA requirement):
+        {% for b in linked_sponsors %}<a href="{{ url_for('.contact_detail', contact_id=b.id) }}">{{ b.full_name }}</a>{{ ', ' if not loop.last }}{% endfor %}.</p>
+      {% endif %}
+      {% if sponsor_link %}
+      <p style="margin:0 0 8px"><span class="badge good">&#10003; Linked</span> to <a href="{{ url_for('.contact_detail', contact_id=sponsor_link.id) }}">{{ sponsor_link.full_name }}</a> &mdash; this counts toward their Sponsor pipeline and TA requirement.</p>
+      {% elif contact.sponsor_name %}
+      <p class="muted" style="margin:0 0 8px"><span class="badge warn">Not linked</span> This name is only typed text, so it does not count toward the Sponsor pipeline. Retype it and pick the person from the list that appears.</p>
+      {% endif %}
+          {% endif %}
+
+    </div>
+    <div style="margin-bottom:14px">
+      <h3>Discovery history</h3>
+      <div class="grid2" style="margin-top:10px">
+      <div class="field">
+        <div class="field"><label>Previously enrolled in Discovery trainings?</label>
+          <select name="discovery_attendance" class="yesno-toggle" data-show-target="discovery_dates_box">
+            <option value="" {% if contact and contact.discovery_attendance == '' %}selected{% endif %}>—</option>
+            <option {% if contact and contact.discovery_attendance == 'Yes' %}selected{% endif %}>Yes</option>
+            <option {% if contact and contact.discovery_attendance == 'No' %}selected{% endif %}>No</option>
+          </select>
+        </div>
+        <div id="discovery_dates_box" style="display:none">
+          <div class="field"><label>The Beginning: month &amp; year</label><input name="d1_month_year" placeholder="e.g. March 2024" value="{{ contact.d1_month_year if contact and contact.d1_month_year else '' }}"></div>
+          <div class="field"><label>Awakening: month &amp; year</label><input name="d2_month_year" placeholder="e.g. April 2024" value="{{ contact.d2_month_year if contact and contact.d2_month_year else '' }}"></div>
+          <div class="field"><label>Vision: month &amp; year</label><input name="d3_month_year" placeholder="e.g. May 2024" value="{{ contact.d3_month_year if contact and contact.d3_month_year else '' }}"></div>
+          <div class="field"><label>Refocus (Discovery)</label><input name="refocus_month_year" placeholder="e.g. June 2024" value="{{ contact.refocus_month_year if contact and contact.refocus_month_year else '' }}"></div>
+          <div class="field" style="margin-bottom:0"><label>The Art of Us (Discovery!)</label><input name="relationship_training_month_year" placeholder="e.g. July 2024" value="{{ contact.relationship_training_month_year if contact and contact.relationship_training_month_year else '' }}"></div>
+        </div>
+      </div>
+      </div>
+    </div>
+    {% if not contact %}
+    <h3>Notes</h3>
+    <div class="field"><textarea name="notes" rows="3" style="width:100%"></textarea></div>
+    <div style="margin:4px 0 14px"><button class="btn" type="submit">Save contact</button></div>
+    {% endif %}
+  </form>
+{% include "_contact_stages.html" %}
+</div>
+{% if contact and session.staff_role == 'Leadership' %}
+{% set has_discovery_dates = contact.d1_month_year or contact.d2_month_year or contact.d3_month_year or contact.refocus_month_year or contact.relationship_training_month_year %}
+<div id="contract_fields_section" style="display: {{ '' if (contact.discovery_attendance == 'Yes' or has_discovery_dates) else 'none' }}">
+<p class="muted" style="margin:14px 0 0">Contracts save themselves as you type.</p>
+{% for kind, label in contract_kinds.items() %}
+{% set entry = contracts_by_kind[kind] %}
+<h2>{% set cc = contract_code(kind) %}{% if cc %}{{ cc }}: {% endif %}{{ label }}</h2>
+<div class="card">
+  <form method="post" class="contract-autosave-form" action="{{ url_for('.contract_upsert', contact_id=contact.id) }}">
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <div class="field">
+      {% if kind in contract_single_line_kinds %}
+      <input name="text" style="width:100%"
+        placeholder="{{ 'e.g. ' ~ contract_examples[kind] if kind in contract_examples else '' }}"
+        value="{{ entry.contract.current_text if entry.contract else '' }}">
+      {% else %}
+      <textarea name="text" rows="6" style="width:100%"
+        placeholder="{{ 'e.g. ' ~ contract_examples[kind] if kind in contract_examples else '' }}"
+      >{{ entry.contract.current_text if entry.contract else '' }}</textarea>
+      {% endif %}
+    </div>
+    <p class="muted contract-save-status" style="min-height:1.2em; margin:0"></p>
+  </form>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+{% if rel_profiles %}
+<h2>Relationship Profile</h2>
+{% for rp in rel_profiles %}
+<div class="card">
+  <p style="margin:0 0 6px"><strong>The Art of Us #{{ rp.session_number }}</strong>
+    <span class="muted">&middot; {{ rp | date_span }}</span>
+    &nbsp;<strong style="color:{{ "#3f5643" if rp.status == "Complete" else "#a15c00" }}">[{{ rp.status }}]</strong></p>
+  {% if rp.status == 'Not started' %}
+  <p class="muted" style="margin:0 0 10px">No answers recorded yet.</p>
+  {% else %}
+  <dl style="margin:8px 0 12px">
+    {% for q, a in rp.answers %}
+    <dt style="font-weight:600; margin-top:8px">{{ loop.index }}. {{ q }}</dt>
+    <dd style="margin:2px 0 0 0; white-space:pre-wrap">{% if a %}{{ a }}{% else %}<span class="muted">&mdash;</span>{% endif %}</dd>
+    {% endfor %}
+  </dl>
+  {% endif %}
+  <a class="btn secondary" href="{{ url_for('.relationship_profile', enrollment_id=rp.enrollment_id) }}">{{ 'Enter answers' if rp.status == 'Not started' else 'Edit answers' }}</a>
+</div>
+{% endfor %}
+{% endif %}
+{% if contact %}
+<div class="card" style="margin-top:18px">
+  <h3 style="margin-top:0">Notes</h3>
+  <textarea name="notes" form="contact-form" rows="3" style="width:100%">{{ contact.notes if contact.notes else '' }}</textarea>
+</div>
+<div style="margin:14px 0 6px">
+  <button class="btn" type="submit" form="contact-form">Save contact</button>
+</div>
+<p style="margin-top:14px"><a href="{{ url_for('.contact_detail', contact_id=contact.id) }}">&larr; Back to {{ contact.full_name }}</a></p>
+{% endif %}
+<style>
+  .save-float { position: fixed; right: 24px; top: 68px; z-index: 90; }
+  .save-float .btn { font-size: 1.05rem; padding: 12px 26px; box-shadow: 0 6px 18px rgba(0,0,0,.28); }
+  @media (max-width: 640px) { .save-float { left: 12px; right: 12px; top: 64px; } .save-float .btn { width: 100%; } }
+</style>
+<div class="save-float"><button class="btn" type="submit" form="contact-form">Save contact</button></div>
+{% endblock %}

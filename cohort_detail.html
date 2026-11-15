@@ -1,5 +1,5 @@
 {% extends "crm_base.html" %}
-{% block title %}{{ cohort.code }} #{{ cohort.session_number }} — {{ program_name }} ERP{% endblock %}
+{% block title %}{{ cohort.code|sess_label }} #{{ cohort.session_number }} — {{ program_name }} ERP{% endblock %}
 {% block content %}
 {# Small groups are turned off for every program for now. Change false to true to bring them back. #}
 {% set show_small_groups = false %}
@@ -370,7 +370,8 @@ function markTA(url, answer){
   document.body.appendChild(f); f.submit(); return false;
 }
 // The top "Back" button first closes whatever is open on this page (a trainee's box, then the Trainee Roster,
-// Team Roster or Materials section, most recently opened first) instead of leaving the page.
+// Team Roster or Materials section, most recently opened first). When everything is closed it goes up to this
+// training's page, instead of wherever the browser history happens to point.
 (function(){
   var opened = [];
   document.querySelectorAll('details').forEach(function(d){
@@ -387,7 +388,9 @@ function markTA(url, answer){
     }
     var left = document.querySelectorAll('details.bandsec[open]');
     if (left.length) { left[left.length - 1].open = false; window.scrollTo(0, 0); return true; }
-    return false;
+    // Nothing left open: go up to this training's own page (not wherever the browser history happens to point).
+    location.href = '{{ url_for('.program_open', program_id=cohort.program_id) }}';
+    return true;
   };
 })();
 </script>

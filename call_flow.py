@@ -487,7 +487,7 @@ def reserve_seat(get_db, req_id, cohort_id, person, partner):
             return "Error", None, "Please choose one of the dates in the list."
         code = coh["code"]
         couple = code in COUPLE_PROGRAMS
-        label = f"{code} #{coh['session_number']}, {span_text(coh)}"
+        label = f"{ {'D1': 'The Beginning', 'D2': 'Awakening', 'D3': 'Vision', 'D4': 'The Art of Us', 'D5': 'Renew', 'D6': 'Spiritual'}.get(code, code) } #{coh['session_number']}, {span_text(coh)}"
         cid = req["contact_id"]
         conn.execute("UPDATE contacts SET first_name = ?, last_name = ?, email = ?, cell_phone = ? WHERE id = ?",
                      (person["first"], person["last"] or None, person["email"], person["phone"] or None, cid))

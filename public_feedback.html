@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ program_name }} Feedback Form{% endblock %}
+{% block content %}
+<section class="pub-section">
+  <div class="pub-container" style="max-width:720px">
+    <h2>{{ program_name }} Feedback Form</h2>
+
+    {% if enr is none %}
+    <p class="lead">We couldn't find that feedback link. Please double-check the link you were sent, or reach out to us if you think this is a mistake.</p>
+
+    {% elif already_submitted %}
+    <p class="lead">Thanks again -- we already have your feedback for {{ enr.code|sess_label }} #{{ enr.session_number }} on {{ enr.session_date|fdate }}. We appreciate you taking the time.</p>
+
+    {% else %}
+    <p class="lead">
+      Thank you for participating and trusting us during the training. Your honest feedback
+      helps us support future programs and improve how our small groups and facilitation
+      work. This form is read only by {{ program_name }} leadership &mdash; your responses
+      are confidential and will not be shared with your TA, or other trainees.
+    </p>
+    <p class="muted" style="margin-bottom:28px">{{ enr.program_name|nice_prog(enr.code) }} &middot; Session #{{ enr.session_number }} &middot; {{ enr.session_date|fdate }}</p>
+
+    <form class="pub-form" method="post" style="max-width:none">
+      <h3 style="font-family:var(--pub-font-display); color:var(--pub-text); margin:28px 0 12px">Your Facilitator</h3>
+
+      <div class="field">
+        <label>My Facilitator communicated the material clearly. <span class="muted">(1&ndash;5 scale, Strongly Disagree &ndash; Strongly Agree)</span></label>
+        <select name="facilitator_clear" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>My Facilitator created a safe, respectful environment for the group. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="facilitator_safe" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>My Facilitator was responsive to questions and individual needs. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="facilitator_responsive" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>What did your Facilitator do well?</label>
+        <textarea name="facilitator_did_well" rows="3"></textarea>
+      </div>
+      <div class="field">
+        <label>What could your Facilitator do differently next time?</label>
+        <textarea name="facilitator_could_improve" rows="3"></textarea>
+      </div>
+
+      <h3 style="font-family:var(--pub-font-display); color:var(--pub-text); margin:28px 0 12px">Your Small Group &amp; TA(s)</h3>
+
+      <div class="field">
+        <label>My TA(s) helped the small group feel safe to share openly. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="ta_safe" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>My TA(s) kept the small group focused and on track. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="ta_focused" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>My TA(s) gave me individual attention when I needed it. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="ta_individual_attention" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>What did your TA(s) do well?</label>
+        <textarea name="ta_did_well" rows="3"></textarea>
+      </div>
+      <div class="field">
+        <label>What could your TA(s) do differently next time?</label>
+        <textarea name="ta_could_improve" rows="3"></textarea>
+      </div>
+
+      <h3 style="font-family:var(--pub-font-display); color:var(--pub-text); margin:28px 0 12px">Overall Weekend</h3>
+
+      <div class="field">
+        <label>This training gave me practical tools I can use in my relationship. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="practical_tools" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>I felt emotionally safe throughout the weekend. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="emotionally_safe" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>I would recommend this training to a friend or family member. <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="would_recommend" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>How likely are you to attend a future {{ program_name }} training? <span class="muted">(1&ndash;5 scale)</span></label>
+        <select name="future_training_likelihood" required>
+          <option value="">Choose a rating</option>
+          {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <h3 style="font-family:var(--pub-font-display); color:var(--pub-text); margin:28px 0 12px">Anything Else</h3>
+
+      <div class="field">
+        <label>Is there anything about your small group experience you'd like leadership to know, especially anything that felt uncomfortable or unsafe?</label>
+        <textarea name="uncomfortable_notes" rows="3"></textarea>
+      </div>
+      <div class="field">
+        <label>Any other comments or suggestions?</label>
+        <textarea name="other_comments" rows="3"></textarea>
+      </div>
+
+      <button class="pub-btn dark" type="submit">Submit feedback</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "crm_base.html" %}
+{% block title %}{{ program.code|sess_label }} Movies — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>{{ program.name }} &mdash; Movies</h1>
+{% include "_material_tabs.html" %}
+
+<h2>Movie list</h2>
+{% for day in ordered_days %}
+<h3>{{ day }}</h3>
+{% for mv in movies_by_day[day] %}
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px">
+    <div>
+      <strong>{{ mv.title }}</strong>
+      {% if mv.link_url %} &middot; <a href="{{ mv.link_url }}" target="_blank" rel="noopener noreferrer">Open link &rarr;</a>{% endif %}
+      {% if mv.scene_notes %}<div class="muted" style="margin-top:4px; white-space:pre-wrap">{{ mv.scene_notes }}</div>{% endif %}
+    </div>
+    {% if can_edit_materials %}
+    <form method="post" action="{{ url_for('.program_movie_delete', program_id=program.id, movie_id=mv.id) }}"
+          onsubmit='return confirm({{ ("Remove " ~ mv.title ~ " from the list?")|tojson }});' style="display:inline">
+      <button class="btn danger" type="submit" style="font-size:0.8rem">Remove</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<p class="muted" style="margin:4px 0 12px">No movies in {{ day }} yet.</p>
+{% endfor %}
+{% endfor %}
+
+{% if can_edit_materials %}
+<h3>Add a movie to the list</h3>
+<div class="card">
+  <form method="post" action="{{ url_for('.program_movie_new', program_id=program.id) }}">
+    <div class="grid2">
+      <div class="field"><label>Day</label>
+        <select name="day_label">{% for d in day_label_choices %}<option value="{{ d }}">{{ d }}</option>{% endfor %}</select>
+      </div>
+      <div class="field"><label>Title</label><input name="title" placeholder="e.g. The Notebook (final scene)" required maxlength="200"></div>
+      <div class="field"><label>Link (optional)</label><input name="link_url" placeholder="YouTube, Vimeo, Dropbox..." maxlength="500"></div>
+      <div class="field"><label>When / scene / notes</label><textarea name="scene_notes" rows="2" placeholder="e.g. Show at 4:15, scene starts 1:12:30, stop at 1:18:00"></textarea></div>
+    </div>
+    <button class="btn" type="submit">Add to list</button>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

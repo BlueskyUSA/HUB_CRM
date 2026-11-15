@@ -1,5 +1,5 @@
 {% extends "crm_base.html" %}
-{% block title %}Letters — {{ cohort.code }} #{{ cohort.session_number }}{% endblock %}
+{% block title %}Letters — {{ cohort.code|sess_label }} #{{ cohort.session_number }}{% endblock %}
 {% block content %}
 {% set full_title = cohort.name|nice_prog(cohort.code) %}
 {% if only == 'trainees' %}<p><a href="{{ url_for('.correspondence_trainees') }}">&larr; Trainee Correspondence</a></p>

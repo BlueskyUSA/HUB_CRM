@@ -1,0 +1,78 @@
+{% extends "crm_base.html" %}
+{% block title %}{{ program.code|sess_label }} Music — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>{{ program.name }} &mdash; Music</h1>
+{% include "_material_tabs.html" %}
+
+<h2>Playlists</h2>
+{% for day in ordered_days %}
+{% for pl in by_day[day] %}
+<div class="card">
+  <h4 style="margin:0 0 8px; font-size:1.05rem; display:flex; justify-content:space-between; align-items:center">
+    <span>{{ pl.category }}</span>
+    <form method="post" action="{{ url_for('.program_playlist_delete', program_id=program.id, playlist_id=pl.id) }}"
+          onsubmit='return confirm({{ ("Delete the whole " ~ pl.category ~ " playlist and all its songs?")|tojson }});' style="display:inline">
+      <button class="btn danger" type="submit" style="font-size:0.8rem">Delete playlist</button>
+    </form>
+  </h4>
+  <table>
+    <tr><th></th><th>Title</th><th>Artist</th><th>Album</th><th>Time</th><th>Notes</th><th></th></tr>
+    {% for s in songs_by_playlist[pl.id] %}
+    <tr>
+      <td style="white-space:nowrap">
+        <form method="post" action="{{ url_for('.playlist_song_move', program_id=program.id, playlist_id=pl.id, song_id=s.id) }}" style="display:inline">
+          <input type="hidden" name="direction" value="up">
+          <button class="btn secondary" type="submit" style="padding:1px 7px">&uarr;</button>
+        </form>
+        <form method="post" action="{{ url_for('.playlist_song_move', program_id=program.id, playlist_id=pl.id, song_id=s.id) }}" style="display:inline">
+          <input type="hidden" name="direction" value="down">
+          <button class="btn secondary" type="submit" style="padding:1px 7px">&darr;</button>
+        </form>
+      </td>
+      <td>{{ s.title }}</td>
+      <td class="muted">{{ s.artist or '' }}</td>
+      <td class="muted">{{ s.album or '' }}</td>
+      <td class="muted">{{ s.duration or '' }}</td>
+      <td class="muted">{{ s.notes or '' }}</td>
+      <td>
+        <form method="post" action="{{ url_for('.playlist_song_delete', program_id=program.id, playlist_id=pl.id, song_id=s.id) }}"
+              onsubmit='return confirm({{ ("Remove " ~ s.title ~ "?")|tojson }});' style="display:inline">
+          <button class="btn danger" type="submit">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="muted">No songs yet.</td></tr>
+    {% endfor %}
+  </table>
+
+  <details style="margin-top:10px">
+    <summary style="cursor:pointer; color:#345a8f; font-size:0.88rem">Add a song</summary>
+    <form class="inline" method="post" action="{{ url_for('.playlist_song_new', program_id=program.id, playlist_id=pl.id) }}" style="margin-top:8px">
+      <input name="title" placeholder="Title" required style="width:200px">
+      <input name="artist" placeholder="Artist" style="width:150px">
+      <input name="album" placeholder="Album" style="width:150px">
+      <input name="duration" placeholder="Time (e.g. 3:45)" style="width:110px">
+      <input name="notes" placeholder="Notes (e.g. which theme/couple)" style="width:200px">
+      <button class="btn secondary" type="submit">Add song</button>
+    </form>
+  </details>
+</div>
+{% else %}
+<p class="muted" style="margin:4px 0 12px">No playlists yet.</p>
+{% endfor %}
+{% else %}
+<p class="muted">No playlists yet.</p>
+{% endfor %}
+
+<h3>Add a playlist</h3>
+<div class="card">
+  <form class="inline" method="post" action="{{ url_for('.program_playlist_new', program_id=program.id) }}">
+    <div class="grid2">
+      <div class="field"><label>Category</label><input name="category" placeholder="e.g. Dinner Entry, Stretch Songs" required></div>
+    </div>
+    <button class="btn" type="submit">Create playlist</button>
+  </form>
+</div>
+
+{% endblock %}

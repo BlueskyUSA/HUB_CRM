@@ -4,7 +4,7 @@
 {% macro session_rows(p, sessions, is_lead, has_contacts_access) %}
     {% for c in sessions %}
     <tr>
-      <td style="color:#1f5fbf; font-weight:600">{{ p.code }} #{{ c.session_number }}</td>
+      <td style="color:#1f5fbf; font-weight:600">{{ p.code|sess_label }} #{{ c.session_number }}</td>
       <td style="color:#1f5fbf; font-weight:600">{{ c|date_span }}</td>
       <td style="color:#1f5fbf; font-weight:600">{{ c.location or '' }}</td>
       <td style="color:#1f5fbf; font-weight:600">{{ c.status }}</td>
@@ -13,7 +13,7 @@
         {% if is_lead %}
         <details style="display:inline-block; margin-left:12px; vertical-align:top;">
           <summary style="cursor:pointer; font-size:0.85rem; color:#c0392b; font-weight:600; line-height:1.3;">Change<br>or Delete<br>Session</summary>
-          <p class="muted" style="margin:6px 0; max-width:360px; font-size:0.82rem;">Affects only {{ p.code }} #{{ c.session_number }}. The {{ p.code }} program and its other sessions are not touched.</p>
+          <p class="muted" style="margin:6px 0; max-width:360px; font-size:0.82rem;">Affects only {{ p.code|sess_label }} #{{ c.session_number }}. The {{ p.code|sess_label }} program and its other sessions are not touched.</p>
           <form class="inline" method="post" action="{{ url_for('.cohort_update_dates', cohort_id=c.id) }}" style="margin:0 0 6px">
             <input type="hidden" name="back" value="programs">
             {% if p.code in ['D1','D2','D3','D5'] %}
@@ -33,9 +33,9 @@
             <button class="btn secondary" type="submit">Save session</button>
           </form>
           <form method="post" action="{{ url_for('.cohort_delete', cohort_id=c.id) }}" style="margin:0"
-                onsubmit='return confirm({{ ("Delete the session " ~ p.code ~ " #" ~ c.session_number ~ " (" ~ (c.session_date|fdate) ~ ")? Only this one session is removed, not the " ~ p.code ~ " program. A session with enrolled people or staff can\'t be deleted -- set it to Cancelled instead.")|tojson }});'>
+                onsubmit='return confirm({{ ("Delete the session " ~ (p.code|sess_label) ~ " #" ~ c.session_number ~ " (" ~ (c.session_date|fdate) ~ ")? Only this one session is removed, not the " ~ (p.code|sess_label) ~ " program. A session with enrolled people or staff can\'t be deleted -- set it to Cancelled instead.")|tojson }});'>
             <input type="hidden" name="back" value="programs">
-            <button class="btn danger" type="submit">Delete {{ p.code }} #{{ c.session_number }}</button>
+            <button class="btn danger" type="submit">Delete {{ p.code|sess_label }} #{{ c.session_number }}</button>
           </form>
         </details>
         {% endif %}
@@ -44,7 +44,7 @@
     {% endfor %}
 {% endmacro %}
 <p><a href="{{ url_for('.programs_list') }}">&larr; All programs</a></p>
-<h1>{{ programs[0].name }}</h1>
+<h1>{{ programs[0].name|nice_prog(programs[0].code) }}</h1>
 
 {% set is_lead = session.is_owner or session.staff_role == 'Leadership' %}
 {% for p in programs %}
@@ -55,7 +55,7 @@
   {% if is_lead %}
   <details style="background:#f6f4ec; border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin-bottom:14px;">
     <summary style="cursor:pointer; font-size:0.88rem; font-weight:700;">Change or Delete the {{ pname }}</summary>
-    <p class="muted" style="margin:8px 0">This is the training as a whole (its code, name, description and prerequisite). A change here applies to <strong>every</strong> {{ p.code }} session, past and future. To change one scheduled session, use the session list below instead.</p>
+    <p class="muted" style="margin:8px 0">This is the training as a whole (its code, name, description and prerequisite). A change here applies to <strong>every</strong> {{ p.code|sess_label }} session, past and future. To change one scheduled session, use the session list below instead.</p>
     <form class="inline" method="post" action="{{ url_for('.program_edit', program_id=p.id) }}">
       <input name="code" value="{{ p.code }}" style="width:90px" required>
       <input name="name" value="{{ p.name }}" style="width:260px" required>
@@ -63,14 +63,14 @@
       <select name="prerequisite_program_id">
         <option value="">No prerequisite</option>
         {% for other in all_programs if other.id != p.id %}
-        <option value="{{ other.id }}" {{ 'selected' if p.prerequisite_program_id == other.id else '' }}>Requires {{ other.code }} first</option>
+        <option value="{{ other.id }}" {{ 'selected' if p.prerequisite_program_id == other.id else '' }}>Requires {{ other.code|sess_label }} first</option>
         {% endfor %}
       </select>
       <button class="btn secondary" type="submit">Save program changes</button>
     </form>
     <form method="post" action="{{ url_for('.program_delete', program_id=p.id) }}" style="margin-top:10px"
-          onsubmit='return confirm({{ ("Delete the entire " ~ p.code ~ " program (" ~ p.name ~ ")? This is the program itself, not one session, and it can\'t be undone. A program that still has scheduled sessions can\'t be deleted.")|tojson }});'>
-      <button class="btn danger" type="submit">Delete the {{ p.code }} program</button>
+          onsubmit='return confirm({{ ("Delete the entire " ~ (p.name|nice_prog(p.code)) ~ " program? This is the program itself, not one session, and it can\'t be undone. A program that still has scheduled sessions can\'t be deleted.")|tojson }});'>
+      <button class="btn danger" type="submit">Delete the {{ p.code|sess_label }} program</button>
       <span class="muted" style="font-size:0.82rem">Only possible once it has no scheduled sessions.</span>
     </form>
   </details>
@@ -94,7 +94,7 @@
 
   {% if is_lead %}
   {% set next_num = (cohorts_by_program[p.id]|map(attribute='session_number')|list|max) + 1 if cohorts_by_program[p.id] else 1 %}
-  {% set sched_label = 'Schedule a ' ~ p.name|nice_prog(p.code) %}
+  {% set sched_label = 'Schedule ' ~ p.name|nice_prog(p.code) %}
   <form id="sched" class="sched-form" method="post" action="{{ url_for('.cohort_new', program_id=p.id) }}"
         data-btn="{{ sched_label }}" data-code="{{ p.code }}" data-num="{{ next_num }}" data-days="{{ default_days(p.code) }}"
         data-weekday="{{ usual_weekday[p.code][0] if p.code in usual_weekday else '' }}"
@@ -137,8 +137,8 @@ document.querySelectorAll('.sched-form').forEach(function (f) {
   var days = parseInt(f.dataset.days || '1', 10);
   var nextNum = parseInt(f.dataset.num || '1', 10);
   var code = f.dataset.code;
-  var baseLabel = f.dataset.btn;                       // "Schedule a D4-Relationship Training"
-  var plural = baseLabel.replace(/^Schedule a /, '');
+  var baseLabel = f.dataset.btn;                       // "Schedule The Art of Us"
+  var plural = baseLabel.replace(/^Schedule (a )?/, '');
   var storeKey = 'sched-queue-' + code;
   var queue = [];                                      // [{s: 'YYYY-MM-DD', e: 'YYYY-MM-DD' or ''}]
   var editing = null;                                  // the queue item whose last day is being changed

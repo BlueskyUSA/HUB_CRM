@@ -1883,7 +1883,7 @@ US_STATES = [
 # separate free-text entry -- shown on the contact page only for contacts
 # who attended Discovery, since these are Discovery training artifacts.
 CONTRACT_KINDS = {
-    "D1B": "The Name of your Buddy in D1",
+    "D1B": "The Name of your Buddy in The Beginning",
     "D1P": "Your Pseudo Name",
     "D1": "Your Contract",
     "D1S": "Your Stretch Song",
@@ -1897,7 +1897,8 @@ CONTRACT_KINDS = {
 
 # The numbers people see in headings. Saved contracts keep their original internal keys (so no stored data
 # had to change); the training order is D1, D2, D3, 4 = The Art of Us, 5 = Refocus, 6 = Spiritual.
-CONTRACT_DISPLAY_CODES = {"D1B": "D1", "D1P": "D1", "D2G": "D2", "D6": "D4", "D6S": "D4S", "D5": "D6"}
+CONTRACT_DISPLAY_CODES = {"D1B": "The Beginning", "D1P": "The Beginning", "D1": "The Beginning", "D1S": "The Beginning",
+                          "D2": "Awakening", "D2G": "Awakening", "D3": "Vision", "D6": "The Art of Us", "D6S": "The Art of Us", "D5": ""}
 
 # Kinds that get a single-line input instead of a multi-row textarea.
 CONTRACT_SINGLE_LINE_KINDS = {"D1B", "D1P", "D1", "D1S", "D6S"}
@@ -1972,6 +1973,19 @@ def nice_prog(name, code=None):
     # the old saved name for the D4 program shows as its new name
     n = re.sub(r"(?:The Art of Us\s*[-\u2013\u2014:]\s*)?Relationship Training", "The Art of Us", n, flags=re.I)
     return n
+
+
+SESSION_LABELS = {"D1": "The Beginning", "D2": "Awakening", "D3": "Vision", "D4": "The Art of Us", "D5": "Renew", "D6": "Spiritual"}
+
+
+def sess_name(code):
+    """Short name used in 'Awakening #3' style labels (never the bare D-code)."""
+    return SESSION_LABELS.get(code, code)
+
+
+@app.template_filter("sess_label")
+def sess_label(code):
+    return sess_name(code)
 
 
 @app.template_filter("prog_label")
@@ -3824,7 +3838,7 @@ def _contact_delete_blockers(conn, contact_id):
     reasons = []
     counts = [
         ("enrollments", "enrolled in a training session"),
-        ("contracts", "a saved contract (D1/D2/D6)"),
+        ("contracts", "a saved contract"),
         ("donations", "a recorded donation"),
         ("cohort_staffing", "listed as session staff"),
         ("small_group_staffing", "listed as small-group staff"),
@@ -3863,7 +3877,7 @@ def _contact_history_counts(conn, contact_id):
     items = []
     for label, sql, params in [
         ("training enrollments", "SELECT COUNT(*) c FROM enrollments WHERE contact_id = ?", (contact_id,)),
-        ("saved contracts (D1/D2/D6)", "SELECT COUNT(*) c FROM contracts WHERE contact_id = ?", (contact_id,)),
+        ("saved contracts", "SELECT COUNT(*) c FROM contracts WHERE contact_id = ?", (contact_id,)),
         ("recorded donations", "SELECT COUNT(*) c FROM donations WHERE contact_id = ?", (contact_id,)),
         ("cohort staff assignments", "SELECT COUNT(*) c FROM cohort_staffing WHERE contact_id = ?", (contact_id,)),
         ("small-group staff assignments", "SELECT COUNT(*) c FROM small_group_staffing WHERE contact_id = ?", (contact_id,)),
@@ -5224,7 +5238,7 @@ def cohort_new(program_id):
             "INSERT INTO cohorts (program_id, session_number, session_date, end_date, location) VALUES (?, ?, ?, ?, ?)",
             (pid, num, start, end_date, location),
         )
-        return f"{pcode} #{num} ({_short_span(date.fromisoformat(start), date.fromisoformat(end_date or start))})"
+        return f"{sess_name(pcode)} #{num} ({_short_span(date.fromisoformat(start), date.fromisoformat(end_date or start))})"
 
     also_programs = []
     if also_ids:
@@ -5393,7 +5407,7 @@ def cohort_delete(cohort_id):
         conn.close()
         flash("That session no longer exists.")
         return redirect(_sched_home())
-    label = f"{cohort['code']} #{cohort['session_number']}"
+    label = f"{sess_name(cohort['code'])} #{cohort['session_number']}"
     checks = [
         ("SELECT COUNT(*) AS n FROM enrollments WHERE cohort_id = ?", "{n} enrolled trainee(s)"),
         ("SELECT COUNT(*) AS n FROM contracts WHERE originating_cohort_id = ?", "{n} contract(s) started in it"),
@@ -6908,7 +6922,7 @@ def _calendar_data(year, public=False):
             "cancelled": all(r["status"] == "Cancelled" for r in sessions),
             "href": sessions[0]["href"],
             "title": "; ".join(
-                (f"{r['code']} #{r['session_number']} " if not public else f"{r['code']} ")
+                (f"{sess_name(r['code'])} #{r['session_number']} " if not public else f"{sess_name(r['code'])} ")
                 + r["span"] + ("" if public else f" ({r['status']})")
                 for r in sessions
             ) + (f"; {cell['holiday']}" if cell["holiday"] else ""),
@@ -7360,7 +7374,7 @@ def _finance_ledger(conn, start, end):
             LEFT JOIN enrollments pe ON pe.id = (SELECT partner_enrollment_id FROM enrollments WHERE id = p.enrollment_id)
             LEFT JOIN contacts pt ON pt.id = pe.contact_id
             WHERE p.voided_at IS NULL AND p.paid_on >= ? AND p.paid_on <= ?""", (start, end)).fetchall():
-        what = f"{p['code']} #{p['session_number']}" if p["code"] else "Training"
+        what = f"{sess_name(p['code'])} #{p['session_number']}" if p["code"] else "Training"
         rows.append({"date": p["paid_on"], "type": "Training payment" if p["completes_payment"] else "Training deposit",
                      "name": p["name"], "email": p["email"] or "", "what": what, "amount": p["amount"],
                      "method": p["method"] or "", "reference": p["reference"] or "", "note": p["note"] or "",
@@ -7404,7 +7418,7 @@ def finance():
             ORDER BY k.session_date, ct.last_name""", (date.today().isoformat(),)).fetchall():
         dep = conn.execute("SELECT COALESCE(SUM(amount),0) AS t FROM payments WHERE voided_at IS NULL AND enrollment_id IN (?, ?)",
                            (e["id"], e["pe"] or 0)).fetchone()["t"]
-        outstanding.append({"name": e["name"], "contact_id": e["contact_id"], "what": f"{e['code']} #{e['session_number']}",
+        outstanding.append({"name": e["name"], "contact_id": e["contact_id"], "what": f"{sess_name(e['code'])} #{e['session_number']}",
                             "date": e["session_date"], "deposit": dep, "couple": bool(e["pe"]), "eid": e["id"],
                             "fee": (TRAINING_FEES.get(e["code"]) if e["pe"] else None)})
     conn.close()

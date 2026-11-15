@@ -1,0 +1,35 @@
+{% extends "crm_base.html" %}
+{% block title %}{{ program.code|sess_label }} {{ category }} — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>{{ program.name }} &mdash; {{ category }}</h1>
+{% include "_material_tabs.html" %}
+
+{% set file_days = by_day %}
+{% set file_day_order = ordered_days %}
+{% include "_material_files.html" %}
+
+{% if can_edit_materials %}
+<h3>Upload to {{ category }}</h3>
+<div class="card">
+  <form method="post" action="{{ url_for('.program_material_new', program_id=program.id) }}" enctype="multipart/form-data">
+    <input type="hidden" name="category" value="{{ category }}">
+    <div class="grid2">
+      <div class="field"><label>Title</label><input name="title" placeholder="Leave blank to use the file name"></div>
+      <div class="field"><label>File</label><input type="file" name="file" required></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Version date</label><input type="date" name="version_date" value="{{ today_iso }}"></div>
+      <div class="field"><label>What changed (optional)</label><input name="change_note" placeholder="e.g. Updated Saturday schedule"></div>
+    </div>
+    <div class="field"><label>Is this a new version of a file already here?</label>
+      <select name="replaces_id">
+        <option value="">No, this is a new file</option>
+        {% for m in by_day[""] %}<option value="{{ m.id }}">Replaces: {{ m.title }} ({{ m.date }})</option>{% endfor %}
+      </select>
+      <span class="muted" style="font-size:.85rem">The earlier version is kept under &ldquo;Earlier versions.&rdquo;</span>
+    </div>
+    <button class="btn" type="submit">Upload to {{ category }}</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
