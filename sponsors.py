@@ -136,7 +136,7 @@ def register(app, get_db, leadership_email=None):
                 finally:
                     conn.close()
         return render_template("public_sponsor_start.html", error=error, form=form,
-                               programs=[("D4", "The Art of Us \u2013 Relationship Training"), ("D1", "The Beginning"), ("", "Not sure yet")],
+                               programs=[("D4", "The Art of Us"), ("D1", "The Beginning"), ("", "Not sure yet")],
                                consent=SPONSOR_CONSENT)
 
     @app.route("/sponsor/thanks/<token>")

@@ -28,7 +28,7 @@ PURPOSE = {
     "questionnaire_request_other": "Gives the trainee their private link to fill in the questionnaire.",
     "questionnaire_reminder": "A friendly nudge to finish the questionnaire.",
     "questionnaire_reminder_other": "A friendly nudge to finish the questionnaire.",
-    "Questionnaire: The Art of Us (Relationship Training)": "The form itself, not a letter. Each partner fills it in on a private link.",
+    "Questionnaire: The Art of Us": "The form itself, not a letter. Each partner fills it in on a private link.",
     "Questionnaire: The Beginning": "The form itself, not a letter. Each person fills it in on a private link.",
     "Questionnaire: other programs": "The form itself, not a letter. A short standard set of questions for the other programs.",
     "what_to_bring_aou": "Tells trainees what to pack and bring, a week before the training.",

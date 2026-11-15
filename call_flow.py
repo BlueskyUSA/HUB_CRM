@@ -37,7 +37,7 @@ except Exception:  # pragma: no cover
 POOLS = [
     ("CAPTAIN", "Guide Team Captain (oversees the team)"),
     ("D1", "The Beginning"),
-    ("D4", "Relationship Training"),
+    ("D4", "The Art of Us"),
     ("ALL", "Everything else (also the back-up if a program has no volunteers)"),
 ]
 MAX_PER_POOL = 6
@@ -45,7 +45,7 @@ MAX_PER_POOL = 6
 
 def max_for(code):
     return 1 if code == "CAPTAIN" else MAX_PER_POOL
-PAGES = {"home": "Front page", "programs": "Programs page", "relationship": "Relationship Training page", "reserve": "Reserve your spot form", "other": "Other"}
+PAGES = {"home": "Front page", "programs": "Programs page", "relationship": "The Art of Us page", "reserve": "Reserve your spot form", "other": "Other"}
 WINDOW_HOURS = 2
 SEND_FROM_HOUR, SEND_TO_HOUR = 8, 20   # Central time
 MAX_ALERT_ROUNDS = 4
@@ -309,7 +309,7 @@ CLIENT_LETTERS = [
     ("curious", "Reply to \"I'm curious\"", "Sent automatically as soon as a Guide takes the request."),
     ("register", "Registration link", "Sent when the volunteer taps \"Email it\" in the Ready to register box. (If they tap \"Text it\", the same link goes by text from the volunteer's own phone.)"),
     ("confirm", "Trainee Registration Confirmation", "Sent automatically to both partners soon after they reserve a date."),
-    ("questionnaire", "Questionnaire", "Sent when the volunteer taps \"Email it\" in the Send the questionnaire box. Each partner gets their own private link to the form shown below. Relationship Training and D1 use the same questionnaire for now."),
+    ("questionnaire", "Questionnaire", "Sent when the volunteer taps \"Email it\" in the Send the questionnaire box. Each partner gets their own private link to the form shown below. The Art of Us and The Beginning use the same questionnaire for now."),
     ("venue", "Where we'll be and what's included", "The venue letter: hotel, what the $1,299 per couple includes, shuttle and check-out. Can be sent to registered couples or used when someone asks about the venue."),
     ("payment", "Payment reminder", "No longer automatic. The Guide is nudged every 7 days while payment is late and sends the reminder if and when they choose."),
 ]
@@ -318,8 +318,8 @@ CLIENT_LETTERS = [
 def letter_venue(first, partner, vol_name, vphone, photo_url=None, room_url=None, dates="[session dates]"):
     subject = "Your weekend at the Four Points by Sheraton \u2013 everything you need to know"
     html = f"""<p>Hi {first},</p>
-<p><strong>Welcome to a Fantastic and Adventure Filled Weekend!</strong> We are delighted to confirm your registration for the Discovery! Relationship Training, {dates}.</p>
-<p>We\u2019re so glad you and {partner} are joining us for Relationship Training. Here is where we\u2019ll be, what\u2019s included, and how to get there, so there are no surprises and you can simply arrive ready to enjoy the weekend.</p>
+<p><strong>Welcome to a Fantastic and Adventure Filled Weekend!</strong> We are delighted to confirm your registration for The Art of Us, {dates}.</p>
+<p>We\u2019re so glad you and {partner} are joining us for The Art of Us. Here is where we\u2019ll be, what\u2019s included, and how to get there, so there are no surprises and you can simply arrive ready to enjoy the weekend.</p>
 <h3>When</h3>
 <p><strong>Friday, [date], 7:00 pm</strong> through <strong>Sunday, [date], 1:30 pm</strong>. (Hotel check-in opens at 3:00 pm.)</p>
 <p><strong>Arrival:</strong> If possible, please come rested. It is best to arrive around <strong>5:30 pm</strong> to register at the hotel, find your room, get settled, relax, grab a bite to eat, and register at the Discovery! Relationship table situated in front of the training room. The training begins promptly at <strong>7:00 pm</strong>.</p>
@@ -377,19 +377,19 @@ def sample_letter(key):
     elif key == "register":
         subject, html, _t = letter_reserve_link("[First name]", "[the training]", "#", "[Volunteer name]", "[volunteer phone]")
     elif key in ("questionnaire", "questionnaire-d1"):
-        subject, html, _t = letter_questionnaire("[First name]", ("The Beginning" if key == "questionnaire-d1" else "Relationship Training"), _base_url() + "/cep-letters/" + ("q-d1" if key == "questionnaire-d1" else "q-rt"), "[Volunteer name]", "[volunteer phone]")
+        subject, html, _t = letter_questionnaire("[First name]", ("The Beginning" if key == "questionnaire-d1" else "The Art of Us"), _base_url() + "/cep-letters/" + ("q-d1" if key == "questionnaire-d1" else "q-rt"), "[Volunteer name]", "[volunteer phone]")
     elif key == "venue":
         subject, html = letter_venue("[First name]", "[partner's name]", "[Volunteer name]", "[volunteer phone]", photo_url=_base_url() + "/static/hotel-exterior.png", room_url=_base_url() + "/static/hotel-room.png")
     else:
         from email_templates import session_letter_content
         sl_key = "trainee_confirm" if key == "confirm" else "payment_reminder"
-        subject, html, _t = session_letter_content(sl_key, "[First name]", "Relationship Training", "[session dates]",
+        subject, html, _t = session_letter_content(sl_key, "[First name]", "The Art of Us", "[session dates]",
                                                    partner="[partner's name]", amount="$1,299 per couple")
     return title, when, subject, html
 
 
 # ---------------------------------------------------------------- seats, dates, the personal reservation link
-DEFAULT_CAPACITY = {"D4": 40}     # Relationship Training: 40 COUPLES unless the session says otherwise
+DEFAULT_CAPACITY = {"D4": 40}     # The Art of Us: 40 COUPLES unless the session says otherwise
 COUPLE_PROGRAMS = ("D4",)
 
 
@@ -1153,7 +1153,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
     @app.route("/cep-letters/<key>")
     def public_cep_letter(key):
         if key in ("q-rt", "q-d1"):
-            fake = {"first_name": "[First name]", "program_name": ("The Beginning" if key == "q-d1" else "Relationship Training"), "session_date": None,
+            fake = {"first_name": "[First name]", "program_name": ("The Beginning" if key == "q-d1" else "The Art of Us"), "session_date": None,
                     "questionnaire_completed_at": None, "code": ("D1" if key == "q-d1" else "D4"), "first_name": "[First name]"}
             return render_template("public_questionnaire.html", enr=fake, profile=None, is_couples=True, done=False,
                                    saved=False, preview=True, letters=CLIENT_LETTERS, key=key)

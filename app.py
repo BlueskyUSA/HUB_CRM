@@ -75,6 +75,30 @@ def _ensure_contact_columns():
         print(f"contact column check failed: {e}", flush=True)
 
 
+_art_of_us_named = False
+
+
+@app.before_request
+def _rename_d4_program_once():
+    """One time per start-up: the D4 program's saved name ('Relationship Training') becomes 'The Art of Us'.
+    Same row, same id, so every session, enrollment and payment stays linked. Safe to repeat."""
+    global _art_of_us_named
+    if _art_of_us_named or request.path.startswith("/static/"):
+        return
+    _art_of_us_named = True
+    try:
+        c = get_db()
+        rows = c.execute("SELECT id, name FROM programs WHERE code = ?", ("D4",)).fetchall()
+        for r in rows:
+            nm = (r["name"] or "")
+            if "relationship training" in nm.lower():
+                c.execute("UPDATE programs SET name = ? WHERE id = ?", ("The Art of Us", r["id"]))
+        c.commit()
+        c.close()
+    except Exception as e:
+        print(f"D4 program rename skipped: {e}", flush=True)
+
+
 @app.before_request
 def _require_site_password():
     if not SITE_PASSWORD:
@@ -1872,7 +1896,7 @@ CONTRACT_KINDS = {
 }
 
 # The numbers people see in headings. Saved contracts keep their original internal keys (so no stored data
-# had to change); the training order is D1, D2, D3, 4 = Relationship Training, 5 = Refocus, 6 = Spiritual.
+# had to change); the training order is D1, D2, D3, 4 = The Art of Us, 5 = Refocus, 6 = Spiritual.
 CONTRACT_DISPLAY_CODES = {"D1B": "D1", "D1P": "D1", "D2G": "D2", "D6": "D4", "D6S": "D4S", "D5": "D6"}
 
 # Kinds that get a single-line input instead of a multi-row textarea.
@@ -1939,12 +1963,14 @@ def day_list(start, last=None):
 
 @app.template_filter("nice_prog")
 def nice_prog(name, code=None):
-    """A program's name without its code in front: 'D1' -> 'The Beginning, Awakening & Vision', 'D4-Relationship Training' -> 'Relationship Training'."""
+    """A program's name without its code in front: 'D1' -> 'The Beginning, Awakening & Vision', 'D4-Relationship Training' -> 'The Art of Us'."""
     n = (name or "").strip()
     c = (code or "").strip()
     if c and n.upper().startswith(c.upper()):
         rest = n[len(c):].lstrip(" -\u2013\u2014:")
         n = rest or PROGRAM_LABELS.get(c, n)
+    # the old saved name for the D4 program shows as its new name
+    n = re.sub(r"(?:The Art of Us\s*[-\u2013\u2014:]\s*)?Relationship Training", "The Art of Us", n, flags=re.I)
     return n
 
 
@@ -4425,7 +4451,7 @@ DAY_LABEL_ORDER = ["Friday Night", "Saturday", "Sunday", "General"]
 
 def _music_day_labels(program):
     """Sections on a program's Music page: Friday Night / Saturday / Sunday for every program,
-    plus Saturday Evening Dance for Relationship Training. (General appears only when something is filed there.)"""
+    plus Saturday Evening Dance for The Art of Us. (General appears only when something is filed there.)"""
     labels = ["Friday Night", "Saturday", "Sunday"]
     if "relationship" in ((program["name"] if program else "") or "").lower():
         labels.insert(2, "Saturday Evening Dance")
@@ -5825,8 +5851,8 @@ RELATIONSHIP_PROFILE_FIELDS = [
 
 
 RELATIONSHIP_PROFILE_QUESTIONS = [
-    ("first_time_attending", "Is this your first time attending the Relationship Training?"),
-    ("training_goals", "What do you want to get out of the Relationship Training?"),
+    ("first_time_attending", "Is this your first time attending The Art of Us?"),
+    ("training_goals", "What do you want to get out of The Art of Us?"),
     ("relationship_length", "How long have you been in your relationship?"),
     ("how_met", "How did you meet your partner and what attracted you to them?"),
     ("childhood_patterns", "Does this relationship have patterns similar to what you experienced with your parents in your childhood?"),
@@ -5841,7 +5867,7 @@ RELATIONSHIP_PROFILE_QUESTIONS = [
 
 
 def _relationship_profiles_for(conn, contact_id):
-    """One entry per Relationship Training (D4) enrollment of this contact, with the profile answers and a
+    """One entry per The Art of Us (D4) enrollment of this contact, with the profile answers and a
     status: Not started / In progress (n of 12) / Complete."""
     out = []
     rows = conn.execute(
@@ -7100,7 +7126,7 @@ def money_required(view):
 
 
 # Training fee per the program code, and who it covers. Shown as the starting amount in "Record payment".
-TRAINING_FEES = {"D4": 1299.0}   # Relationship Training: $1,299 per couple (one payment covers both partners)
+TRAINING_FEES = {"D4": 1299.0}   # The Art of Us: $1,299 per couple (one payment covers both partners)
 PAYMENT_METHODS = ["Check", "Zelle", "Cash", "Card", "Other"]
 BOOKS_ENTITY = "Nonprofit"        # which set of books the CRM's money belongs to (the LLC is not run from the CRM)
 _finance_ready = False
@@ -7505,7 +7531,7 @@ def public_relationship_training():
         if r:
             date_text = _public_date_text(r)
     except Exception as e:
-        print(f"Relationship Training date lookup failed: {e}", flush=True)
+        print(f"The Art of Us date lookup failed: {e}", flush=True)
     return render_template("public_relationship.html", date_text=date_text)
 
 

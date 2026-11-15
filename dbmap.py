@@ -11,11 +11,11 @@ BLOCKS = [
         ("contact_lists", "The groups our contacts come from or belong to, such as Kent's Contact Data, the Discovery Contact list and Responded to the Excitement blast. A person can be in more than one."),
         ("contact_list_members", "Which person is in which data source."),
         ("contact_photos", "Photos people have uploaded."),
-        ("profile_relationship", "The Relationship Training (D4) profile: questions about the relationship. Stored in training_profiles."),
+        ("profile_relationship", "The Art of Us profile: questions about the relationship. Stored in training_profiles."),
         ("profile_d1", "The D1 profile: basic questions now, the rest still to be determined (TBD). Stored in training_profiles."),
     ]),
     ("programs", "Programs and Sessions", "#6a4c93", "What we teach and when: programs, scheduled sessions and their groups.", [
-        ("programs", "The trainings we offer (D1, Relationship Training and so on)."),
+        ("programs", "The trainings we offer (The Beginning, The Art of Us and so on)."),
         ("cohorts", "Each scheduled session of a program, with dates and capacity."),
         ("small_groups", "The small groups inside a session."),
         ("program_materials", "Training materials attached to a program."),
@@ -94,7 +94,7 @@ TITLES = {
     "blast_recipients": "Correspondence Recipients",
     "contact_lists": "Data Sources",
     "contact_list_members": "Who Is in Each Data Source",
-    "profile_relationship": "Relationship Training Profile (D4)",
+    "profile_relationship": "The Art of Us Profile",
     "profile_d1": "D1 Profile",
 }
 

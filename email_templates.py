@@ -554,7 +554,7 @@ SESSION_LETTERS = {
         "audience": "Trainees",
         "subject": "You're confirmed for {training}",
         "paras": [
-            "We are delighted to confirm your registration for the Discovery! Relationship Training, {dates}{where}.",
+            "We are delighted to confirm your registration for The Art of Us, {dates}{where}.",
             "This will be a powerful experience for you and your partner, and we are honored that you have chosen to be part of it.",
             "Soon you will receive a separate email with your personal link to a questionnaire we ask you to seriously ponder. Take your time to complete each question. "
             "Let your experience, heart, and mind flow into your words. Be sure not to share your answers with your partner. "

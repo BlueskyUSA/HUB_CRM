@@ -262,7 +262,7 @@ def catalog():
             E("questionnaire_request_other", sl["questionnaire_request_other"]["title"], "By hand from the session's letters page.", "Trainees without a completed questionnaire (The Beginning and every other training)"),
             E("questionnaire_reminder", sl["questionnaire_reminder"]["title"] + " \u2013 The Art of Us", "By hand from the session's letters page.", "Trainees without a completed questionnaire (The Art of Us)"),
             E("questionnaire_reminder_other", sl["questionnaire_reminder_other"]["title"], "By hand from the session's letters page.", "Trainees without a completed questionnaire (The Beginning and every other training)"),
-            X("Questionnaire: The Art of Us (Relationship Training)", "Sent as a private link by the Guide's \"Email it\" or from the session page.", "Each partner of a couple, separately", "/cep-letters/q-rt"),
+            X("Questionnaire: The Art of Us", "Sent as a private link by the Guide's \"Email it\" or from the session page.", "Each partner of a couple, separately", "/cep-letters/q-rt"),
             X("Questionnaire: The Beginning", "Sent as a private link from the session page.", "Each person, separately. The Beginning's own questions are still to be written (shown as TBD).", "/cep-letters/q-d1"),
             C("Questionnaire: other programs", "Sent as a private link from the session page.", "Each person", "Awakening, Vision, Renew and Spiritual use a short standard set: first time attending, goals, food and access needs, injuries, anything else."),
             E("what_to_bring_aou", sl["what_to_bring_aou"]["title"], "Automatically 7 days before The Art of Us for people who have paid (reserved through a Guide); also by hand from the session's letters page.", "Trainees (The Art of Us)"),
@@ -683,7 +683,7 @@ def register(app, crm, get_db, h):
     SESSION_SAMPLE = dict(first_name="Alex", training="The Art of Us", dates="Feb. 12, 2027 to Feb. 14, 2027",
                           location="the hotel", role="Lead Facilitator", duties=["Sound Equipment"], link="https://example.org/your-link",
                           partner="Jordan", amount="$1,299 per couple")
-    GUIDE_SAMPLE = dict(first="Alex", label="Relationship Training", vol_name="Pat Smith", vfirst="Pat", vphone="469-555-0100",
+    GUIDE_SAMPLE = dict(first="Alex", label="The Art of Us", vol_name="Pat Smith", vfirst="Pat", vphone="469-555-0100",
                         link="https://example.org/your-link", pw="call or text", client="Jordan Lee", page_link="https://example.org/your-page", when_text=" on Thursday at 2:00 pm")
     FIELD_HELP = {
         "First Name": "the person's first name",
