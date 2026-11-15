@@ -1,0 +1,21 @@
+<form method="post" action="{{ suggest_action }}" style="margin-top:8px; max-width:560px">
+  {% if suggest_back %}<input type="hidden" name="back" value="{{ suggest_back }}">{% endif %}
+  <input type="text" name="website" value="" tabindex="-1" autocomplete="off" style="position:absolute; left:-9999px" aria-hidden="true">
+  <label style="display:block">Which letter?<br>
+    {% if suggest_fixed %}
+      <input type="hidden" name="letter_name" value="{{ suggest_fixed }}"><strong>{{ suggest_fixed }}</strong>
+    {% else %}
+      <select name="letter_name" id="suggestLetter" style="width:100%; padding:8px">
+        <option value="">A letter not listed (say which in your note)</option>
+        {% for n in suggest_letters %}<option {{ 'selected' if n == suggest_pick else '' }}>{{ n }}</option>{% endfor %}
+      </select>
+    {% endif %}
+  </label>
+  {% if suggest_public %}
+  <label style="display:block; margin-top:10px">Your name *<br><input type="text" name="name" required maxlength="120" style="width:100%; padding:8px"></label>
+  <label style="display:block; margin-top:10px">Your email <span class="muted">(optional, so we can thank you or ask a question)</span><br><input type="email" name="email" maxlength="200" style="width:100%; padding:8px"></label>
+  {% endif %}
+  <label style="display:block; margin-top:10px">Your suggestion *<br>
+    <textarea name="message" rows="5" required maxlength="2000" style="width:100%; padding:8px" placeholder="What would you change, and why? You can type the new wording if you like."></textarea></label>
+  <p style="margin:10px 0 0"><button class="{{ suggest_btn or 'btn' }}" type="submit">Send my suggestion</button></p>
+</form>
