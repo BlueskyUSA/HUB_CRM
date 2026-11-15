@@ -278,7 +278,7 @@ def longform_followup_content(first_name, longform_url):
         <p>As promised, here's a short follow-up form with a bit more information that
         will help us organize our volunteer teams:</p>
         <p><a href="{longform_url}">{longform_url}</a></p>
-        <p>No rush at all &mdash; fill it out whenever you get a chance.</p>
+        <p>No rush at all &mdash; fill it out whenever you get a chance. Your answers save as you go, so you can close the page and pick up right where you left off by opening the same link again.</p>
         <p>Thanks again for your support and your giving heart.</p>
         <p>Blessings,<br>Kent Hafemann</p>
     """
@@ -288,7 +288,7 @@ def longform_followup_content(first_name, longform_url):
         "interested in helping bring this training back to life.\n\n"
         "As promised, here's a short follow-up form with a bit more information that "
         f"will help us organize our volunteer teams:\n{longform_url}\n\n"
-        "No rush at all -- fill it out whenever you get a chance.\n\n"
+        "No rush at all -- fill it out whenever you get a chance. Your answers save as you go, so you can close the page and pick up right where you left off by opening the same link again.\n\n"
         "Thanks again for your support and your giving heart.\n\nBlessings,\nKent Hafemann"
     )
     return html_content, text_content
@@ -625,7 +625,7 @@ SESSION_LETTERS = {
             "We are looking forward to {training}, {dates}{where}, and wanted to send a friendly reminder that "
             "we have not yet received your payment.",
             "{amount_sentence}",
-            "Please complete your payment before the training so your place is fully secured. If you have already "
+            "Please complete your payment before the training so your place is fully secured. Please note that our team is not able to receive payment at the check-in table when you arrive. Please make your payment before the training so that check-in is quick and your place is secured. If you have already "
             "paid, thank you, and please disregard this note.",
             "If you have any questions, or would like to talk about payment options, just reply to this email.",
         ],
@@ -666,6 +666,7 @@ SESSION_LETTERS = {
             "Your answers help us prepare for you, so please complete it before the training. It is for you alone, "
             "so please answer in your own words. If you have already done so, thank you, and please disregard this note.",
             "{link}",
+            "You can close it and pick up right where you left off by opening the same link again.",
             "If you have any questions, just reply to this email.",
         ],
         "signoff": "Warmly,",
@@ -742,7 +743,7 @@ SESSION_LETTERS = {
             "We are looking forward to {training}, {dates}{where}, and wanted to send a friendly reminder that "
             "we have not yet received your payment.",
             "{amount_sentence}",
-            "Please complete your payment before the training so your place is fully secured. If you have already "
+            "Please complete your payment before the training so your place is fully secured. Please note that our team is not able to receive payment at the check-in table when you arrive. Please make your payment before the training so that check-in is quick and your place is secured. If you have already "
             "paid, thank you, and please disregard this note.",
             "If you have any questions, or would like to talk about payment options, just reply to this email.",
         ],
@@ -782,6 +783,7 @@ SESSION_LETTERS = {
             "Your answers help us prepare for you, so please complete it before the training. It is for you alone, "
             "so please answer in your own words. If you have already done so, thank you, and please disregard this note.",
             "{link}",
+            "You can close it and pick up right where you left off by opening the same link again.",
             "If you have any questions, just reply to this email.",
         ],
         "signoff": "Warmly,",
@@ -939,6 +941,7 @@ GUIDE_LETTERS = {
             "Your updated information will keep you connected with your fellow participants and team members, "
             "and ease some Discovery! admin burden.",
             "{link}",
+            "Your answers save as you go. You can close the page and pick up right where you left off by opening the same link again.",
         ],
         "signoff": "Thanks so much, and have a great day!",
         "signer": "The Discovery! Team",
@@ -971,6 +974,7 @@ GUIDE_LETTERS = {
             "food allergies or dietary restrictions, food preferences, accessibility or room needs, and any injuries that limit everyday activities.",
             "It only takes a minute. Please use your private link, and scroll to the food and health questions:",
             "{link}",
+            "Your answers save as you go. You can close the page and pick up right where you left off by opening the same link again.",
         ],
         "signoff": "Thanks so much,",
         "signer": "The Discovery! Team",
@@ -997,6 +1001,7 @@ GUIDE_LETTERS = {
             "Thank you for reserving your spot in **{label}**! The next step is payment, which secures your place.",
             "The training fee is $1,299 per couple (one payment covers both partners). Reply to this email or call {vfirst} at "
             "{vphone} and we will walk you through the easy ways to pay.",
+            "Please note that our team is not able to receive payment at the check-in table when you arrive. Please make your payment before the training so that check-in is quick and your place is secured.",
             "Once your payment arrives, you will receive a confirmation from us.",
         ],
         "signoff": "Warmly,",
@@ -1010,6 +1015,7 @@ GUIDE_LETTERS = {
         "paras": [
             "Just a friendly reminder that your payment for **{label}** has not come in yet. Your spot is held, and we are looking "
             "forward to seeing you.",
+            "Please note that our team is not able to receive payment at the check-in table when you arrive. Please make your payment before the training so that check-in is quick and your place is secured.",
             "If you have any questions about paying, or if something is in the way, reply to this email or call {vfirst} at {vphone}. "
             "We are glad to help.",
         ],
@@ -1029,6 +1035,7 @@ GUIDE_LETTERS = {
             "2. You complete your contact information (this eliminates admin support). Here is your link:",
             "{link}",
             "Please complete the items marked in color on that form. Everything else is optional.",
+            "Your answers save as you go. You can close the page and pick up right where you left off by opening the same link again.",
             "3. When your contact form is complete, Discovery! will automatically send you a dedicated web page to your phone and computer which enables you "
             "(simply by clicking on buttons) to easily walk the sponsee through the registration process. Of course, if you need help speaking to the sponsee, "
             "let us know (again by clicking on a button) and an experienced volunteer will reach out to you.",
