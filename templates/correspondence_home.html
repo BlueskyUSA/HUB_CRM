@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Correspondence</h1>
 <p class="muted">Every letter, in one place. Nothing goes out to people until sending is switched on.</p>
+{% set q = "" %}{% include "_letter_search.html" %}
 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; max-width:980px">
   <div class="card"><h2 style="margin-top:0"><a href="{{ url_for('.correspondence_all') }}">All Letters</a></h2>
     <p>Every letter the program sends, grouped by who receives it, with its wording and history.</p></div>

@@ -1,0 +1,21 @@
+{% extends "crm_base.html" %}
+{% block title %}Search letters{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('.correspondence_all') }}">&larr; All Letters</a></p>
+<h1>Search letters</h1>
+{% include "_letter_search.html" %}
+{% if q %}
+<p class="muted">{{ results|length }} letter{{ '' if results|length == 1 else 's' }} contain &ldquo;{{ q }}&rdquo; (searched {{ checked }} letters, using their current wording).</p>
+{% for r in results %}
+<div class="card" style="margin-bottom:10px; max-width:860px">
+  <strong>{% if r.link %}<a href="{{ r.link }}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}</strong>
+  <span class="muted">&middot; {{ r.category }} &middot; {{ r.count }} match{{ '' if r.count == 1 else 'es' }}</span>
+  {% for hit in r.hits %}<div style="margin-top:6px; font-size:.92rem">{{ hit }}</div>{% endfor %}
+</div>
+{% endfor %}
+{% if not results %}<p>No letter contains that.</p>{% endif %}
+{% else %}
+<p class="muted">Type a word or amount to find every letter that contains it.</p>
+{% endif %}
+<style>mark{background:#ffe08a; padding:0 2px}</style>
+{% endblock %}

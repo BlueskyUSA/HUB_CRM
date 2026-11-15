@@ -24,7 +24,7 @@
   <p style="margin:0">{{ letter_buttons(client_letters, None, 'btn secondary', 'btn', False) }}</p>
 </div>
 {% for g in groups %}
-{% set nice = {'CAPTAIN': 'Guide Team Captain', 'D1': 'The Beginning (D1)', 'D4': 'The Art of Us \u2013 Relationship Training', 'ALL': 'Everything Else'} %}
+{% set nice = {'CAPTAIN': 'Guide Team Captain', 'D1': 'The Beginning', 'D4': 'The Art of Us', 'ALL': 'Everything Else'} %}
 {% set collapse = true %}
 <div class="card" style="margin-bottom:16px">
   {% if collapse %}<details {{ 'open' if push_pid and g.vols|selectattr('id', 'equalto', push_pid)|list else '' }}><summary style="cursor:pointer; list-style-position:inside"><h3 style="display:inline; margin:0">{{ nice.get(g.code, g.label) }} <span class="muted" style="font-weight:400">({{ g.vols|length }} of {{ g.max }})</span></h3>{% if g.code == 'ALL' %}<div class="muted" style="font-size:.85rem; margin-top:4px">Also the back-up when a program has no Guides, or someone is &ldquo;Not sure&rdquo;.</div>{% endif %}</summary><div style="margin-top:12px">
@@ -76,7 +76,7 @@
       <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
         <input class="pk-q" placeholder="Search any part of a name, email, or phone" style="min-width:280px" autocomplete="off">
         <select class="pk-mode">
-          {% if g.code in ('D1','D4') %}<option value="team|{{ g.code }}">Team who served on {{ g.code }}</option>{% endif %}
+          {% if g.code in ('D1','D4') %}<option value="team|{{ g.code }}">Team who served on {{ 'The Beginning' if g.code == 'D1' else 'The Art of Us' }}</option>{% endif %}
           <option value="team|">All team members</option>
           <option value="all|">Everyone in Contacts (type to search)</option>
         </select>

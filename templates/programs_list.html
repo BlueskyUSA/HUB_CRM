@@ -94,7 +94,7 @@
 
   {% if is_lead %}
   {% set next_num = (cohorts_by_program[p.id]|map(attribute='session_number')|list|max) + 1 if cohorts_by_program[p.id] else 1 %}
-  {% set sched_label = 'Schedule a ' ~ p.name|nice_prog(p.code) %}
+  {% set sched_label = 'Schedule ' ~ p.name|nice_prog(p.code) %}
   <form id="sched" class="sched-form" method="post" action="{{ url_for('.cohort_new', program_id=p.id) }}"
         data-btn="{{ sched_label }}" data-code="{{ p.code }}" data-num="{{ next_num }}" data-days="{{ default_days(p.code) }}"
         data-weekday="{{ usual_weekday[p.code][0] if p.code in usual_weekday else '' }}"
@@ -137,8 +137,8 @@ document.querySelectorAll('.sched-form').forEach(function (f) {
   var days = parseInt(f.dataset.days || '1', 10);
   var nextNum = parseInt(f.dataset.num || '1', 10);
   var code = f.dataset.code;
-  var baseLabel = f.dataset.btn;                       // "Schedule a D4-Relationship Training"
-  var plural = baseLabel.replace(/^Schedule a /, '');
+  var baseLabel = f.dataset.btn;                       // "Schedule The Art of Us"
+  var plural = baseLabel.replace(/^Schedule (a )?/, '');
   var storeKey = 'sched-queue-' + code;
   var queue = [];                                      // [{s: 'YYYY-MM-DD', e: 'YYYY-MM-DD' or ''}]
   var editing = null;                                  // the queue item whose last day is being changed

@@ -274,7 +274,7 @@
           <div class="field"><label>Awakening: month &amp; year</label><input name="d2_month_year" placeholder="e.g. April 2024" value="{{ contact.d2_month_year if contact and contact.d2_month_year else '' }}"></div>
           <div class="field"><label>Vision: month &amp; year</label><input name="d3_month_year" placeholder="e.g. May 2024" value="{{ contact.d3_month_year if contact and contact.d3_month_year else '' }}"></div>
           <div class="field"><label>Refocus (Discovery)</label><input name="refocus_month_year" placeholder="e.g. June 2024" value="{{ contact.refocus_month_year if contact and contact.refocus_month_year else '' }}"></div>
-          <div class="field" style="margin-bottom:0"><label>Relationship Training (Discovery)</label><input name="relationship_training_month_year" placeholder="e.g. July 2024" value="{{ contact.relationship_training_month_year if contact and contact.relationship_training_month_year else '' }}"></div>
+          <div class="field" style="margin-bottom:0"><label>The Art of Us (Discovery!)</label><input name="relationship_training_month_year" placeholder="e.g. July 2024" value="{{ contact.relationship_training_month_year if contact and contact.relationship_training_month_year else '' }}"></div>
         </div>
       </div>
       </div>
@@ -318,7 +318,7 @@
 <h2>Relationship Profile</h2>
 {% for rp in rel_profiles %}
 <div class="card">
-  <p style="margin:0 0 6px"><strong>Relationship Training #{{ rp.session_number }}</strong>
+  <p style="margin:0 0 6px"><strong>The Art of Us #{{ rp.session_number }}</strong>
     <span class="muted">&middot; {{ rp | date_span }}</span>
     &nbsp;<strong style="color:{{ "#3f5643" if rp.status == "Complete" else "#a15c00" }}">[{{ rp.status }}]</strong></p>
   {% if rp.status == 'Not started' %}

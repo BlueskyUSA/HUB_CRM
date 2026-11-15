@@ -9,7 +9,7 @@
 </style>
 {% for k, t, w in letters %}{% set on = (current in ('questionnaire','questionnaire-d1','q-rt','q-d1')) if k == 'questionnaire' else (k == current) %}{% set label = ((loop.index ~ '. ') if numbered else '') ~ t %}
 {% if k == 'questionnaire' %}<details class="qdrop"><summary class="{{ on_cls if on else off_cls }}">{{ label }} &#9662;</summary>
-  <div class="qdrop-items"><a href="{{ url_for('public_cep_letter', key='questionnaire') }}">Relationship Training</a><a href="{{ url_for('public_cep_letter', key='questionnaire-d1') }}">D1 &ndash; The Beginning</a></div></details>
+  <div class="qdrop-items"><a href="{{ url_for('public_cep_letter', key='questionnaire') }}">The Art of Us</a><a href="{{ url_for('public_cep_letter', key='questionnaire-d1') }}">The Beginning</a></div></details>
 {% else %}<a class="{{ on_cls if on else off_cls }}" href="{{ url_for('public_cep_letter', key=k) }}" style="margin:0 6px 8px 0">{{ label }}</a>{% endif %}
 {% endfor %}
 {% endmacro %}
