@@ -369,5 +369,26 @@ function markTA(url, answer){
   [['answer',answer],['back','session']].forEach(function(p){var i=document.createElement('input'); i.type='hidden'; i.name=p[0]; i.value=p[1]; f.appendChild(i);});
   document.body.appendChild(f); f.submit(); return false;
 }
+// The top "Back" button first closes whatever is open on this page (a trainee's box, then the Trainee Roster,
+// Team Roster or Materials section, most recently opened first) instead of leaving the page.
+(function(){
+  var opened = [];
+  document.querySelectorAll('details').forEach(function(d){
+    d.addEventListener('toggle', function(){
+      var i = opened.indexOf(d);
+      if (i > -1) opened.splice(i, 1);
+      if (d.open) opened.push(d);
+    });
+  });
+  window.hubBackHook = function(){
+    while (opened.length) {
+      var d = opened.pop();
+      if (d.open) { d.open = false; var top = d.closest('details.bandsec') || d; top.scrollIntoView({block:'start'}); return true; }
+    }
+    var left = document.querySelectorAll('details.bandsec[open]');
+    if (left.length) { left[left.length - 1].open = false; window.scrollTo(0, 0); return true; }
+    return false;
+  };
+})();
 </script>
 {% endblock %}
