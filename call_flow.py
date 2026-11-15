@@ -36,7 +36,7 @@ except Exception:  # pragma: no cover
 
 POOLS = [
     ("CAPTAIN", "Guide Team Captain (oversees the team)"),
-    ("D1", "D1 – The Beginning"),
+    ("D1", "The Beginning"),
     ("D4", "Relationship Training"),
     ("ALL", "Everything else (also the back-up if a program has no volunteers)"),
 ]
@@ -180,7 +180,7 @@ def _program_label(code):
     for c, label in POOLS:
         if c == code:
             return label
-    return {"D2": "D2 \u2013 Awakening", "D3": "D3 \u2013 Vision"}.get(code) or code or "Discovery!"
+    return {"D2": "Awakening", "D3": "Vision"}.get(code) or code or "Discovery!"
 
 
 def ensure_tables(get_db):
@@ -369,7 +369,7 @@ def sample_letter(key):
     """(title, when, subject, html) for the Guides to read, with placeholders in [brackets]."""
     title, when = next(((t, w) for k, t, w in CLIENT_LETTERS if k == key), (None, None))
     if key == "questionnaire-d1":
-        title, when = "Questionnaire \u2013 D1", next(w for k, t, w in CLIENT_LETTERS if k == "questionnaire")
+        title, when = "Questionnaire \u2013 The Beginning", next(w for k, t, w in CLIENT_LETTERS if k == "questionnaire")
     if not title:
         return None
     if key == "curious":
@@ -377,7 +377,7 @@ def sample_letter(key):
     elif key == "register":
         subject, html, _t = letter_reserve_link("[First name]", "[the training]", "#", "[Volunteer name]", "[volunteer phone]")
     elif key in ("questionnaire", "questionnaire-d1"):
-        subject, html, _t = letter_questionnaire("[First name]", ("D1 \u2013 The Beginning" if key == "questionnaire-d1" else "Relationship Training"), _base_url() + "/cep-letters/" + ("q-d1" if key == "questionnaire-d1" else "q-rt"), "[Volunteer name]", "[volunteer phone]")
+        subject, html, _t = letter_questionnaire("[First name]", ("The Beginning" if key == "questionnaire-d1" else "Relationship Training"), _base_url() + "/cep-letters/" + ("q-d1" if key == "questionnaire-d1" else "q-rt"), "[Volunteer name]", "[volunteer phone]")
     elif key == "venue":
         subject, html = letter_venue("[First name]", "[partner's name]", "[Volunteer name]", "[volunteer phone]", photo_url=_base_url() + "/static/hotel-exterior.png", room_url=_base_url() + "/static/hotel-room.png")
     else:
@@ -1153,7 +1153,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
     @app.route("/cep-letters/<key>")
     def public_cep_letter(key):
         if key in ("q-rt", "q-d1"):
-            fake = {"first_name": "[First name]", "program_name": ("D1 – The Beginning" if key == "q-d1" else "Relationship Training"), "session_date": None,
+            fake = {"first_name": "[First name]", "program_name": ("The Beginning" if key == "q-d1" else "Relationship Training"), "session_date": None,
                     "questionnaire_completed_at": None, "code": ("D1" if key == "q-d1" else "D4"), "first_name": "[First name]"}
             return render_template("public_questionnaire.html", enr=fake, profile=None, is_couples=True, done=False,
                                    saved=False, preview=True, letters=CLIENT_LETTERS, key=key)

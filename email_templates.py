@@ -399,17 +399,17 @@ def preliminary_plan_content(first_name):
             reserves to ensure the program survives.</li>
             <li>Begin the selection process for leadership teams. Previous leaders will have
             priority due to their experience, but the minimum expectation of all leadership is to
-            have enrolled at least one trainee in D1, or one couple in the Relationship training.
-            We need Facilitators for D2, D3, and Refocus. Initially, Max Thompson, Pamela
-            Hafemann and I will be the lead facilitators in D1 and the Relationship training. But
+            have enrolled at least one trainee in The Beginning, or one couple in the Relationship training.
+            We need Facilitators for Awakening, Vision, and Refocus. Initially, Max Thompson, Pamela
+            Hafemann and I will be the lead facilitators in The Beginning and the Relationship training. But
             it is our desire to share this role with others who are qualified in the very near
             future. The Board of Directors will make final leadership selections.</li>
             <li>Begin a marketing campaign with the goal of hosting a Relationship training within
-            the next four to six months, and to kick off D1 soon thereafter. Our goal is to have
+            the next four to six months, and to kick off The Beginning soon thereafter. Our goal is to have
             forty couples in the training room for the first Relationship training. We believe
             the need for relationship coaching is so significant that with the right marketing
             campaign, we can easily fill the seats and use the energy from that training to kick
-            off D1.</li>
+            off The Beginning.</li>
         </ol>
         <p><strong>VOLUNTEERS NEEDED AS FOLLOWS:</strong></p>
         <ol type="a">
@@ -460,8 +460,8 @@ This is a monumental vision. To give Discovery! away, as volunteers, it needs yo
 HOW WILL WE ACCOMPLISH THIS MISSION?
 a. First, we will begin hosting Discovery! social gatherings to build vision and excitement, and renew old friendships (volunteers will be needed to organize and pull these events together).
 b. Hold fund-raisers to capture the financial support needed to open the program. All donations will go to the Discovery! 501(c)(3). Our goal is to secure sufficient funding to pay for the acquisition cost of the program, plus we have been advised that to responsibly host {PROGRAM_NAME} we need to raise $100,000 in cash-flow reserves to ensure the program survives.
-c. Begin the selection process for leadership teams. Previous leaders will have priority due to their experience, but the minimum expectation of all leadership is to have enrolled at least one trainee in D1, or one couple in the Relationship training. We need Facilitators for D2, D3, and Refocus. Initially, Max Thompson, Pamela Hafemann and I will be the lead facilitators in D1 and the Relationship training. But it is our desire to share this role with others who are qualified in the very near future. The Board of Directors will make final leadership selections.
-d. Begin a marketing campaign with the goal of hosting a Relationship training within the next four to six months, and to kick off D1 soon thereafter. Our goal is to have forty couples in the training room for the first Relationship training. We believe the need for relationship coaching is so significant that with the right marketing campaign, we can easily fill the seats and use the energy from that training to kick off D1.
+c. Begin the selection process for leadership teams. Previous leaders will have priority due to their experience, but the minimum expectation of all leadership is to have enrolled at least one trainee in The Beginning, or one couple in the Relationship training. We need Facilitators for Awakening, Vision, and Refocus. Initially, Max Thompson, Pamela Hafemann and I will be the lead facilitators in The Beginning and the Relationship training. But it is our desire to share this role with others who are qualified in the very near future. The Board of Directors will make final leadership selections.
+d. Begin a marketing campaign with the goal of hosting a Relationship training within the next four to six months, and to kick off The Beginning soon thereafter. Our goal is to have forty couples in the training room for the first Relationship training. We believe the need for relationship coaching is so significant that with the right marketing campaign, we can easily fill the seats and use the energy from that training to kick off D1.
 
 VOLUNTEERS NEEDED AS FOLLOWS:
 a. We need video and photography experts willing to work for free to help us put together an effective marketing campaign. Videography will include testimonials of enthusiastic trainees whose lives have been changed by the training. Relationship training videos and photography will be needed first.
@@ -491,10 +491,10 @@ CONTRACT_REQUEST_SUBJECT = "Congratulations on completing your training!"
 
 _LETTER_PARAS = (
     "Congratulations on completing your training... Woohoo!!! Let's keep going!!! "
-    "From D1 through D3, what you learned in each training is the foundation for the next. "
+    "From The Beginning through Vision, what you learned in each training is the foundation for the next. "
     "All these programs are fabulous and we look forward to seeing you there. "
     "Meanwhile, would you please help the Discovery! staff by taking a few minutes to update your "
-    "D1 Pseudo name, Contract and as needed, other information from these programs. "
+    "pseudo name, Contract and as needed, other information from these programs. "
     "Our volunteers would otherwise have to type all of this into our records by hand, which "
     "takes many hours. We would be so grateful."
 )
