@@ -19,7 +19,7 @@
             {% if p.code in ['D1','D2','D3','D5'] %}
             <label style="display:flex; align-items:center; gap:12px; flex-basis:100%; width:100%; box-sizing:border-box; margin:0 0 10px; padding:12px 16px; background:#fff4d6; border:2px solid #e8a13c; border-radius:10px; font-size:1.05rem; font-weight:700; color:#5a3b00; cursor:pointer">
               <input type="checkbox" name="move_together" value="1" checked style="width:26px; height:26px; flex:none; accent-color:#c0392b">
-              <span>Schedule D1, D2, D3, and D5-Renew for this same weekend.</span>
+              <span>Schedule The Beginning, Awakening, Vision and Renew for this same weekend.</span>
             </label>
             {% endif %}
             <input type="date" name="session_date" value="{{ c.session_date }}" data-was="{{ c.session_date }}" required
@@ -102,8 +102,8 @@
         style="background:#f1f6ef; border:1px solid #b9cfb4; border-radius:8px; padding:12px 14px; margin-top:14px;">
     {% set together = all_programs|selectattr('code', 'in', ['D1','D2','D3','D5'])|rejectattr('id', 'equalto', p.id)|list if p.code in ['D1','D2','D3','D5'] else [] %}
     <div style="font-weight:700; margin-bottom:6px">Schedule {{ pname }} sessions</div>
-    <div style="font-size:0.95rem; margin-bottom:8px">Click the <strong>first day</strong> of each {{ p.code }} on the calendar below and <strong>Save</strong>.
-      {% if together %}<span class="muted">({% for q in together %}{{ 'Refocus' if q.code == 'D5' else q.code }}{{ ', ' if not loop.last and loop.revindex > 2 else (' and ' if loop.revindex == 2 else '') }}{% endfor %} {{ 'is' if together|length == 1 else 'are' }} scheduled with {{ p.code }}.)</span>{% endif %}
+    <div style="font-size:0.95rem; margin-bottom:8px">Click the <strong>first day</strong> of each {{ {'D1': 'The Beginning', 'D2': 'Awakening', 'D3': 'Vision', 'D5': 'Refocus'}.get(p.code, p.name) }} on the calendar below and <strong>Save</strong>.
+      {% if together %}<span class="muted">({% for q in together %}{{ {'D1': 'The Beginning', 'D2': 'Awakening', 'D3': 'Vision', 'D5': 'Refocus'}.get(q.code, q.code) }}{{ ', ' if not loop.last and loop.revindex > 2 else (' and ' if loop.revindex == 2 else '') }}{% endfor %} {{ 'is' if together|length == 1 else 'are' }} scheduled with {{ {'D1': 'The Beginning', 'D2': 'Awakening', 'D3': 'Vision', 'D5': 'Refocus'}.get(p.code, p.name) }}.)</span>{% endif %}
     </div>
     {% for q in together %}<input type="hidden" name="also" value="{{ q.id }}">{% endfor %}
     <input type="hidden" name="session_date"><input type="hidden" name="end_date">

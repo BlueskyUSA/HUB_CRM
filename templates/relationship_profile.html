@@ -1,8 +1,8 @@
 {% extends "crm_base.html" %}
-{% block title %}{{ 'D1 Profile' if enrollment.code == 'D1' else 'Relationship Profile' }} — {{ enrollment.full_name }} — {{ program_name }}{% endblock %}
+{% block title %}{{ 'The Beginning Profile' if enrollment.code == 'D1' else 'Relationship Profile' }} — {{ enrollment.full_name }} — {{ program_name }}{% endblock %}
 {% block content %}
-<h1>{{ 'D1 profile' if enrollment.code == 'D1' else 'Relationship profile' }}</h1>
-<p class="muted">{{ enrollment.full_name }} &middot; {{ enrollment.code }} #{{ enrollment.session_number }} &middot; {{ enrollment.session_date|fdate }}</p>
+<h1>{{ 'The Beginning profile' if enrollment.code == 'D1' else 'Relationship profile' }}</h1>
+<p class="muted">{{ enrollment.full_name }} &middot; {{ program_name }} #{{ enrollment.session_number }} &middot; {{ enrollment.session_date|fdate }}</p>
 
 <div class="card">
   <form method="post">
@@ -13,7 +13,7 @@
         <option {{ 'selected' if profile and profile.first_time_attending == 'No' else '' }}>No</option>
       </select>
     </div>
-    <div class="field"><label>{{ 'What do you want to get out of Discovery D1?' if enrollment.code == 'D1' else 'What do you want to get out of the Relationship Training?' }}</label>
+    <div class="field"><label>{{ 'What do you want to get out of The Beginning?' if enrollment.code == 'D1' else 'What do you want to get out of the Relationship Training?' }}</label>
       <textarea name="training_goals" rows="2" style="width:100%">{{ profile.training_goals if profile else '' }}</textarea></div>
     {% if is_couples %}
     <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'How long have you been in your relationship?' }}</label>
