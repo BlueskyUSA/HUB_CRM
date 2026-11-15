@@ -233,8 +233,8 @@ def catalog():
     cats = [
         ("interested", "Interested people (before they register)",
          "What someone receives after they ask a question, ask to be called, or fill in a form on the website.", [
-            V("welcome", "Welcome", "Automatically, when someone fills in the Discovery! form as an interested party.", "Interested parties"),
-            V("longform_followup", "Profile follow-up", "Automatically, when someone fills in the Discovery! form and checks Volunteer.", "Past volunteers"),
+            V("welcome", "Welcome", "Automatically, when someone fills in the I'm Interested form as an interested party.", "Interested parties"),
+            V("longform_followup", "Profile follow-up", "Automatically, when someone fills in the I'm Interested form and checks Volunteer.", "Past volunteers"),
             V("longform_thankyou", "Profile thank-you", "Automatically, when someone finishes their profile.", "People who completed the profile"),
             V("connect", "Connect-request confirmation", "Automatically, when someone asks us to reach out from their private link.", "People who asked to connect"),
             V("excitement", "Excitement email", "By hand, from a contact's record.", "Contacts"),

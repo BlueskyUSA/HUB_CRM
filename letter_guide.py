@@ -3,7 +3,7 @@ Keyed by the letter's key (or slug), or by its name for entries that have neithe
 
 PURPOSE = {
     # Interested people
-    "welcome": "A warm first thank-you from Kent, with a short story of why he and Pamela value the training, and an offer of a call. For people who chose \"Interested Party\" on the Discovery! form.",
+    "welcome": "A warm first thank-you from Kent, with a short story of why he and Pamela value the training, and an offer of a call. For people who chose \"Interested Party\" on the I'm Interested form.",
     "longform_followup": "Invites a past volunteer to fill in their profile so we can place them on the volunteer teams.",
     "longform_thankyou": "Thanks the person for finishing their profile, and offers the preliminary business plan.",
     "connect": "Confirms we received their message and that someone will reach out.",
@@ -67,7 +67,7 @@ PURPOSE = {
 }
 
 JOURNEY = [
-    ("Someone shows interest", "They fill in the \"I'm curious\" form (front page, program pages, Reserve page) or the Discovery! form. Guides get a call request. The person gets a reply, or the Welcome letter."),
+    ("Someone shows interest", "They fill in the \"I'm curious\" form (front page, program pages, Reserve page) or the I'm Interested form. Guides get a call request. The person gets a reply, or the Welcome letter."),
     ("A Guide talks with them", "The Guide sends the registration link, then, after they reserve, the questionnaire, profile and payment links."),
     ("They register", "They receive their registration confirmation. The Guide is told they registered."),
     ("They pay", "The thank-you letter goes out when payment is recorded. If payment is late, the Guide is nudged every 7 days and decides whether to send a reminder."),
