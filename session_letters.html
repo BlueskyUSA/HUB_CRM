@@ -1,0 +1,131 @@
+{% extends "crm_base.html" %}
+{% block title %}Letters — {{ cohort.code }} #{{ cohort.session_number }}{% endblock %}
+{% block content %}
+{% set full_title = cohort.name|nice_prog(cohort.code) %}
+{% if only == 'trainees' %}<p><a href="{{ url_for('.correspondence_trainees') }}">&larr; Trainee Correspondence</a></p>
+{% elif only == 'team' %}<p><a href="{{ url_for('.correspondence_team') }}">&larr; Team Correspondence</a></p>
+{% else %}<p><a href="{{ url_for('.cohort_detail', cohort_id=cohort.id) }}">&larr; Back to the session</a></p>{% endif %}
+<h1>{{ 'Trainee letters' if only == 'trainees' else ('Team letters' if only == 'team' else 'Letters') }} &mdash; {{ full_title }} (Session # {{ cohort.session_number }})</h1>
+<p class="muted">{{ cohort|date_span }}{% if cohort.location %} &middot; {{ cohort.location }}{% endif %}</p>
+{% if not live %}
+<div class="card" style="border-left:4px solid #b3261e; max-width:760px">
+  <strong style="color:#b3261e">Sending to people is switched off.</strong>
+  You can open any letter with <em>Preview</em> and send a test copy to yourself. Nothing goes to trainees or the team yet.
+</div>
+{% endif %}
+
+{% if only != 'team' %}
+<details {{ 'open' if only }} style="margin:14px 0; background:#f6f4ec; border:1px solid var(--border); border-radius:8px; padding:8px 14px">
+  <summary style="cursor:pointer; font-size:1.15rem; font-weight:700; color:#1f5fbf">Letters to Trainees</summary>
+  {% for key in order if key in trainee_keys %}
+{% set spec = letters[key] %}
+{% set people = recipients[key] %}
+<details style="margin:8px 0; border:1px solid var(--border); border-radius:8px; padding:6px 12px; background:#fffdf7">
+<summary style="cursor:pointer; font-weight:700; font-size:1.05rem; color:#1f5fbf">{{ spec.title }} <span class="muted" style="font-size:0.9rem; font-weight:400">({{ people|length }} {{ spec.audience|lower }})</span></summary>
+<h2 style="margin-top:12px">{{ spec.title }}
+  <a class="btn secondary" style="margin-left:12px; font-size:0.9rem" href="{{ url_for('.session_letter_view', cohort_id=cohort.id, key=key) }}">View Letter</a>
+  <a class="btn secondary" style="margin-left:8px; font-size:0.9rem" href="{{ url_for('.correspondence_letter_edit', key=vkey.get(key, key)) if session.is_owner else '#' }}"{% if not session.is_owner %} onclick="alert('Only the Owner can edit correspondence. You can read every letter here, and use Suggest a change to ask for an edit.'); return false;"{% endif %}>Edit wording{% if vkey.get(key, key) in edited %} (edited){% endif %}</a></h2>
+{% if previews.get(key) %}
+<div class="card" style="background:#fffdf7; margin-bottom:10px">
+  <p class="muted" style="margin:0 0 6px"><strong>The letter as it will be sent</strong> (with [First name] standing in for the person){% if vkey.get(key, key) in edited %} &middot; edited wording{% endif %}</p>
+  <p style="margin:0 0 8px"><strong>Subject:</strong> {{ previews[key][0] }}</p>
+  <div style="border-top:1px solid var(--border); padding-top:8px">{{ previews[key][1]|safe }}</div>
+</div>
+{% endif %}
+<div class="card">
+  {% if people %}
+  <form method="post" action="{{ url_for('.session_letter_send', cohort_id=cohort.id, key=key) }}"
+        onsubmit="return confirm('Send the {{ spec.title }} to every checked person now?');">
+    <table>
+      <tr><th style="width:30px"></th><th>Name</th><th>Email</th><th>Sent</th><th></th></tr>
+      {% for p in people %}
+      {% set when = sent.get((p.contact_id, key)) %}
+      <tr>
+        <td>{% if p.email and not when %}<input type="checkbox" name="contact_id" value="{{ p.contact_id }}" {{ 'disabled' if not live }}>{% endif %}</td>
+        <td>{{ p.name }}{% if p.partner_name %} <span class="muted">(with {{ p.partner_name }})</span>{% endif %}</td>
+        <td>{% if p.email %}{{ p.email }}{% else %}<span class="badge warn">no email</span>{% endif %}</td>
+        <td>{% if when %}<a href="{{ url_for('.session_letter_sent_copy', cohort_id=cohort.id, key=key, contact_id=p.contact_id) }}" title="See the letter as it was sent"><span class="badge good">&#10003; {{ when[:10]|fdate }}</span></a>{% else %}<span class="muted">not sent</span>{% endif %}</td>
+        <td><a href="{{ url_for('.session_letter_preview', cohort_id=cohort.id, key=key, contact_id=p.contact_id) }}">Preview</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    <div style="margin-top:10px">
+      <button class="btn secondary" type="button" {{ 'disabled' if not live }}
+        onclick="var f=this.form,b=f.querySelectorAll('input[name=contact_id]:not(:disabled)'),all=Array.prototype.every.call(b,function(x){return x.checked});b.forEach(function(x){x.checked=!all});this.textContent=all?'Check All':'Uncheck All';">Check All</button>
+      <button class="btn" type="submit" {{ 'disabled' if not live }}>Send to checked people</button>
+      {% if not live %}<span class="muted" style="margin-left:8px">(switched off)</span>{% endif %}
+    </div>
+  </form>
+  {% else %}
+  <p class="muted">No {{ spec.audience|lower }} on this session yet.</p>
+  {% endif %}
+</div>
+</details>
+  {% endfor %}
+</details>
+{% endif %}
+{% if only != 'trainees' %}
+<details {{ 'open' if only }} style="margin:14px 0; background:#f6f4ec; border:1px solid var(--border); border-radius:8px; padding:8px 14px">
+  <summary style="cursor:pointer; font-size:1.15rem; font-weight:700; color:#1f5fbf">Letters to Team</summary>
+  {% for key in order if key == 'facilitator_confirm' or key == 'ta_invitation' or key == 'ta_confirm' or key == 'backup_confirm' %}
+{% set spec = letters[key] %}
+{% set people = recipients[key] %}
+<details style="margin:8px 0; border:1px solid var(--border); border-radius:8px; padding:6px 12px; background:#fffdf7">
+<summary style="cursor:pointer; font-weight:700; font-size:1.05rem; color:#1f5fbf">{{ spec.title }} <span class="muted" style="font-size:0.9rem; font-weight:400">({{ people|length }} {{ spec.audience|lower }})</span></summary>
+<h2 style="margin-top:12px">{{ spec.title }}
+  <a class="btn secondary" style="margin-left:12px; font-size:0.9rem" href="{{ url_for('.session_letter_view', cohort_id=cohort.id, key=key) }}">View Letter</a>
+  <a class="btn secondary" style="margin-left:8px; font-size:0.9rem" href="{{ url_for('.correspondence_letter_edit', key=vkey.get(key, key)) if session.is_owner else '#' }}"{% if not session.is_owner %} onclick="alert('Only the Owner can edit correspondence. You can read every letter here, and use Suggest a change to ask for an edit.'); return false;"{% endif %}>Edit wording{% if vkey.get(key, key) in edited %} (edited){% endif %}</a></h2>
+{% if previews.get(key) %}
+<div class="card" style="background:#fffdf7; margin-bottom:10px">
+  <p class="muted" style="margin:0 0 6px"><strong>The letter as it will be sent</strong> (with [First name] standing in for the person){% if vkey.get(key, key) in edited %} &middot; edited wording{% endif %}</p>
+  <p style="margin:0 0 8px"><strong>Subject:</strong> {{ previews[key][0] }}</p>
+  <div style="border-top:1px solid var(--border); padding-top:8px">{{ previews[key][1]|safe }}</div>
+</div>
+{% endif %}
+<div class="card">
+  {% if people %}
+  <form method="post" action="{{ url_for('.session_letter_send', cohort_id=cohort.id, key=key) }}"
+        onsubmit="return confirm('Send the {{ spec.title }} to every checked person now?');">
+    <table>
+      <tr><th style="width:30px"></th><th>Name</th><th>Email</th><th>{{ 'Invitation sent' if key == 'ta_invitation' else 'Sent' }}</th>{% if key in ('ta_invitation', 'ta_confirm') %}<th>Attendance confirmed</th>{% endif %}<th></th></tr>
+      {% for p in people %}
+      {% set when = sent.get((p.contact_id, key)) %}
+      <tr>
+        <td>{% if p.email and not when %}<input type="checkbox" name="contact_id" value="{{ p.contact_id }}" {{ 'disabled' if not live }}>{% endif %}</td>
+        <td>{{ p.name }}{% if p.partner_name %} <span class="muted">(with {{ p.partner_name }})</span>{% endif %}</td>
+        <td>{% if p.email %}{{ p.email }}{% else %}<span class="badge warn">no email</span>{% endif %}</td>
+        <td>{% if when %}<a href="{{ url_for('.session_letter_sent_copy', cohort_id=cohort.id, key=key, contact_id=p.contact_id) }}" title="See the letter as it was sent"><span class="badge good">&#10003; {{ when[:10]|fdate }}</span></a>{% else %}<span class="muted">not sent</span>{% endif %}</td>
+        {% if key in ('ta_invitation', 'ta_confirm') %}{% set ans = ta_resp.get(p.contact_id) %}<td>
+          {% if ans and ans.response == 'Yes' %}<span class="badge good">&#10003; Confirmed</span>{% elif ans and ans.response == 'No' %}<span class="badge warn">&#10007; Can't make it</span>{% else %}<span class="muted">not yet</span>{% endif %}
+          {% if ans and ans.response_note %}<div class="muted" style="font-size:.8rem">{{ ans.response_note }}</div>{% endif %}
+          {% if key == 'ta_invitation' %}<div style="font-size:.8rem; margin-top:3px">
+            <a href="#" onclick="return markTA({{ url_for('.ta_invite_mark', cohort_id=cohort.id, contact_id=p.contact_id)|tojson }}, 'Yes');">Mark confirmed</a> &middot;
+            <a href="#" onclick="return markTA({{ url_for('.ta_invite_mark', cohort_id=cohort.id, contact_id=p.contact_id)|tojson }}, 'No');">Mark can't make it</a></div>{% endif %}</td>{% endif %}
+        <td><a href="{{ url_for('.session_letter_preview', cohort_id=cohort.id, key=key, contact_id=p.contact_id) }}">Preview</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    <div style="margin-top:10px">
+      <button class="btn secondary" type="button" {{ 'disabled' if not live }}
+        onclick="var f=this.form,b=f.querySelectorAll('input[name=contact_id]:not(:disabled)'),all=Array.prototype.every.call(b,function(x){return x.checked});b.forEach(function(x){x.checked=!all});this.textContent=all?'Check All':'Uncheck All';">Check All</button>
+      <button class="btn" type="submit" {{ 'disabled' if not live }}>Send to checked people</button>
+      {% if not live %}<span class="muted" style="margin-left:8px">(switched off)</span>{% endif %}
+    </div>
+  </form>
+  {% else %}
+  <p class="muted">No {{ spec.audience|lower }} on this session yet.</p>
+  {% endif %}
+</div>
+</details>
+  {% endfor %}
+</details>
+<p class="muted">The Support Team does not receive these letters. Write to them from <a href="{{ url_for('.correspondence_note', group='support') }}">Team Correspondence</a>.</p>
+{% endif %}
+<script>
+function markTA(url, answer){
+  var f=document.createElement('form'); f.method='post'; f.action=url;
+  var i=document.createElement('input'); i.type='hidden'; i.name='answer'; i.value=answer; f.appendChild(i);
+  document.body.appendChild(f); f.submit(); return false;
+}
+</script>
+{% endblock %}

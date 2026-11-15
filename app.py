@@ -1937,6 +1937,17 @@ def day_list(start, last=None):
     return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " & " + parts[-1] if len(parts) > 2 else " & ".join(parts)
 
 
+@app.template_filter("nice_prog")
+def nice_prog(name, code=None):
+    """A program's name without its code in front: 'D1' -> 'The Beginning, Awakening & Vision', 'D4-Relationship Training' -> 'Relationship Training'."""
+    n = (name or "").strip()
+    c = (code or "").strip()
+    if c and n.upper().startswith(c.upper()):
+        rest = n[len(c):].lstrip(" -\u2013\u2014:")
+        n = rest or PROGRAM_LABELS.get(c, n)
+    return n
+
+
 @app.template_filter("prog_label")
 def prog_label(code):
     """Calendar labels: show the program's name instead of its code (D4 -> The Art of Us)."""

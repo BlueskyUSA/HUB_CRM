@@ -1,0 +1,252 @@
+{% extends "crm_base.html" %}
+{% block title %}Programs — {{ program_name }} ERP{% endblock %}
+{% block content %}
+{% macro session_rows(p, sessions, is_lead, has_contacts_access) %}
+    {% for c in sessions %}
+    <tr>
+      <td style="color:#1f5fbf; font-weight:600">{{ p.code }} #{{ c.session_number }}</td>
+      <td style="color:#1f5fbf; font-weight:600">{{ c|date_span }}</td>
+      <td style="color:#1f5fbf; font-weight:600">{{ c.location or '' }}</td>
+      <td style="color:#1f5fbf; font-weight:600">{{ c.status }}</td>
+      <td>
+        {% if is_lead or has_contacts_access %}<a href="{{ url_for('.cohort_detail', cohort_id=c.id) }}" style="display:inline-block; vertical-align:top; font-size:1.15rem; font-weight:700; color:#1f5fbf; text-decoration:none; border:2px solid #1f5fbf; border-radius:8px; padding:6px 14px; line-height:1.2">Open Session &rarr;</a>{% endif %}
+        {% if is_lead %}
+        <details style="display:inline-block; margin-left:12px; vertical-align:top;">
+          <summary style="cursor:pointer; font-size:0.85rem; color:#c0392b; font-weight:600; line-height:1.3;">Change<br>or Delete<br>Session</summary>
+          <p class="muted" style="margin:6px 0; max-width:360px; font-size:0.82rem;">Affects only {{ p.code }} #{{ c.session_number }}. The {{ p.code }} program and its other sessions are not touched.</p>
+          <form class="inline" method="post" action="{{ url_for('.cohort_update_dates', cohort_id=c.id) }}" style="margin:0 0 6px">
+            <input type="hidden" name="back" value="programs">
+            {% if p.code in ['D1','D2','D3','D5'] %}
+            <label style="display:flex; align-items:center; gap:12px; flex-basis:100%; width:100%; box-sizing:border-box; margin:0 0 10px; padding:12px 16px; background:#fff4d6; border:2px solid #e8a13c; border-radius:10px; font-size:1.05rem; font-weight:700; color:#5a3b00; cursor:pointer">
+              <input type="checkbox" name="move_together" value="1" checked style="width:26px; height:26px; flex:none; accent-color:#c0392b">
+              <span>Schedule The Beginning, Awakening, Vision and Renew for this same weekend.</span>
+            </label>
+            {% endif %}
+            <input type="date" name="session_date" value="{{ c.session_date }}" data-was="{{ c.session_date }}" required
+                   onchange="var e=this.form.end_date; if(e.value && this.dataset.was){var d=(new Date(e.value)-new Date(this.dataset.was))/86400000; var n=new Date(this.value); n.setDate(n.getDate()+d); e.value=n.toISOString().slice(0,10);} this.dataset.was=this.value;">
+            <span class="muted">through</span>
+            <input type="date" name="end_date" value="{{ c.end_date or '' }}">
+            <input type="text" name="location" value="{{ c.location or '' }}" placeholder="Location" style="width:170px">
+            <select name="status">
+              {% for st in ['Scheduled', 'Completed', 'Cancelled'] %}<option {{ 'selected' if c.status == st }}>{{ st }}</option>{% endfor %}
+            </select>
+            <button class="btn secondary" type="submit">Save session</button>
+          </form>
+          <form method="post" action="{{ url_for('.cohort_delete', cohort_id=c.id) }}" style="margin:0"
+                onsubmit='return confirm({{ ("Delete the session " ~ p.code ~ " #" ~ c.session_number ~ " (" ~ (c.session_date|fdate) ~ ")? Only this one session is removed, not the " ~ p.code ~ " program. A session with enrolled people or staff can\'t be deleted -- set it to Cancelled instead.")|tojson }});'>
+            <input type="hidden" name="back" value="programs">
+            <button class="btn danger" type="submit">Delete {{ p.code }} #{{ c.session_number }}</button>
+          </form>
+        </details>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+{% endmacro %}
+<p><a href="{{ url_for('.programs_list') }}">&larr; All programs</a></p>
+<h1>{{ programs[0].name }}</h1>
+
+{% set is_lead = session.is_owner or session.staff_role == 'Leadership' %}
+{% for p in programs %}
+<div class="card" id="program-{{ p.id }}">
+  {% set pname = p.name|nice_prog(p.code) %}
+  {% if p.description %}<p class="muted">{{ p.description }}</p>{% endif %}
+
+  {% if is_lead %}
+  <details style="background:#f6f4ec; border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin-bottom:14px;">
+    <summary style="cursor:pointer; font-size:0.88rem; font-weight:700;">Change or Delete the {{ pname }}</summary>
+    <p class="muted" style="margin:8px 0">This is the training as a whole (its code, name, description and prerequisite). A change here applies to <strong>every</strong> {{ p.code }} session, past and future. To change one scheduled session, use the session list below instead.</p>
+    <form class="inline" method="post" action="{{ url_for('.program_edit', program_id=p.id) }}">
+      <input name="code" value="{{ p.code }}" style="width:90px" required>
+      <input name="name" value="{{ p.name }}" style="width:260px" required>
+      <input name="description" value="{{ p.description or '' }}" style="width:280px" placeholder="Description">
+      <select name="prerequisite_program_id">
+        <option value="">No prerequisite</option>
+        {% for other in all_programs if other.id != p.id %}
+        <option value="{{ other.id }}" {{ 'selected' if p.prerequisite_program_id == other.id else '' }}>Requires {{ other.code }} first</option>
+        {% endfor %}
+      </select>
+      <button class="btn secondary" type="submit">Save program changes</button>
+    </form>
+    <form method="post" action="{{ url_for('.program_delete', program_id=p.id) }}" style="margin-top:10px"
+          onsubmit='return confirm({{ ("Delete the entire " ~ p.code ~ " program (" ~ p.name ~ ")? This is the program itself, not one session, and it can\'t be undone. A program that still has scheduled sessions can\'t be deleted.")|tojson }});'>
+      <button class="btn danger" type="submit">Delete the {{ p.code }} program</button>
+      <span class="muted" style="font-size:0.82rem">Only possible once it has no scheduled sessions.</span>
+    </form>
+  </details>
+  {% endif %}
+
+  <h4 style="margin:6px 0">Upcoming {{ pname }} sessions</h4>
+  <table>
+    <tr><th>Session</th><th>Date</th><th>Location</th><th>Status</th><th></th></tr>
+    {{ session_rows(p, upcoming_by_program[p.id], is_lead, has_contacts_access) }}
+    {% if not upcoming_by_program[p.id] %}<tr><td colspan="4" class="muted">No upcoming sessions scheduled.</td></tr>{% endif %}
+  </table>
+  {% if past_by_program[p.id] %}
+  <details style="margin-top:10px">
+    <summary style="cursor:pointer; font-weight:700; font-size:0.9rem">Past {{ pname }} sessions ({{ past_by_program[p.id]|length }})</summary>
+    <table>
+      <tr><th>Session</th><th>Date</th><th>Location</th><th>Status</th><th></th></tr>
+      {{ session_rows(p, past_by_program[p.id], is_lead, has_contacts_access) }}
+    </table>
+  </details>
+  {% endif %}
+
+  {% if is_lead %}
+  {% set next_num = (cohorts_by_program[p.id]|map(attribute='session_number')|list|max) + 1 if cohorts_by_program[p.id] else 1 %}
+  {% set sched_label = 'Schedule a ' ~ p.name|nice_prog(p.code) %}
+  <form id="sched" class="sched-form" method="post" action="{{ url_for('.cohort_new', program_id=p.id) }}"
+        data-btn="{{ sched_label }}" data-code="{{ p.code }}" data-num="{{ next_num }}" data-days="{{ default_days(p.code) }}"
+        data-weekday="{{ usual_weekday[p.code][0] if p.code in usual_weekday else '' }}"
+        data-weekday-name="{{ usual_weekday[p.code][1] if p.code in usual_weekday else '' }}"
+        style="background:#f1f6ef; border:1px solid #b9cfb4; border-radius:8px; padding:12px 14px; margin-top:14px;">
+    {% set together = all_programs|selectattr('code', 'in', ['D1','D2','D3','D5'])|rejectattr('id', 'equalto', p.id)|list if p.code in ['D1','D2','D3','D5'] else [] %}
+    <div style="font-weight:700; margin-bottom:6px">Schedule {{ pname }} sessions</div>
+    <div style="font-size:0.95rem; margin-bottom:8px">Click the <strong>first day</strong> of each {{ {'D1': 'The Beginning', 'D2': 'Awakening', 'D3': 'Vision', 'D5': 'Refocus'}.get(p.code, p.name) }} on the calendar below and <strong>Save</strong>.
+      {% if together %}<span class="muted">({% for q in together %}{{ {'D1': 'The Beginning', 'D2': 'Awakening', 'D3': 'Vision', 'D5': 'Refocus'}.get(q.code, q.code) }}{{ ', ' if not loop.last and loop.revindex > 2 else (' and ' if loop.revindex == 2 else '') }}{% endfor %} {{ 'is' if together|length == 1 else 'are' }} scheduled with {{ {'D1': 'The Beginning', 'D2': 'Awakening', 'D3': 'Vision', 'D5': 'Refocus'}.get(p.code, p.name) }}.)</span>{% endif %}
+    </div>
+    {% for q in together %}<input type="hidden" name="also" value="{{ q.id }}">{% endfor %}
+    <input type="hidden" name="session_date"><input type="hidden" name="end_date">
+    <div class="batch-list" style="margin:8px 0"></div>
+    <input type="hidden" name="cal_year" value="{{ pick_cal.year }}">
+    <div class="batch-fields"></div>
+    <div class="sched-preview" style="margin-top:8px; font-size:0.9rem"></div>
+    {% set picker = true %}
+    {% set cal = pick_cal %}{% set prev_url = pick_prev %}{% set next_url = pick_next %}{% set today_url = pick_today %}
+    <details class="cal-pick" style="margin-top:12px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:8px 12px">
+      <summary style="cursor:pointer; font-weight:700; font-size:0.9rem">Show the full calendar (holidays are marked)</summary>
+      <div style="margin-top:8px">{% include "_calendar_widget.html" %}</div>
+    </details>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+
+
+{% if is_lead %}
+<script>
+// Guide the scheduling steps: fill "last day" from the usual length, show a plain-English preview,
+// and keep the button off until a first day is picked.
+var HOLIDAYS = {{ holiday_map|tojson }};
+var MONTHS = ['Jan.','Feb.','Mar.','Apr.','May','June','July','Aug.','Sept.','Oct.','Nov.','Dec.'];
+function pretty(v) { var p = v.split('-').map(Number); return MONTHS[p[1] - 1] + ' ' + p[2] + ', ' + p[0]; }
+document.querySelectorAll('.sched-form').forEach(function (f) {
+  var prev = f.querySelector('.sched-preview');
+  var listBox = f.querySelector('.batch-list');
+  var fieldsBox = f.querySelector('.batch-fields');
+  var days = parseInt(f.dataset.days || '1', 10);
+  var nextNum = parseInt(f.dataset.num || '1', 10);
+  var code = f.dataset.code;
+  var baseLabel = f.dataset.btn;                       // "Schedule a D4-Relationship Training"
+  var plural = baseLabel.replace(/^Schedule a /, '');
+  var storeKey = 'sched-queue-' + code;
+  var queue = [];                                      // [{s: 'YYYY-MM-DD', e: 'YYYY-MM-DD' or ''}]
+  var editing = null;                                  // the queue item whose last day is being changed
+  try { queue = JSON.parse(sessionStorage.getItem(storeKey) || '[]'); } catch (x) { queue = []; }
+  if (!Array.isArray(queue)) { queue = []; }
+  function save() { try { sessionStorage.setItem(storeKey, JSON.stringify(queue)); } catch (x) {} }
+  function iso(dt) { return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
+  function holidayText(s, e) {
+    var p = s.split('-').map(Number), q = (e || s).split('-').map(Number), hits = [];
+    var stop = new Date(q[0], q[1] - 1, q[2]);
+    for (var c = new Date(p[0], p[1] - 1, p[2]); c <= stop && hits.length < 6; c.setDate(c.getDate() + 1)) {
+      var k = iso(c);
+      if (HOLIDAYS[k]) { hits.push(HOLIDAYS[k] + ' (' + MONTHS[c.getMonth()] + ' ' + c.getDate() + ')'); }
+    }
+    return hits.length ? 'Holiday on these dates: ' + hits.join(', ') + '.' : '';
+  }
+  function rangeText(s, e) { return pretty(s) + (e && e !== s ? ' to ' + pretty(e) : ''); }
+  function sorted() { return queue.slice().sort(function (a, b) { return a.s < b.s ? -1 : (a.s > b.s ? 1 : 0); }); }
+  function span(it) { return it.e || it.s; }
+
+  function renderQueue() {
+    listBox.innerHTML = ''; fieldsBox.innerHTML = '';
+    var q = sorted();
+    if (q.length) {
+      var h = document.createElement('div');
+      h.style.display = 'flex'; h.style.alignItems = 'center'; h.style.gap = '16px'; h.style.margin = '6px 0 8px';
+      var t = document.createElement('span');
+      t.style.fontWeight = '700'; t.style.fontSize = '1.3rem';
+      t.textContent = 'On the list, not saved yet (' + q.length + '):';
+      h.appendChild(t);
+      var sv = document.createElement('button');
+      sv.type = 'submit'; sv.textContent = 'Save';
+      sv.style.cssText = 'background:#c0392b; color:#fff; border:0; border-radius:8px; padding:8px 28px; font-size:1.1rem; font-weight:700; cursor:pointer';
+      h.appendChild(sv);
+      listBox.appendChild(h);
+    }
+    q.forEach(function (item, i) {
+      var row = document.createElement('div');
+      row.style.margin = '4px 0';
+      var strong = document.createElement('strong');
+      strong.textContent = code + ' #' + (nextNum + i) + '  ' + rangeText(item.s, item.e);
+      row.appendChild(strong);
+      var p = item.s.split('-').map(Number);
+      var dt = new Date(p[0], p[1] - 1, p[2]);
+      if (f.dataset.weekday !== '' && dt.getDay() !== (parseInt(f.dataset.weekday, 10) + 1) % 7) {
+        var w = document.createElement('span'); w.className = 'muted'; w.textContent = '  (not a ' + f.dataset.weekdayName + ')'; row.appendChild(w);
+      }
+      var hol = holidayText(item.s, item.e);
+      if (hol) { var r = document.createElement('span'); r.style.color = '#b3261e'; r.style.fontWeight = '700'; r.textContent = '  ' + hol; row.appendChild(r); }
+      var ch = document.createElement('button');
+      ch.type = 'button'; ch.className = 'btn secondary'; ch.style.marginLeft = '10px'; ch.style.padding = '1px 8px';
+      ch.textContent = editing === item ? 'Now click the new last day…' : 'Change last day';
+      if (editing === item) { ch.style.outline = '3px solid #2f6fb5'; }
+      ch.addEventListener('click', function () { editing = editing === item ? null : item; renderQueue(); refresh(); });
+      row.appendChild(ch);
+      var rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'btn secondary'; rm.style.marginLeft = '6px'; rm.style.padding = '1px 8px'; rm.textContent = 'Remove';
+      rm.addEventListener('click', function () { queue = queue.filter(function (x) { return x !== item; }); if (editing === item) { editing = null; } save(); renderQueue(); refresh(); });
+      row.appendChild(rm);
+      listBox.appendChild(row);
+      ['batch_start', 'batch_end'].forEach(function (nm, k) {
+        var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = nm; inp.value = k === 0 ? item.s : (item.e || '');
+        fieldsBox.appendChild(inp);
+      });
+    });
+  }
+
+  function paint() {
+    f.querySelectorAll('[data-date]').forEach(function (el) {
+      var dt = el.dataset.date;
+      el.classList.toggle('picked', queue.some(function (x) { return dt >= x.s && dt <= span(x); }));
+    });
+  }
+
+  function refresh() {
+    var n = queue.length;
+    if (editing) {
+      prev.innerHTML = '<strong>Click the new last day on the calendar for ' + rangeText(editing.s, editing.e) + '.</strong>';
+    } else if (n) {
+      prev.innerHTML = '';
+    } else {
+      prev.innerHTML = '';
+    }
+    paint();
+  }
+
+  f.querySelectorAll('[data-date]').forEach(function (el) {
+    el.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var day = el.dataset.date;
+      if (editing) {                                    // changing one training's last day
+        if (day < editing.s) { return; }
+        editing.e = day === editing.s ? '' : day;
+        editing = null; save(); renderQueue(); refresh(); return;
+      }
+      var hit = queue.filter(function (x) { return day >= x.s && day <= span(x); })[0];
+      if (hit) {                                        // clicking a blue day again takes it off
+        queue = queue.filter(function (x) { return x !== hit; });
+      } else {
+        var p = day.split('-').map(Number);
+        queue.push({ s: day, e: days > 1 ? iso(new Date(p[0], p[1] - 1, p[2] + days - 1)) : '' });
+      }
+      save(); renderQueue(); refresh();
+    });
+  });
+  f.addEventListener('submit', function () { try { sessionStorage.removeItem(storeKey); } catch (x) {} });
+  renderQueue(); refresh();
+});
+</script>
+{% endif %}
+{% endblock %}

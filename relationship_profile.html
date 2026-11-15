@@ -1,0 +1,45 @@
+{% extends "crm_base.html" %}
+{% block title %}{{ 'The Beginning Profile' if enrollment.code == 'D1' else 'Relationship Profile' }} — {{ enrollment.full_name }} — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>{{ 'The Beginning profile' if enrollment.code == 'D1' else 'Relationship profile' }}</h1>
+<p class="muted">{{ enrollment.full_name }} &middot; {{ enrollment.code|prog_label }} #{{ enrollment.session_number }} &middot; {{ enrollment.session_date|fdate }}</p>
+
+<div class="card">
+  <form method="post">
+    <div class="field"><label>{{ 'Is this your first time attending a Discovery training?' if enrollment.code == 'D1' else 'Is this your first time attending the Relationship Training?' }}</label>
+      <select name="first_time_attending">
+        <option value="">—</option>
+        <option {{ 'selected' if profile and profile.first_time_attending == 'Yes' else '' }}>Yes</option>
+        <option {{ 'selected' if profile and profile.first_time_attending == 'No' else '' }}>No</option>
+      </select>
+    </div>
+    <div class="field"><label>{{ 'What do you want to get out of The Beginning?' if enrollment.code == 'D1' else 'What do you want to get out of the Relationship Training?' }}</label>
+      <textarea name="training_goals" rows="2" style="width:100%">{{ profile.training_goals if profile else '' }}</textarea></div>
+    {% if is_couples %}
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'How long have you been in your relationship?' }}</label>
+      <input name="relationship_length" style="width:100%" value="{{ profile.relationship_length if profile else '' }}"></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'How did you meet your partner and what attracted you to them?' }}</label>
+      <textarea name="how_met" rows="2" style="width:100%">{{ profile.how_met if profile else '' }}</textarea></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'Does this relationship have patterns similar to what you experienced with your parents in your childhood?' }}</label>
+      <textarea name="childhood_patterns" rows="2" style="width:100%">{{ profile.childhood_patterns if profile else '' }}</textarea></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'Describe a significant emotional milestone within your relationship.' }}</label>
+      <textarea name="emotional_milestone" rows="2" style="width:100%">{{ profile.emotional_milestone if profile else '' }}</textarea></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'What are the strengths within the relationship?' }}</label>
+      <textarea name="relationship_strengths" rows="2" style="width:100%">{{ profile.relationship_strengths if profile else '' }}</textarea></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'What are the weaknesses within the relationship?' }}</label>
+      <textarea name="relationship_weaknesses" rows="2" style="width:100%">{{ profile.relationship_weaknesses if profile else '' }}</textarea></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'Are there any stress points within the relationship? Please explain.' }}</label>
+      <textarea name="stress_points" rows="2" style="width:100%">{{ profile.stress_points if profile else '' }}</textarea></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'List one song and artist that describes the way you feel about your partner.' }}</label>
+      <input name="song_artist" style="width:100%" value="{{ profile.song_artist if profile else '' }}"></div>
+    <div class="field"><label>{{ 'TBD (to be determined)' if enrollment.code == 'D1' else 'Briefly describe how the song above makes you feel toward your partner.' }}</label>
+      <textarea name="song_feelings" rows="2" style="width:100%">{{ profile.song_feelings if profile else '' }}</textarea></div>
+    {% endif %}
+    <div class="field"><label>{{ 'Please provide any other information you believe is important for us to know about you.' if enrollment.code == 'D1' else 'Please provide other information you believe is important to this relationship.' }}</label>
+      <textarea name="other_info" rows="2" style="width:100%">{{ profile.other_info if profile else '' }}</textarea></div>
+
+    <button class="btn" type="submit">Save</button>
+    <a class="btn secondary" href="{{ url_for('.contact_detail', contact_id=enrollment.contact_id) }}">Back to contact</a>
+  </form>
+</div>
+{% endblock %}

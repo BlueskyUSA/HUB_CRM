@@ -1,0 +1,102 @@
+{% if is_lead %}
+<div class="card" style="background:#f1f6ef; border:1px solid #b9cfb4">
+  <h3 style="margin-top:0">Quick Schedule</h3>
+  <p class="muted" style="margin-top:0">Pick the program and the first day (a Friday; Renew starts on Saturday). The end date is filled in for you and it shows on the website right away. Scheduling The Beginning also schedules Awakening, Vision and Refocus for the same weekend.</p>
+  {% if last_sched %}
+  <div style="background:#fff8e1; border:1px solid #e0c36a; border-radius:8px; padding:8px 12px; margin:0 0 10px; display:flex; flex-wrap:wrap; gap:10px; align-items:center">
+    <span><strong>Just scheduled:</strong> {{ last_sched.label }}.</span>
+    <form class="inline" method="post" action="{{ url_for('.quick_schedule_undo') }}" style="margin:0"
+          onsubmit="return confirm('Undo this? The session(s) just added will be removed.');"><input type="hidden" name="back" value="{{ sched_back|default('programs') }}">
+      <input type="hidden" name="action" value="undo"><button class="btn secondary" type="submit">Undo this</button></form>
+    <form class="inline" method="post" action="{{ url_for('.quick_schedule_undo') }}" style="margin:0"><input type="hidden" name="back" value="{{ sched_back|default('programs') }}">
+      <input type="hidden" name="action" value="keep"><button class="btn secondary" type="submit">Keep it</button></form>
+  </div>
+  {% endif %}
+  <form id="qs-form" class="inline" method="post" action="{{ url_for('.quick_schedule') }}" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center"
+        onsubmit="var f=this, sel=f.program_id, opt=sel.options[sel.selectedIndex], r=document.getElementById('qs-range').textContent; return confirm('Schedule ' + (opt ? opt.text : '') + (r ? ' (' + r + ')' : '') + '?\n\nPress Cancel to back out. Nothing is saved until you press OK.');">
+    <input type="hidden" name="back" value="{{ sched_back|default('programs') }}">
+    <select name="program_id" required style="font-size:1.05rem">
+      <option value="">Choose a program&hellip;</option>
+      {% for p in programs if p.code in ['D1','D4','D5','D6'] %}<option value="{{ p.id }}" data-days="{{ 2 if p.code == 'D5' else 3 }}">{{ 'The Beginning, Awakening &amp; Vision weekend'|safe if p.code == 'D1' else p.name }}</option>{% endfor %}
+    </select>
+    <input type="date" name="session_date" id="qs-date" required style="font-size:1.05rem">
+    <button class="btn" type="submit" style="font-size:1.05rem">Save</button>
+    <button class="btn secondary" type="button" style="font-size:1.05rem" title="Clear the program and date"
+            onclick="var f=document.getElementById('qs-form'); f.reset(); f.program_id.value=''; f.session_date.value=''; document.getElementById('qs-range').textContent='';">Cancel</button>
+    <span id="qs-range" style="font-weight:700; color:#1f5fbf"></span>
+  </form>
+</div>
+{% endif %}
+<script>
+(function(){var d=document.getElementById('qs-date'),r=document.getElementById('qs-range');if(!d||!r)return;
+function upd(){if(!d.value){r.textContent='';return;}
+var sel=d.form.program_id,n=parseInt((sel.options[sel.selectedIndex]||{}).dataset?(sel.options[sel.selectedIndex].dataset.days||3):3,10),a=new Date(d.value+'T12:00:00'),b=new Date(a.getTime()+(n-1)*86400000),o={weekday:'short',month:'short',day:'numeric'};
+r.textContent=a.toLocaleDateString('en-US',o)+' \u2192 '+b.toLocaleDateString('en-US',o);}
+d.addEventListener('change',upd);d.form.program_id.addEventListener('change',upd);})();
+</script>
+{% if sessions %}
+<div class="card" id="by-year">
+  <h3 style="margin-top:0">Scheduled sessions</h3>
+  <div id="yearTabs" style="display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px">
+    {% for y in years %}<button type="button" class="btn secondary yrtab" data-year="{{ y }}" style="font-size:1.05rem; font-weight:700">{{ y }}</button>{% endfor %}
+    <button type="button" class="btn secondary yrtab" data-year="" style="font-size:1.05rem">All years</button>
+  </div>
+  <p id="yearEmpty" class="muted" style="display:none">Nothing scheduled for this year.</p>
+  <table id="schedTable" class="stack">
+    <tr><th>Program</th><th>Dates</th><th>Status</th><th></th></tr>
+    {% for c in sessions %}
+    {% set past = (c.end_date or c.session_date) < today_iso %}
+    <tr data-year="{{ c.session_date[:4] }}"{% if past %} style="opacity:.6"{% endif %}>
+      <td style="font-weight:600">{{ c.program_name|nice_prog(c.code) }}</td>
+      <td data-label="Dates" style="color:#1f5fbf; font-weight:600">{{ c|date_span }}</td>
+      <td data-label="Status">{{ 'Past' if past else c.status }}</td>
+      <td>
+        {% if is_lead or has_contacts_access %}<a href="{{ url_for('.cohort_detail', cohort_id=c.id) }}" style="font-weight:700; color:#1f5fbf; text-decoration:none; border:2px solid #1f5fbf; border-radius:8px; padding:4px 12px; margin-right:10px">Open &rarr;</a>{% endif %}
+        {% if is_lead %}
+        <details style="display:inline-block; vertical-align:top">
+          <summary style="cursor:pointer; font-size:0.9rem; color:#c0392b; font-weight:600">Change or delete</summary>
+          <form class="inline" method="post" action="{{ url_for('.cohort_update_dates', cohort_id=c.id) }}" style="margin:6px 0">
+            <input type="hidden" name="back" value="{{ sched_back|default('programs') }}">{% if c.code == 'D1' %}<input type="hidden" name="weekend" value="1">{% endif %}
+            <input type="hidden" name="status" value="{{ c.status }}">
+            <input type="date" name="session_date" value="{{ c.session_date }}" required
+                   onchange="var e=this.form.end_date; if(this.value){var n=new Date(this.value+'T12:00:00'); n.setDate(n.getDate()+{{ 1 if c.code == 'D5' else 2 }}); e.value=n.toISOString().slice(0,10);}">
+            <span class="muted">through</span>
+            <input type="date" name="end_date" value="{{ c.end_date or '' }}">
+            <button class="btn secondary" type="submit">Save dates</button>
+          </form>
+          <form class="inline" method="post" action="{{ url_for('.cohort_update_dates', cohort_id=c.id) }}" style="margin:0 0 6px"
+                onsubmit="return confirm('Cancel this session? It comes off the website and this list, but its history is kept.');">
+            <input type="hidden" name="back" value="{{ sched_back|default('programs') }}">{% if c.code == 'D1' %}<input type="hidden" name="weekend" value="1">{% endif %}
+            <input type="hidden" name="session_date" value="{{ c.session_date }}">
+            <input type="hidden" name="end_date" value="{{ c.end_date or '' }}">
+            <input type="hidden" name="status" value="Cancelled">
+            <button class="btn secondary" type="submit">Cancel this session</button>
+            <span class="muted">(use this if Delete says people are enrolled)</span>
+          </form>
+          <form method="post" action="{{ url_for('.cohort_delete', cohort_id=c.id) }}" style="margin:0"
+                onsubmit='return confirm({{ ("Delete " ~ c.program_name|nice_prog(c.code) ~ " (" ~ (c|date_span) ~ ")? A session with enrolled people can\'t be deleted; set it to Cancelled instead. Any staff assignments are removed with it.")|tojson }});'>
+            <input type="hidden" name="back" value="{{ sched_back|default('programs') }}">{% if c.code == 'D1' %}<input type="hidden" name="weekend" value="1">{% endif %}
+            <button class="btn danger" type="submit">Delete this session</button>
+          </form>
+        </details>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+<script>
+(function(){
+  var tabs=document.querySelectorAll('.yrtab'), rows=document.querySelectorAll('#schedTable tr[data-year]'), empty=document.getElementById('yearEmpty');
+  var counts={}; rows.forEach(function(r){var y=r.getAttribute('data-year'); counts[y]=(counts[y]||0)+1;});
+  tabs.forEach(function(t){var y=t.getAttribute('data-year'); if(y)t.textContent=y+' ('+(counts[y]||0)+')';});
+  function show(y){
+    var n=0; rows.forEach(function(r){var ok=!y||r.getAttribute('data-year')===y; r.style.display=ok?'':'none'; if(ok)n++;});
+    empty.style.display=n?'none':'block';
+    tabs.forEach(function(t){var on=t.getAttribute('data-year')===y; t.style.background=on?'#1f5fbf':''; t.style.color=on?'#fff':'';});
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(){show(t.getAttribute('data-year'));});});
+  show('{{ default_year }}');
+})();
+</script>
+{% endif %}
