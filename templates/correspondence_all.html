@@ -8,7 +8,8 @@
 <p class="muted" style="max-width:860px">This page shows every type of correspondence (automated or not) that may be sent to trainees and volunteers throughout the entire Discovery program. The correspondence is grouped by who receives it.</p>
 <p class="muted" style="max-width:860px">Each of these documents may be viewed by all volunteers who have logins to this program, but only the owner of this program may make changes to a document. Every changed document is saved as a numbered version so, if necessary, we can go back to previous versions. The <strong>View</strong> button shows the most current correspondence available and indicates whether the document is automated or not.</p>
 <p class="muted" style="max-width:860px">At the top of this page a button is available to send the owner suggested changes to these documents. If the owner agrees, the changes will be made.</p>
-<p style="margin:12px 0"><a class="btn" href="#suggest" onclick="document.getElementById('suggestBox').style.display='block';">Suggest a change to a letter</a></p>
+{% set q = "" %}{% include "_letter_search.html" %}
+<p style="margin:12px 0"><a class="btn" href="{{ url_for('.correspondence_guide') }}">Letter Guide: what each letter is for</a> <a class="btn" href="#suggest" onclick="document.getElementById('suggestBox').style.display='block';">Suggest a change to a letter</a></p>
 {% if is_owner %}
 <details id="suggestions" class="card" style="max-width:860px; margin-top:14px" {{ 'open' if sugg_new else '' }}>
   <summary style="cursor:pointer; font-weight:700">Suggestions received from volunteers <span class="muted" style="font-weight:400">({{ sugg_new|length }} new &middot; only you see this)</span></summary>

@@ -1,0 +1,41 @@
+{% extends "crm_base.html" %}
+{% block title %}Letter Guide{% endblock %}
+{% block content %}
+<style>
+@media print { .no-print, nav, header.topbar { display: none !important; } .card { box-shadow: none !important; } table { font-size: 10pt; } tr { page-break-inside: avoid; } h2 { page-break-after: avoid; } }
+.lg td, .lg th { vertical-align: top; }
+</style>
+<p class="no-print"><a href="{{ url_for('.correspondence_all') }}">&larr; All Letters</a>
+  <button type="button" class="btn secondary" style="margin-left:14px" onclick="window.print()">Print this guide</button></p>
+<h1>Letter Guide</h1>
+<p class="muted" style="max-width:860px">What every letter is for, when it goes out, and who gets it. Open a letter from All Letters to read its wording. Automated letters go out by themselves; by-hand letters are sent by a person from the place named under "When".</p>
+
+<div class="card" style="max-width:860px; margin-bottom:16px">
+  <strong>How the letters follow a person from first interest to the end of training</strong>
+  <ol style="margin:8px 0 0 18px; padding:0">
+  {% for t, d in journey %}<li style="margin-bottom:4px"><strong>{{ t }}.</strong> {{ d }}</li>{% endfor %}
+  </ol>
+</div>
+
+{% for title, intro, rows in cats %}
+<h2 style="margin-top:22px">{{ title }}</h2>
+<p class="muted" style="max-width:860px; margin-top:0">{{ intro }}</p>
+<div class="card" style="overflow-x:auto">
+<table class="lg stack" style="width:100%">
+  <tr><th style="width:22%">Letter</th><th style="width:28%">What it's for</th><th style="width:30%">When it goes out</th><th>Who gets it</th></tr>
+  {% for e in rows %}
+  <tr>
+    <td data-label="Letter"><strong>{{ e.name }}</strong>
+      <div style="margin-top:3px"><span class="badge {{ 'good' if e.delivery == 'Automated' else '' }}">{{ e.delivery }}</span></div>
+      {% if e.kind == 'edit' %}<a class="no-print" style="font-size:.85rem" href="{{ url_for('.correspondence_letter_edit', key=e.key, view=1) }}">Read the letter</a>
+      {% elif e.kind == 'view' %}<a class="no-print" style="font-size:.85rem" href="{{ url_for('.correspondence_letter_view', slug=e.slug) }}">Read the letter</a>{% endif %}
+    </td>
+    <td data-label="What it's for">{{ e.purpose }}</td>
+    <td data-label="When it goes out">{{ e.when }}</td>
+    <td data-label="Who gets it">{{ e.who }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endfor %}
+{% endblock %}

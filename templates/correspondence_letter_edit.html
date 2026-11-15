@@ -12,8 +12,12 @@
 </div>
 {% endif %}
 <h1>{{ 'Edit letter' if can_edit else 'Letter' }}: {{ orig.title }}</h1>
-<p class="muted">Goes to: {{ orig.audience }}. {% if entry and entry.delivery %}<span class="badge">{{ entry.delivery }}</span> {{ entry.when }}{% endif %}
-  {% if saved %}Edited by {{ saved.updated_by or 'a team member' }} on {{ saved.updated_at[:10]|fdate }}.{% else %}This is the original wording.{% endif %}</p>
+<div class="card" style="max-width:900px; margin-bottom:10px">
+  {% if entry and entry.purpose %}<div><strong>What it's for:</strong> {{ entry.purpose }}</div>{% endif %}
+  <div><strong>Goes to:</strong> {{ entry.who if entry and entry.who else orig.audience }}</div>
+  {% if entry and entry.delivery %}<div><strong>Sent:</strong> <span class="badge">{{ entry.delivery }}</span> {{ entry.when }}</div>{% endif %}
+</div>
+<p class="muted">{% if saved %}Edited by {{ saved.updated_by or 'a team member' }} on {{ saved.updated_at[:10]|fdate }}.{% else %}This is the original wording.{% endif %}</p>
 {% for m in get_flashed_messages() %}<p class="flash">{{ m }}</p>{% endfor %}
 {% if not can_edit %}
 <div class="card" style="max-width:900px; border-left:4px solid #a8892f; background:#fff8e1; margin-bottom:10px">
