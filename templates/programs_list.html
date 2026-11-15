@@ -49,7 +49,7 @@
 {% set is_lead = session.is_owner or session.staff_role == 'Leadership' %}
 {% for p in programs %}
 <div class="card" id="program-{{ p.id }}">
-  {% set pname = p.name if p.name.startswith(p.code) else p.code ~ '-' ~ p.name %}
+  {% set pname = p.name|nice_prog(p.code) %}
   {% if p.description %}<p class="muted">{{ p.description }}</p>{% endif %}
 
   {% if is_lead %}
@@ -94,7 +94,7 @@
 
   {% if is_lead %}
   {% set next_num = (cohorts_by_program[p.id]|map(attribute='session_number')|list|max) + 1 if cohorts_by_program[p.id] else 1 %}
-  {% set sched_label = ('Schedule a ' ~ p.name) if p.name.startswith(p.code) else ('Schedule a ' ~ p.code ~ '-' ~ p.name) %}
+  {% set sched_label = 'Schedule a ' ~ p.name|nice_prog(p.code) %}
   <form id="sched" class="sched-form" method="post" action="{{ url_for('.cohort_new', program_id=p.id) }}"
         data-btn="{{ sched_label }}" data-code="{{ p.code }}" data-num="{{ next_num }}" data-days="{{ default_days(p.code) }}"
         data-weekday="{{ usual_weekday[p.code][0] if p.code in usual_weekday else '' }}"

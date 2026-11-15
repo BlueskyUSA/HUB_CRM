@@ -2,7 +2,7 @@
 {% block title %}{{ 'The Beginning Profile' if enrollment.code == 'D1' else 'Relationship Profile' }} — {{ enrollment.full_name }} — {{ program_name }}{% endblock %}
 {% block content %}
 <h1>{{ 'The Beginning profile' if enrollment.code == 'D1' else 'Relationship profile' }}</h1>
-<p class="muted">{{ enrollment.full_name }} &middot; {{ program_name }} #{{ enrollment.session_number }} &middot; {{ enrollment.session_date|fdate }}</p>
+<p class="muted">{{ enrollment.full_name }} &middot; {{ enrollment.code|prog_label }} #{{ enrollment.session_number }} &middot; {{ enrollment.session_date|fdate }}</p>
 
 <div class="card">
   <form method="post">

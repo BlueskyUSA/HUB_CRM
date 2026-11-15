@@ -1,7 +1,7 @@
 {% extends "crm_base.html" %}
 {% block title %}Team roster — {{ program_name }}{% endblock %}
 {% block content %}
-<h1>Team roster &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
+<h1>Team roster &mdash; {{ cohort.name|nice_prog(cohort.code) }}, Session {{ cohort.session_number }}</h1>
 <p class="muted">Tap a number to call, or <b>Text</b> to send a message. {% if can_photo %}<a href="{{ url_for('.checkin_session', cohort_id=cohort.id) }}">Back to the check-in table</a> &middot; {% endif %}<a href="{{ url_for('.checkin_photos', cohort_id=cohort.id) }}">Photo board</a></p>
 <input id="q" type="search" placeholder="Find a team member" style="width:100%; max-width:360px; padding:12px; font-size:1.1rem; margin-bottom:12px">
 {% for p in team %}

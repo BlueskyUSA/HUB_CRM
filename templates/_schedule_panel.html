@@ -47,7 +47,7 @@ d.addEventListener('change',upd);d.form.program_id.addEventListener('change',upd
     {% for c in sessions %}
     {% set past = (c.end_date or c.session_date) < today_iso %}
     <tr data-year="{{ c.session_date[:4] }}"{% if past %} style="opacity:.6"{% endif %}>
-      <td style="font-weight:600">{{ c.program_name }}</td>
+      <td style="font-weight:600">{{ c.program_name|nice_prog(c.code) }}</td>
       <td data-label="Dates" style="color:#1f5fbf; font-weight:600">{{ c|date_span }}</td>
       <td data-label="Status">{{ 'Past' if past else c.status }}</td>
       <td>
@@ -74,7 +74,7 @@ d.addEventListener('change',upd);d.form.program_id.addEventListener('change',upd
             <span class="muted">(use this if Delete says people are enrolled)</span>
           </form>
           <form method="post" action="{{ url_for('.cohort_delete', cohort_id=c.id) }}" style="margin:0"
-                onsubmit='return confirm({{ ("Delete " ~ c.program_name ~ " (" ~ (c|date_span) ~ ")? A session with enrolled people can\'t be deleted; set it to Cancelled instead. Any staff assignments are removed with it.")|tojson }});'>
+                onsubmit='return confirm({{ ("Delete " ~ c.program_name|nice_prog(c.code) ~ " (" ~ (c|date_span) ~ ")? A session with enrolled people can\'t be deleted; set it to Cancelled instead. Any staff assignments are removed with it.")|tojson }});'>
             <input type="hidden" name="back" value="{{ sched_back|default('programs') }}">{% if c.code == 'D1' %}<input type="hidden" name="weekend" value="1">{% endif %}
             <button class="btn danger" type="submit">Delete this session</button>
           </form>

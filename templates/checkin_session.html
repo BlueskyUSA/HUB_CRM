@@ -1,7 +1,7 @@
 {% extends "crm_base.html" %}
 {% block title %}Check-in table — {{ program_name }}{% endblock %}
 {% block content %}
-<h1>Check-in &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
+<h1>Check-in &mdash; {{ cohort.name|nice_prog(cohort.code) }}, Session {{ cohort.session_number }}</h1>
 <p class="muted">{{ cohort.session_date|fdate }}{% if cohort.end_date %} &ndash; {{ cohort.end_date|fdate }}{% endif %}. Find the couple, check that nothing is missing, then tap <b>Take couple photo</b>. The photo is saved for both partners. &nbsp;<a href="{{ url_for('.checkin_photos', cohort_id=cohort.id) }}">Photo board</a> &middot; <a href="{{ url_for('.checkin_team', cohort_id=cohort.id) }}">Team roster (phone numbers)</a></p>
 {% set ns = namespace(ready=0, total=0) %}{% for g in groups %}{% set ns.total = ns.total + 1 %}{% if g.ready %}{% set ns.ready = ns.ready + 1 %}{% endif %}{% endfor %}
 {% if can_money %}<p><a class="btn secondary" href="{{ url_for('.checkin_payments') }}">Payments waiting to be confirmed</a></p>{% endif %}

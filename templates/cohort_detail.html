@@ -13,7 +13,7 @@
 <datalist id="contact-picks">
   {% for c in all_contacts %}<option value="{{ c.full_name }} [#{{ c.id }}]"></option>{% endfor %}
 </datalist>
-{% set full_title = cohort.name if cohort.name.startswith(cohort.code) else (cohort.code ~ '-' ~ cohort.name) %}
+{% set full_title = cohort.name|nice_prog(cohort.code) %}
 <h1>{{ full_title }} (Session # {{ cohort.session_number }})</h1>
 <p class="muted">{{ cohort|date_span }}{% if cohort.location %} &middot; {{ cohort.location }}{% endif %} &middot; <span class="badge">{{ cohort.status }}</span></p>
 {% if session.is_owner or session.staff_role == 'Leadership' %}

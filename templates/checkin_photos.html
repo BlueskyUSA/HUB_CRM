@@ -1,7 +1,7 @@
 {% extends "crm_base.html" %}
 {% block title %}Photo board — {{ program_name }}{% endblock %}
 {% block content %}
-<h1>Photo board &mdash; {{ cohort.name }}, Session {{ cohort.session_number }}</h1>
+<h1>Photo board &mdash; {{ cohort.name|nice_prog(cohort.code) }}, Session {{ cohort.session_number }}</h1>
 <p class="muted">Couple photos for the weekend. {% if can_photo %}<a href="{{ url_for('.checkin_session', cohort_id=cohort.id) }}">Back to the check-in table</a> &middot; {% endif %}<a href="{{ url_for('.checkin_team', cohort_id=cohort.id) }}">Team roster (phone numbers)</a></p>
 <input id="q" type="search" placeholder="Find a name" style="width:100%; max-width:360px; padding:10px; font-size:1rem; margin-bottom:12px">
 <div id="grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px">
