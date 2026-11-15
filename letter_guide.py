@@ -3,7 +3,7 @@ Keyed by the letter's key (or slug), or by its name for entries that have neithe
 
 PURPOSE = {
     # Interested people
-    "welcome": "A warm first thank-you with a short story of why we do this, and a private link to tell us more. For people who are not past volunteers.",
+    "welcome": "A warm first thank-you from Kent, with a short story of why he and Pamela value the training, and an offer of a call. For people who chose \"Interested Party\" on the Discovery! form.",
     "longform_followup": "Invites a past volunteer to fill in their profile so we can place them on the volunteer teams.",
     "longform_thankyou": "Thanks the person for finishing their profile, and offers the preliminary business plan.",
     "connect": "Confirms we received their message and that someone will reach out.",

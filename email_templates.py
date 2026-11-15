@@ -197,69 +197,36 @@ def interested_party_welcome_content(first_name, connect_url=None):
     """Returns (html_content, text_content) for the welcome email sent when
     someone selects "Interested Party" (rather than a past volunteer role)
     on the /discovery short form -- thanks them for their interest and
-    shares Kent and Pamela's own story with Discovery! connect_url, if
-    given, is that contact's personal link to the "reach out to me" page,
-    so they can ask Kent to personally follow up without just replying to
-    this email."""
+    shares Kent and Pamela's own story. connect_url, if given, is that
+    contact's personal link to the "reach out to me" page, so they can ask
+    for a personal call that the Hub records."""
     greeting = first_name.strip() if first_name and first_name.strip() else "Friend"
 
-    connect_html = ""
-    connect_text = ""
+    paras = [
+        "Thank you for your interest in Discovery! I\u2019d like to share why this training has meant so much to Pamela and me.",
+        "In 1996, our marriage was struggling. We had three children and had tried counseling, pastoral guidance, and just about everything we could think of. Yet our marriage seemed to be slipping through our fingers.",
+        "Then a close friend invited us to attend a three-day experiential training. Pamela attended first.",
+        "I\u2019ll never forget the phone call I received from her while I was at work. That conversation became a turning point in our marriage and the beginning of a remarkable journey.",
+        "Through the training, we began to understand how our past experiences influenced our attitudes, behaviors, and relationships. We learned practical ways to communicate, navigate conflict, take personal responsibility, and extend forgiveness and grace to ourselves and each other.",
+        "It wasn\u2019t a magical fix. The real change came as we began putting what we\u2019d learned into practice.",
+        "Since then, we\u2019ve participated in and helped facilitate numerous personal-growth and relationship programs. We continue to believe deeply in the value of this experience.",
+        "Unlike most trainings, this training invites participants into an immersive experience, personal reflection, and meaningful conversations. It\u2019s an invitation to become curious about yourself, explore new perspectives, and discover possibilities for your life and relationships that you may not have considered before.",
+        "Our next weekend for couples, The Art of Us, is February 12\u201314, 2027. If you would like to know more, we would be glad to tell you.",
+        "If you have questions or would like to speak with one of our experienced volunteers, simply reply to this email. We\u2019d love to hear from you.",
+    ]
+    import html as _html
+    body_html = "".join(f"<p>{_html.escape(p, quote=False)}</p>" for p in paras)
+    body_text = "\n\n".join(paras)
     if connect_url:
-        connect_html = f' Feel free to <a href="{connect_url}">click here</a> if you\'d like me to reach out to you personally.'
-        connect_text = f" Feel free to click the link below if you'd like me to reach out to you personally.\n{connect_url}"
+        body_html += f'<p>Prefer a call? <a href="{connect_url}">Click here</a> and one of us will reach out to you.</p>'
+        body_text += f"\n\nPrefer a call? Use the link below and one of us will reach out to you.\n{connect_url}"
 
     html_content = f"""
         <p>Dear {greeting},</p>
-        <p>Thank you so much for your interest in {PROGRAM_NAME}. Let me tell you a bit about
-        our journey and the profound impact Discovery! has had on our lives.</p>
-        <p>In 1996, my wife Pamela and I moved to Texas, and soon after, a close friend invited us
-        to attend Pathways (now Discovery!) &mdash; our marriage was struggling. With three
-        children and eighteen years of marriage behind us, we were lost and confused. We tried
-        counselors, church advisors, mentors, healing prayer, anything we could think of. But we
-        simply couldn't figure it out &mdash; it was like trying to hold water in our hands, our
-        life falling apart, leaking right through our fingers.</p>
-        <p>Pamela went through D1 training first. I'll never forget the phone call that changed
-        everything &mdash; I was at work, wondering what was happening with her in this mysterious
-        training our friend had invited us to. That one phone call was a breakthrough that changed
-        the course of our marriage and put us on a healing path we're still thankful for today.</p>
-        <p>Of course, wanting our marriage to work meant actually using the tools that Discovery!
-        offered. We learned how our pasts had shaped our differences, and how to honor and accept
-        our limitations and broken stories. We learned how to listen and walk through conflict
-        without breaking the relationship. We learned about the power of forgiveness and the
-        importance of standing up for yourself honestly in a relationship &mdash; and so much
-        more.</p>
-        <p>Since then, Pamela and I have been involved in many trainings and programs helping
-        people identify and overcome what stands in the way of joy and peace. But there is nothing
-        out there that compares to the effectiveness of Discovery! The core trainings include D1,
-        D2, D3, and Relationship Training. D1, D2, and D3 are monthly, consecutive trainings that
-        build on one another &mdash; advancing from one to the next requires having completed the
-        one before. The Relationship Training, on the other hand, welcomes all committed couples
-        with no prior Discovery! involvement required. We find that most couples who complete it go
-        on to enlist individually in D1 through D3.</p>
-        <p>We welcome your interest, and we hope you'll take the risk of stepping into this
-        life-changing training with us.{connect_html}</p>
-        <p>Thank you, and God bless you,<br>Kent Hafemann</p>
+        {body_html}
+        <p>Warm regards,<br>Kent Hafemann</p>
     """
-
-    text_content = f"""Dear {greeting},
-
-Thank you so much for your interest in {PROGRAM_NAME}. Let me tell you a bit about our journey and the profound impact Discovery! has had on our lives.
-
-In 1996, my wife Pamela and I moved to Texas, and soon after, a close friend invited us to attend Pathways (now Discovery!) -- our marriage was struggling. With three children and eighteen years of marriage behind us, we were lost and confused. We tried counselors, church advisors, mentors, healing prayer, anything we could think of. But we simply couldn't figure it out -- it was like trying to hold water in our hands, our life falling apart, leaking right through our fingers.
-
-Pamela went through D1 training first. I'll never forget the phone call that changed everything -- I was at work, wondering what was happening with her in this mysterious training our friend had invited us to. That one phone call was a breakthrough that changed the course of our marriage and put us on a healing path we're still thankful for today.
-
-Of course, wanting our marriage to work meant actually using the tools that Discovery! offered. We learned how our pasts had shaped our differences, and how to honor and accept our limitations and broken stories. We learned how to listen and walk through conflict without breaking the relationship. We learned about the power of forgiveness and the importance of standing up for yourself honestly in a relationship -- and so much more.
-
-Since then, Pamela and I have been involved in many trainings and programs helping people identify and overcome what stands in the way of joy and peace. But there is nothing out there that compares to the effectiveness of Discovery! The core trainings include D1, D2, D3, and Relationship Training. D1, D2, and D3 are monthly, consecutive trainings that build on one another -- advancing from one to the next requires having completed the one before. The Relationship Training, on the other hand, welcomes all committed couples with no prior Discovery! involvement required. We find that most couples who complete it go on to enlist individually in D1 through D3.
-
-We welcome your interest, and we hope you'll take the risk of stepping into this life-changing training with us.{connect_text}
-
-Thank you, and God bless you,
-Kent Hafemann
-"""
-
+    text_content = f"Dear {greeting},\n\n{body_text}\n\nWarm regards,\nKent Hafemann\n"
     return html_content, text_content
 
 
