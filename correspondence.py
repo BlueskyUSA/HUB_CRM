@@ -439,6 +439,29 @@ def register(app, crm, get_db, h):
         finally:
             conn.close()
 
+    def _with_purpose(e):
+        import letter_guide as LG
+        e = dict(e or {})
+        e["purpose"] = LG.PURPOSE.get(e.get("key") or e.get("slug") or e.get("name"), "")
+        return e
+
+    @crm.route("/correspondence/guide")
+    def correspondence_guide():
+        """A plain-language reference: what each letter is for, when it goes out, and who gets it. Everyone with a login may read it."""
+        import letter_guide as LG
+        can_mkt = h["has_correspondence_access"]()
+        cats = []
+        for cid, title, intro, entries in catalog():
+            rows = []
+            for e in entries:
+                if e.get("owner") and not can_mkt:
+                    continue
+                ident = e.get("key") or e.get("slug") or e["name"]
+                rows.append(dict(e, purpose=LG.PURPOSE.get(ident, "")))
+            if rows:
+                cats.append((title, intro, rows))
+        return render_template("correspondence_guide.html", cats=cats, journey=LG.JOURNEY)
+
     @crm.route("/correspondence/search")
     def correspondence_search():
         """Search the current wording of every letter. Everyone with a login may read, so everyone may search."""
@@ -517,6 +540,7 @@ def register(app, crm, get_db, h):
         except Exception:
             subject, html = None, None
         return render_template("correspondence_letter_view.html", name=name, subject=subject, letter_html=html, delivery=entry.get("delivery"), when=entry.get("when"),
+                               purpose=_with_purpose(entry)["purpose"], who=entry.get("who"),
                                short_note=(slug in ("welcome", "longform_followup")),
                                long_note=(slug in ("longform_followup", "longform_thankyou")))
 
@@ -801,7 +825,7 @@ def register(app, crm, get_db, h):
             used = [f for f in fields if "{" + f + "}" in blob and f not in (("first",) if _own_greeting else ("first", "First name"))]
             versions = conn.execute("SELECT * FROM letter_versions WHERE letter_key = ? ORDER BY version DESC", (key,)).fetchall()
             return render_template("correspondence_letter_edit.html", key=key, can_edit=can_edit, is_owner=bool(session.get("is_owner")),
-                                   entry=next((e for _i, _t, _d, es in catalog() for e in es if e.get("key") == key), {}), guide_note=(GUIDE_EXPLAINER if key in et.GUIDE_LETTERS and key not in ("sponsor_welcome", "sponsor_page", "profile_request", "video_call", "needs_request", "testimonial_request") else None), guides=(guides_by_group(conn) if key in et.GUIDE_LETTERS else []), orig=orig, form=form, error=error,
+                                   entry=_with_purpose(next((e for _i, _t, _d, es in catalog() for e in es if e.get("key") == key), {})), guide_note=(GUIDE_EXPLAINER if key in et.GUIDE_LETTERS and key not in ("sponsor_welcome", "sponsor_page", "profile_request", "video_call", "needs_request", "testimonial_request") else None), guides=(guides_by_group(conn) if key in et.GUIDE_LETTERS else []), orig=orig, form=form, error=error,
                                    saved=saved, preview_subject=subject, preview_html=html, used=used, help=FIELD_HELP,
                                    versions=versions, note=note, current_version=(versions[0]["version"] if versions and saved else None),
                                    back=("correspondence_all" if key in et.GUIDE_LETTERS else
