@@ -173,7 +173,7 @@ def _preview_map():
 # Plain-language note shown where the Guide letters appear, because most people don't know what a Guide is.
 GUIDE_EXPLAINER = (
     "A Guide is a volunteer with a very important role. A Guide is a volunteer selected by leadership who is responsible for responding to the \u201cI\u2019m Curious to know more\u201d short form on the public website. "
-    "If a Guide responds to this inquiry, the Guide becomes that person's personal contact for Discovery!, from their first question all the way into the training room. "
+    "If a Guide responds to this inquiry, the Guide becomes that person's personal contact for Sojourn, from their first question all the way into the training room. "
     "In short, a Guide is a salesperson who helps fill the seats. In years past only staff took on this job. We think it makes sense to invite qualified volunteers to help. "
     "Our goal is to select 12 volunteers to do this job: 6 for The Art of Us program, and 6 for The Beginning program.",
     "## How it works",
@@ -297,9 +297,9 @@ def catalog():
                 ("To the Guide: please log your call (2 hours after taking a request)", "Subject: Please log your call\n\nHi [Guide first name],\n\nYou took a call request a couple of hours ago. When you\u2019ve called, please log how it went here:\n[the Guide\u2019s personal link]\n\nThank you!"),
             ]),
             C("Milestone emails", "Automatically, as a Guide reaches milestones.", "Guides", sub="Guides", text=[
-                ("When the person registers", "Subject: [First name] has registered!\n\nHi [Guide first name],\n\nGood news: [Name] registered for [Program, dates], thanks to your conversation. Please open your page for them to send the questionnaire link and the payment request: [link] Payment is still pending. We will let you know when it comes in.\n\nWarmly,\nThe Discovery! Team"),
-                ("When the person pays", "Subject: [First name] has registered and paid!\n\nHi [Guide first name],\n\n[Name] has paid for [Program, dates]. Their spot is secure. Thank you for helping them take this step!\n\nWarmly,\nThe Discovery! Team"),
-                ("Every 7 days while payment is late", "Subject: [First name] has not paid yet\n\nHi [Guide first name],\n\n[First name] reserved a seat but payment has not arrived. A friendly reminder may help, and it is your call. Open your page for them and tap the payment reminder: [link]\n\nWarmly,\nThe Discovery! Team"),
+                ("When the person registers", "Subject: [First name] has registered!\n\nHi [Guide first name],\n\nGood news: [Name] registered for [Program, dates], thanks to your conversation. Please open your page for them to send the questionnaire link and the payment request: [link] Payment is still pending. We will let you know when it comes in.\n\nWarmly,\nThe Sojourn Team"),
+                ("When the person pays", "Subject: [First name] has registered and paid!\n\nHi [Guide first name],\n\n[Name] has paid for [Program, dates]. Their spot is secure. Thank you for helping them take this step!\n\nWarmly,\nThe Sojourn Team"),
+                ("Every 7 days while payment is late", "Subject: [First name] has not paid yet\n\nHi [Guide first name],\n\n[First name] reserved a seat but payment has not arrived. A friendly reminder may help, and it is your call. Open your page for them and tap the payment reminder: [link]\n\nWarmly,\nThe Sojourn Team"),
             ]),
          
             dict(kind="page", name="Sponsor a Friend (the public form page)", when="A volunteer opens it from the public website to start sponsoring someone.", who="Volunteers who sponsor someone", url="/sponsor", label="View page", sub="Sponsors"),

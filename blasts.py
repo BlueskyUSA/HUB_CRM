@@ -24,17 +24,17 @@ _ready = False
 
 VOLUNTEERS_BODY = """Dear {first},
 
-When people ask about Discovery!, we want them to visit with an experienced, credible person who has been through the training. The training changed your life, and we hope you are passionate about sharing what it did for you.
+When people ask about Sojourn, we want them to visit with an experienced, credible person who has been through the training. The training changed your life, and we hope you are passionate about sharing what it did for you.
 
-Instead of relying on staff for the heavy lifting, we built an AI-assisted portal that makes it easy for every willing Discovery! volunteer to help people register for the training. Our hope is you will help us fill seats. Your personal page works on your Android or Apple phone, iPad, or computer.
+Instead of relying on staff for the heavy lifting, we built an AI-assisted portal that makes it easy for every willing Sojourn volunteer to help people register for the training. Our hope is you will help us fill seats. Your personal page works on your Android or Apple phone, iPad, or computer.
 
-If you are willing, tap the link below to get your own personal volunteer page. If you know another Discovery! volunteer who would like to help, your page has a link you can text or email to them.
+If you are willing, tap the link below to get your own personal volunteer page. If you know another Sojourn volunteer who would like to help, your page has a link you can text or email to them.
 
 {link}
 
 Thank you for all that you do.
 
-The Discovery! Team"""
+The Sojourn Team"""
 
 GUIDES_BODY = ""
 
@@ -189,7 +189,7 @@ def ensure_tables(get_db):
         conn.close()
 
 
-MAILING_ADDRESS = os.environ.get("BLAST_MAILING_ADDRESS", "Discovery!, 964 Condor Drive, Coppell, TX 75019")
+MAILING_ADDRESS = os.environ.get("BLAST_MAILING_ADDRESS", "Sojourn, 964 Condor Drive, Coppell, TX 75019")
 
 
 def blasts_live():
@@ -298,8 +298,8 @@ def build(letter, aud, first, contact_id, base_url):
     if contact_id is not None:
         u = "#" if contact_id == 0 else f"{base_url}/unsubscribe/{unsub_token(contact_id)}"
         what = ("Unsubscribe from Guide announcements (you will still get alerts about requests)" if aud["kind"] == "guides" else "Unsubscribe")
-        why = ("You are receiving this because you are a Discovery! Guide." if aud["kind"] == "guides"
-               else "You are receiving this because you are part of the Discovery! community.")
+        why = ("You are receiving this because you are a Sojourn Guide." if aud["kind"] == "guides"
+               else "You are receiving this because you are part of the Sojourn community.")
         footer_h = (f'<hr style="border:none;border-top:1px solid #ddd;margin:24px 0 10px">'
                     f'<p style="font-size:.8em;color:#777">{why} <a href="{u}">{what}</a><br>{_html.escape(MAILING_ADDRESS)}</p>')
         footer_t = f"\n\n--\n{why} {what}: {u}\n{MAILING_ADDRESS}"

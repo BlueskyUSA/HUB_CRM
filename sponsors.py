@@ -20,10 +20,10 @@ import botguard
 
 CODE = "SPONSOR"
 SPONSOR_CONSENT = (
-    "I give Discovery! permission to share my name, my cell phone number and my email address with the person I am "
+    "I give Sojourn permission to share my name, my cell phone number and my email address with the person I am "
     "sponsoring, so they can recognize and reach me. I have told this person that I am inviting them, and I believe "
-    "they would welcome hearing from Discovery!. Discovery! will not sell or rent my information. I can withdraw this "
-    "permission at any time by telling Discovery!.")
+    "they would welcome hearing from Sojourn. Sojourn will not sell or rent my information. I can withdraw this "
+    "permission at any time by telling Sojourn.")
 
 
 def profile_status(conn, contact, base_url):
@@ -125,7 +125,7 @@ def register(app, get_db, leadership_email=None):
                         try:
                             from email_templates import guide_letter_content
                             subject, html, text = guide_letter_content(
-                                "sponsor_welcome", me["first_name"], cf._program_label(program) if program else "Discovery!", my_name,
+                                "sponsor_welcome", me["first_name"], cf._program_label(program) if program else "Sojourn", my_name,
                                 cf.pretty_phone(me["cell_phone"] or my_phone), link=st["link"], client=who, page_link=page)
                             cf._send(my_email, subject, html, text, to_name=my_name)
                             cf._send(cf._leadership_email(), f"New Sponsor: {my_name} is sponsoring {who}",

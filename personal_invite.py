@@ -39,7 +39,7 @@ def register(app, crm, get_db, leadership_required, area_assign_logins, role_lab
         login_url = url_for("crm.login", _external=True)
         first = (contact_first or staff["name"] or "").split()[0] if (contact_first or staff["name"]) else "there"
         me = (session.get("staff_name") or "").split()[0] or ""
-        note = (f"Hi {first},\n\n[Write your own words here: why you're inviting them and your vision for Discovery!]\n\n"
+        note = (f"Hi {first},\n\n[Write your own words here: why you're inviting them and your vision for Sojourn]\n\n"
                 f"I've set you up with a login to the {program_name} team site as {role_label(staff['role'] if staff['is_owner'] != 2 else 'Administrator')}. "
                 f"{role_blurbs.get('Administrator' if staff['is_owner'] == 2 else staff['role'], '')}\n\n"
                 f"Use this personal link to choose your own password. It works once and expires in {DAYS_GOOD} days:\n{link}\n\n"

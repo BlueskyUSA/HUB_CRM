@@ -28,8 +28,8 @@ SECTIONS = [
           "Creates a contact (marketing source recorded) and an interest log entry; the Excitement or thank-you emails can follow."),
         E("Contact us", "/contact", "Anyone", "A general contact form. Adds a contact for follow-up.", "contacts"),
         E("Talk to us (the Curious form)", "/talk-to-us", "Anyone",
-          "The form for someone who wants to hear from an experienced Discovery! volunteer by text or phone. Starts the Guides call flow.",
-          "call_requests, interest_log; alerts the Guides; see Discovery Guides."),
+          "The form for someone who wants to hear from an experienced Sojourn volunteer by text or phone. Starts the Guides call flow.",
+          "call_requests, interest_log; alerts the Guides; see Sojourn Guides."),
         E("Donate", "/donate", "Anyone", "The donation page. Records the person as a contact.", "contacts, donations"),
         E("Stories (In Their Own Words)", "/stories", "Anyone, only when switched on",
           "Approved testimonials. Hidden everywhere on the site until the Owner or Leadership turns the stories switch on (default is off).",
@@ -75,7 +75,7 @@ SECTIONS = [
         E("Feedback", "Leadership area", "Leadership", "The feedback and questionnaire answers people gave after trainings.", "feedback_responses."),
         E("Contracts and business plan", "Reached from the Contacts area", "Contracts area", "The agreements people sign and the earlier versions, and the business plan page.", "contracts, contract_revisions."),
     ]),
-    ("guides", "Discovery Guides (the call flow)", "How a curious visitor gets a personal answer quickly.", [
+    ("guides", "Sojourn Guides (the call flow)", "How a curious visitor gets a personal answer quickly.", [
         E("Curious form to a Guide", "Public Talk to us form, then Admin > Call requests", "Guides and Leadership",
           "A visitor asks to be contacted by text or phone. The next Guide in turn is alerted, opens a private call page, makes the contact and can send the video link, the questionnaire and the reserve link from there. Unanswered requests move to the next Guide.",
           "call_requests, call_notices; alerts go out by Pushover and email."),

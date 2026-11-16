@@ -203,7 +203,7 @@ def interested_party_welcome_content(first_name, connect_url=None):
     greeting = first_name.strip() if first_name and first_name.strip() else "Friend"
 
     paras = [
-        "Thank you for your interest in Discovery! I\u2019d like to share why this training has meant so much to Pamela and me.",
+        "Thank you for your interest in Sojourn. I\u2019d like to share why this training has meant so much to Pamela and me.",
         "In 1996, our marriage was struggling. We had three children and had tried counseling, pastoral guidance, and just about everything we could think of. Yet our marriage seemed to be slipping through our fingers.",
         "Then a close friend invited us to attend a three-day experiential training. Pamela attended first.",
         "I\u2019ll never forget the phone call I received from her while I was at work. That conversation became a turning point in our marriage and the beginning of a remarkable journey.",
@@ -493,7 +493,7 @@ _LETTER_PARAS = (
     "Congratulations on completing your training... Woohoo!!! Let's keep going!!! "
     "From The Beginning through Vision, what you learned in each training is the foundation for the next. "
     "All these programs are fabulous and we look forward to seeing you there. "
-    "Meanwhile, would you please help the Discovery! staff by taking a few minutes to update your "
+    "Meanwhile, would you please help the Sojourn staff by taking a few minutes to update your "
     "pseudo name, Contract and as needed, other information from these programs. "
     "Our volunteers would otherwise have to type all of this into our records by hand, which "
     "takes many hours. We would be so grateful."
@@ -568,7 +568,7 @@ SESSION_LETTERS = {
             "We look forward to seeing you.",
         ],
         "signoff": "Warmly,",
-        "signer": "Coach Kent and the Discovery! Team",
+        "signer": "Coach Kent and the Sojourn Team",
     },
     "seminar_registration": {
         "title": "Seminar registration",
@@ -700,7 +700,7 @@ SESSION_LETTERS = {
             "We look forward to seeing you.",
         ],
         "signoff": "Warmly,",
-        "signer": "Coach Kent and the Discovery! Team",
+        "signer": "Coach Kent and the Sojourn Team",
     },
     "payment_reminder_other": {
         "title": "Payment reminder \u2013 Other Trainings",
@@ -761,7 +761,7 @@ SESSION_LETTERS = {
         "subject": "You're invited to serve as a TA for {training}",
         "button": "Let us know if you can join us",
         "paras": [
-            "TAs are the heartbeat of a Discovery! training. We believe the training's effectiveness depends on your skill, your ability and your leadership.",
+            "TAs are the heartbeat of a Sojourn training. We believe the training's effectiveness depends on your skill, your ability and your leadership.",
             "That is why we have chosen you to be a TA for {training}.",
             "We so appreciate your work, your dedication and your skill as you partner with us to bring healing and wholeness to the world.",
             "Please let us know whether you can join us on {dates}{where} by clicking the button below. If anything changes for you, just let us know.",
@@ -769,7 +769,7 @@ SESSION_LETTERS = {
             "Thanks so much.",
         ],
         "signoff": "God bless you,",
-        "signer": "The Discovery! Team",
+        "signer": "The Sojourn Team",
     },
     "facilitator_confirm": {
         "title": "Facilitator confirmation",
@@ -836,10 +836,10 @@ GUIDE_LETTERS = {
         "title": "Reply to \"I'm curious\"",
         "audience": "People who ask to be called",
         "greeting": "Hi",
-        "subject": "{vfirst} from Discovery! will {pw} you soon",
+        "subject": "{vfirst} from Sojourn will {pw} you soon",
         "paras": [
             "Thank you for your interest in {label}. We\u2019re so glad you\u2019re curious!",
-            "**{vol_name}**, an experienced Discovery! volunteer, will {pw} you from **{vphone}**, usually within a few hours. "
+            "**{vol_name}**, an experienced Sojourn volunteer, will {pw} you from **{vphone}**, usually within a few hours. "
             "We reach out between 8 am and 8 pm Central, so if you asked in the evening, expect to hear from {vfirst} the next morning. "
             "For your security, here is their name and number, so you will know it is us.",
             "There is no pressure at all. It\u2019s just a conversation with someone who has been through this training and is "
@@ -851,7 +851,7 @@ GUIDE_LETTERS = {
             "We\u2019re looking forward to meeting you!",
         ],
         "signoff": "Warmly,",
-        "signer": "The Discovery! Team",
+        "signer": "The Sojourn Team",
     },
     "guide_register": {
         "title": "Registration link",
@@ -865,7 +865,7 @@ GUIDE_LETTERS = {
             "If you have any questions, reply to this email or call {vfirst} at {vphone}.",
         ],
         "signoff": "Warmly,",
-        "signer": "{vol_name} and the Discovery! Team",
+        "signer": "{vol_name} and the Sojourn Team",
     },
     "guide_questionnaire": {
         "title": "Questionnaire link",
@@ -880,7 +880,7 @@ GUIDE_LETTERS = {
             "Questions? Reply to this email or call {vfirst} at {vphone}.",
         ],
         "signoff": "Warmly,",
-        "signer": "{vol_name} and the Discovery! Team",
+        "signer": "{vol_name} and the Sojourn Team",
     },
     "guide_longform": {
         "title": "Complete your profile",
@@ -895,7 +895,7 @@ GUIDE_LETTERS = {
             "Questions? Reply to this email or call {vfirst} at {vphone}.",
         ],
         "signoff": "Warmly,",
-        "signer": "{vol_name} and the Discovery! Team",
+        "signer": "{vol_name} and the Sojourn Team",
     },
     "profile_request": {
         "title": "Profile update request (email, text and the profile page)",
@@ -906,12 +906,12 @@ GUIDE_LETTERS = {
             "Dear {First name},",
             "Please take a moment to update your contact information below. It only takes a few minutes. "
             "Your updated information will keep you connected with your fellow participants and team members, "
-            "and ease some Discovery! admin burden.",
+            "and ease some Sojourn admin burden.",
             "{link}",
             "Your answers save as you go. You can close the page and pick up right where you left off by opening the same link again.",
         ],
         "signoff": "Thanks so much, and have a great day!",
-        "signer": "The Discovery! Team",
+        "signer": "The Sojourn Team",
     },
     "testimonial_request": {
         "title": "Testimonial request (email)",
@@ -925,7 +925,7 @@ GUIDE_LETTERS = {
             "{link}",
             "Your story will not be published without your approval. We'll show you the final edited version first, and when "
             "approved by you, we will add it to other testimonials that are ready to be added to the website.",
-            "When you have a free moment, please take a look at {home_url} to see the new direction we are heading with Discovery!. "
+            "When you have a free moment, please take a look at {home_url} to see the new direction we are heading with Sojourn. "
             "The program names and branding are very different from the past.{stories_sentence}",
         ],
         "signoff": "Thank you so much,",
@@ -944,7 +944,7 @@ GUIDE_LETTERS = {
             "Your answers save as you go. You can close the page and pick up right where you left off by opening the same link again.",
         ],
         "signoff": "Thanks so much,",
-        "signer": "The Discovery! Team",
+        "signer": "The Sojourn Team",
     },
     "video_call": {
         "title": "Video call link (Google Meet)",
@@ -972,7 +972,7 @@ GUIDE_LETTERS = {
             "Once your payment arrives, you will receive a confirmation from us.",
         ],
         "signoff": "Warmly,",
-        "signer": "{vol_name} and the Discovery! Team",
+        "signer": "{vol_name} and the Sojourn Team",
     },
     "guide_payment_reminder": {
         "title": "Payment reminder (from the Guide)",
@@ -987,7 +987,7 @@ GUIDE_LETTERS = {
             "We are glad to help.",
         ],
         "signoff": "Warmly,",
-        "signer": "{vol_name} and the Discovery! Team",
+        "signer": "{vol_name} and the Sojourn Team",
     },
     "sponsor_welcome": {
         "title": "Sponsor welcome (complete your profile)",
@@ -995,7 +995,7 @@ GUIDE_LETTERS = {
         "greeting": "Dear",
         "subject": "Thank you for sponsoring {client}",
         "paras": [
-            "It is because of volunteers like you that Discovery! flourishes, and we are so grateful for your leadership and giving heart. "
+            "It is because of volunteers like you that Sojourn flourishes, and we are so grateful for your leadership and giving heart. "
             "We have automated much of the sponsorship process so that everyone can complete the entire sponsorship process without admin support.",
             "Here is how it works:",
             "1. As a sponsor, you complete a short form registration for the sponsee.",
@@ -1003,13 +1003,13 @@ GUIDE_LETTERS = {
             "{link}",
             "Please complete the items marked in color on that form. Everything else is optional.",
             "Your answers save as you go. You can close the page and pick up right where you left off by opening the same link again.",
-            "3. When your contact form is complete, Discovery! will automatically send you a dedicated web page to your phone and computer which enables you "
+            "3. When your contact form is complete, Sojourn will automatically send you a dedicated web page to your phone and computer which enables you "
             "(simply by clicking on buttons) to easily walk the sponsee through the registration process. Of course, if you need help speaking to the sponsee, "
             "let us know (again by clicking on a button) and an experienced volunteer will reach out to you.",
             "Thank you so much. Let us know if you have questions.",
         ],
         "signoff": "Have a great day.",
-        "signer": "The Discovery! Team",
+        "signer": "The Sojourn Team",
     },
     "sponsor_page": {
         "title": "Sponsor thank-you and page (contact form complete)",
@@ -1025,7 +1025,7 @@ GUIDE_LETTERS = {
             "This page is yours alone, so please do not share the link. Thank you so much for sponsoring.",
         ],
         "signoff": "Have a great day.",
-        "signer": "The Discovery! Team",
+        "signer": "The Sojourn Team",
     },
 }
 GUIDE_FIELDS = ("when_text", "First Name", "first name", "label", "vol_name", "vfirst", "vphone", "link", "pw", "first", "First name", "Name", "name", "client", "page_link")

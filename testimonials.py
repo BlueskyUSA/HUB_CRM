@@ -21,7 +21,7 @@ STORY_PROGRAMS = [("D4", "The Art of Us"), ("D1", "The Beginning"), ("D2", "Awak
 PROGRAM_LABEL = dict(STORY_PROGRAMS)
 MAX_VIDEO_BYTES = 70 * 1024 * 1024
 NAME_CHOICES = [("full", "My full name"), ("initial", "My first name and last initial"), ("anon", "Anonymous")]
-CONSENT_TEXT = ("I give Discovery! permission to publish what I have shared here (my words and/or my video) on its "
+CONSENT_TEXT = ("I give Sojourn permission to publish what I have shared here (my words and/or my video) on its "
                 "website and in its materials, using the name choice I picked. I understand I can ask to have it "
                 "removed at any time.")
 

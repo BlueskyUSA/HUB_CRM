@@ -19,7 +19,7 @@ role labels like "Dallas Discovery Volunteer" in saved records.
 """
 import os
 
-PROGRAM_NAME = os.environ.get("PROGRAM_NAME", "Dallas Discovery").strip() or "Dallas Discovery"
+PROGRAM_NAME = os.environ.get("PROGRAM_NAME", "Sojourn").strip() or "Sojourn"
 PUBLIC_BASE_URL = (
     os.environ.get("PUBLIC_BASE_URL", "https://dallas-discovery-crm.onrender.com").strip().rstrip("/")
 )

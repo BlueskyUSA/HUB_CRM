@@ -1,0 +1,158 @@
+{% extends "crm_base.html" %}
+{% block title %}All Letters{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('.correspondence_home') }}">&larr; Correspondence</a></p>
+<h1>All Letters</h1>
+{% for m in get_flashed_messages() %}<p class="flash">{{ m }}</p>{% endfor %}
+{% for m in get_flashed_messages() %}<p class="flash">{{ m }}</p>{% endfor %}
+<p class="muted" style="max-width:860px">This page shows every type of correspondence (automated or not) that may be sent to trainees and volunteers throughout the entire Sojourn program. The correspondence is grouped by who receives it.</p>
+<p class="muted" style="max-width:860px">Each of these documents may be viewed by all volunteers who have logins to this program, but only the owner of this program may make changes to a document. Every changed document is saved as a numbered version so, if necessary, we can go back to previous versions. The <strong>View</strong> button shows the most current correspondence available and indicates whether the document is automated or not.</p>
+<p class="muted" style="max-width:860px">At the top of this page a button is available to send the owner suggested changes to these documents. If the owner agrees, the changes will be made.</p>
+{% set q = "" %}{% include "_letter_search.html" %}
+<p style="margin:12px 0"><a class="btn" href="{{ url_for('.correspondence_guide') }}">Letter Guide: what each letter is for</a> <a class="btn" href="#suggest" onclick="document.getElementById('suggestBox').style.display='block';">Suggest a change to a letter</a></p>
+{% if is_owner %}
+<details id="suggestions" class="card" style="max-width:860px; margin-top:14px" {{ 'open' if sugg_new else '' }}>
+  <summary style="cursor:pointer; font-weight:700">Suggestions received from volunteers <span class="muted" style="font-weight:400">({{ sugg_new|length }} new &middot; only you see this)</span></summary>
+  {% for s in sugg_new %}
+  <div style="border-top:1px solid var(--border); padding:10px 0">
+    <strong>{{ s.letter_name or 'A letter' }}</strong>
+    <span class="muted">&middot; {{ s.name }}{% if s.email %} ({{ s.email }}){% endif %} &middot; {{ s.created_at[:16] }} &middot; {{ s.source }}</span>
+    <div style="white-space:pre-wrap; margin-top:4px">{{ s.message }}</div>
+    <form method="post" action="{{ url_for('.correspondence_suggestion_done', sid=s.id) }}" style="margin-top:6px"><button class="btn secondary" type="submit">Mark as handled</button></form>
+  </div>
+  {% else %}<p class="muted" style="margin:8px 0 0">No new suggestions.</p>{% endfor %}
+  {% if sugg_done %}
+  <details style="margin-top:10px"><summary style="cursor:pointer" class="muted">Handled suggestions</summary>
+    {% for s in sugg_done %}
+    <div style="border-top:1px solid var(--border); padding:8px 0">
+      <strong>{{ s.letter_name or 'A letter' }}</strong> <span class="muted">&middot; {{ s.name }} &middot; {{ s.created_at[:10] }}</span>
+      <div style="white-space:pre-wrap; margin-top:2px">{{ s.message }}</div>
+      <form method="post" action="{{ url_for('.correspondence_suggestion_done', sid=s.id) }}" style="margin-top:4px"><input type="hidden" name="action" value="reopen"><button class="btn secondary" type="submit">Reopen</button></form>
+    </div>
+    {% endfor %}
+  </details>
+  {% endif %}
+</details>
+{% endif %}
+<div id="suggestBox" class="card" style="max-width:860px; margin-top:14px; display:none">
+  <strong id="suggest">Suggest a change to a letter</strong>
+  {% set suggest_action = url_for('.correspondence_suggest') %}{% set suggest_letters = letter_names %}{% set suggest_pick = '' %}{% set suggest_public = false %}{% set suggest_back = '' %}{% set suggest_fixed = '' %}
+  {% include "_suggest_form.html" %}
+</div>
+<p style="margin:14px 0">
+  <button type="button" class="btn secondary" onclick="document.querySelectorAll('details.catblock').forEach(function(d){d.open=true})">Open all</button>
+  <button type="button" class="btn secondary" onclick="document.querySelectorAll('details.catblock').forEach(function(d){d.open=false})">Close all</button>
+</p>
+<style>
+details.catblock{border:1px solid #d9d2c0;border-radius:8px;margin:10px 0;background:#fbf9f3}
+details.catblock>summary{cursor:pointer;padding:12px 16px;font-size:1.15rem;font-weight:700;list-style:none}
+details.catblock>summary::-webkit-details-marker{display:none}
+details.catblock>summary::before{content:"\25B8";display:inline-block;width:1.2em;color:#a8892f}
+details.catblock[open]>summary::before{content:"\25BE"}
+details.catblock .cnt{font-weight:400;font-size:.9rem;color:#6b6b5e;margin-left:8px}
+details.catblock .catbody{padding:0 16px 14px}
+details.subblock{background:#fff;margin:14px 0}
+details.subblock>summary{font-size:1.05rem}
+</style>
+{% for cid, ctitle, cintro, entries in cats %}
+{% set vis = entries|rejectattr('owner')|list if not can_marketing else entries %}
+<details class="catblock" id="cat-{{ cid }}">
+<summary>{{ ctitle }}<span class="cnt">{{ vis|length }} letter{{ '' if vis|length == 1 else 's' }}</span></summary>
+<div class="catbody">
+<p class="muted" style="margin-top:0">{{ cintro }}</p>
+{% if cid == 'contacts' %}{% include "_profile_sent_explainer.html" %}{% endif %}
+{% set subnames = entries|map(attribute='sub')|unique|list %}
+{% for sn in subnames %}
+{% set grp = entries|selectattr('sub','equalto',sn)|list %}
+{% if sn %}<details class="catblock subblock" open><summary>{{ sn }}<span class="cnt">{{ grp|length }} letter{{ '' if grp|length == 1 else 's' }}</span></summary><div class="catbody">{% endif %}
+<table class="stack">
+  <tr><th>Letter</th><th>When it is sent</th><th>Who gets it</th><th>Wording</th></tr>
+  {% for e in grp %}
+  {% if not (e.owner and not can_marketing) %}
+  <tr>
+    <td style="font-weight:600">{{ e.name }}
+      <div style="font-weight:400; font-size:.8rem; margin-top:3px"><span class="badge {{ 'good' if e.delivery == 'Automated' else '' }}">{{ e.delivery }}</span></div>
+      {% if e.key == 'guide_curious' %}
+      <details style="margin-top:6px; font-weight:400">
+        <summary style="cursor:pointer; color:#1f5fbf; font-size:.9rem">What is a Guide?</summary>
+        <div style="background:#fff8e1; border:1px solid #e3d29a; border-radius:6px; padding:4px 12px 10px; margin-top:6px; max-width:560px">
+          {% include "_guide_explainer.html" %}
+        </div>
+      </details>
+      {% endif %}
+      {% if e.slug in ('welcome', 'longform_followup') or e.key == 'guide_curious' %}
+      <details style="margin-top:6px; font-weight:400">
+        <summary style="cursor:pointer; color:#1f5fbf; font-size:.9rem">What is a Short Form?</summary>
+        <div style="background:#fff8e1; border:1px solid #e3d29a; border-radius:6px; padding:4px 12px 10px; margin-top:6px; max-width:560px">
+          {% include "_short_form_explainer.html" %}
+        </div>
+      </details>
+      {% endif %}
+      {% if e.slug in ('longform_followup', 'longform_thankyou') %}
+      <details style="margin-top:6px; font-weight:400">
+        <summary style="cursor:pointer; color:#1f5fbf; font-size:.9rem">What is the Profile?</summary>
+        <div style="background:#fff8e1; border:1px solid #e3d29a; border-radius:6px; padding:4px 12px 10px; margin-top:6px; max-width:560px">
+          {% include "_long_form_explainer.html" %}
+        </div>
+      </details>
+      {% endif %}</td>
+    <td data-label="When">{{ e.when }}</td>
+    <td data-label="Who gets it">{{ e.who }}</td>
+    <td style="white-space:nowrap">
+      {% if e.kind == 'edit' %}
+        <a class="btn secondary" href="{{ url_for('.correspondence_letter_edit', key=e.key, view=1) }}">View</a>
+        <a class="btn secondary" href="{{ url_for('.correspondence_letter_edit', key=e.key) if is_owner else '#' }}"{% if not is_owner %} onclick="alert('Only the Owner can edit correspondence. You can read every letter here, and use Suggest a change to ask for an edit.'); return false;"{% endif %}>Edit wording</a>
+        <div class="muted" style="font-size:.85rem; margin-top:4px">
+          {% if edits.get(e.key) %}Edited by {{ edits[e.key].updated_by or 'a team member' }}, {{ edits[e.key].updated_at[:10]|fdate }}{% else %}Original wording{% endif %}
+          {% if nvers.get(e.key) %} &middot; {{ nvers[e.key] }} version{{ '' if nvers[e.key] == 1 else 's' }}{% endif %}
+          {% if sent.get(e.key) %} &middot; {{ sent[e.key] }} sent{% endif %}
+        </div>
+      {% elif e.kind == 'view' %}
+        <a class="btn secondary" href="{{ url_for('.correspondence_letter_view', slug=e.slug) }}">View</a>
+        <div class="muted" style="font-size:.85rem; margin-top:4px">Wording is in the program code</div>
+      {% elif e.kind == 'page' %}
+        <a class="btn secondary" href="{{ e.url }}" target="_blank" rel="noopener">{{ e.label }}</a>
+        <div class="muted" style="font-size:.85rem; margin-top:4px">Opens the public page in a new tab. Nothing is sent from just looking.</div>
+      {% elif e.kind == 'ext' %}
+        <a class="btn secondary" href="{{ e.url }}" target="_blank" rel="noopener">View questionnaire</a>
+        <div class="muted" style="font-size:.85rem; margin-top:4px">Read-only preview, opens in a new tab</div>
+      {% elif e.kind == 'link' %}
+        {% if e.group %}<a class="btn secondary" href="{{ url_for('.' ~ e.url, group=e.group) }}">{{ e.label }}</a>
+        {% else %}<a class="btn secondary" href="{{ url_for('.' ~ e.url) }}">{{ e.label }}</a>{% endif %}
+      {% else %}
+        {% if e.text %}
+        <details open><summary style="cursor:pointer; color:#1f5fbf">Show wording</summary>
+          <div style="background:#fff; border:1px solid #d9d2c0; border-radius:6px; padding:4px 12px 10px; margin-top:6px; max-width:560px; white-space:normal">
+          {% for ttl, body in e.text %}<p style="margin:10px 0 2px"><strong>{{ ttl }}</strong></p><div style="white-space:pre-wrap">{{ body }}</div>{% endfor %}
+          <p class="muted" style="margin:10px 0 0; font-size:.85rem">Words in [brackets] are filled in for each person.</p>
+          </div>
+        </details>
+        {% else %}<span class="muted">{% if e.note %}{{ e.note }}{% else %}Wording is in the program code{% endif %}</span>{% endif %}
+      {% endif %}
+      {% if e.kind not in ('link',) %}<div style="margin-top:4px"><a href="#suggest" class="suggestLink" data-letter="{{ e.name }}" style="font-size:.85rem">Suggest a change</a></div>{% endif %}
+    </td>
+  </tr>
+  {% endif %}
+  {% endfor %}
+</table>
+{% if sn %}</div></details>{% endif %}
+{% endfor %}
+</div>
+</details>
+{% endfor %}
+<script>
+(function () {
+  var h = location.hash;
+  if (h && h.indexOf('#cat-') === 0) {
+    var d = document.getElementById(h.slice(1));
+    if (d && d.tagName === 'DETAILS') { d.open = true; d.scrollIntoView(); }
+  }
+})();
+document.querySelectorAll('.suggestLink').forEach(function (l) {
+  l.addEventListener('click', function () {
+    document.getElementById('suggestBox').style.display = 'block';
+    var s = document.getElementById('suggestLetter'); if (s) { s.value = l.getAttribute('data-letter'); }
+  });
+});
+</script>
+{% endblock %}

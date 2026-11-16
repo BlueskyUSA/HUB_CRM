@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sponsor guide — {{ program_name }}{% endblock %}
+{% block content %}
+<section class="pub-section">
+  <div class="pub-container" style="max-width:720px">
+    {% if session.staff_id %}<p style="margin:0 0 12px"><a class="pub-btn secondary" href="{{ url_for('crm.dashboard') }}">&larr; Back to the team site</a></p>{% endif %}
+
+    <h2>Sponsor guide</h2>
+    <p class="lead">A short guide for volunteers who sponsor someone.</p>
+    <h3>What a Sponsor does</h3>
+    <p>Registering a person is easy. Follow the instructions below, and if needed an experienced volunteer will call you to provide assistance.</p>
+    <ol>
+      <li>Click the &ldquo;Sponsor a Friend&rdquo; button below and complete the form for your friend.</li>
+      <li>Note that, for transparency, we ask your permission to send your contact information to your friend.</li>
+      <li>When the form is complete, you will receive an email asking you to fill in some basic information about yourself (this helps relieve the administrative burden). Then you will receive a private web page for your friend that walks you through the registration process.</li>
+    </ol>
+    <h3>Be a good sponsor</h3>
+    <ul>
+      <li>Only sponsor someone you have spoken with who would welcome hearing from us.</li>
+      <li>Listen first. Share your own story briefly and honestly. No pressure.</li>
+      <li>If you do not know an answer, say &ldquo;I&rsquo;ll find out.&rdquo; Do not guess about prices, dates or promises.</li>
+      <li>Keep what people tell you private, and keep your page link to yourself.</li>
+    </ul>
+    <p>Thanks so much. We greatly appreciate your help.<br>The Sojourn Team</p>
+    <p><a class="pub-btn dark" href="{{ url_for('public_sponsor') }}">Sponsor a Friend</a></p>
+  </div>
+</section>
+{% endblock %}

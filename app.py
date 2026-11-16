@@ -1997,7 +1997,7 @@ def prog_label(code):
 @app.context_processor
 def inject_program_name():
     """Makes {{ program_name }} available in every template (see config.py)."""
-    return {"program_name": PROGRAM_NAME, "public_brand": "Discovery!"}
+    return {"program_name": PROGRAM_NAME, "public_brand": "Sojourn"}
 
 
 @app.context_processor

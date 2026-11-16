@@ -20,7 +20,7 @@ def build_pdf(label, kind, data, updated_at=None):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), leftMargin=0.5 * inch, rightMargin=0.5 * inch,
                             topMargin=0.5 * inch, bottomMargin=0.5 * inch, title=f"Budget: {label}")
-    el = [Paragraph("Discovery!", st["Title"]), Paragraph(f"Budget: {label}", st["Heading2"]),
+    el = [Paragraph("Sojourn", st["Title"]), Paragraph(f"Budget: {label}", st["Heading2"]),
           Paragraph("Confidential. Prices marked ESTIMATE or PLACEHOLDER are not quotes."
                     + (f" Saved {updated_at}." if updated_at else " Starting template, not yet saved."), small), Spacer(1, 8)]
     if kind == "training":
