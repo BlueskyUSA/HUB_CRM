@@ -50,7 +50,7 @@
 <div class="qn-private"><strong>Just for you.</strong> These questions are for you alone. Please answer in your own words &mdash; there are no right or wrong answers. {% if personal %}Your answers are seen only by our training team.{% else %}Your answers are seen only by our training team, never by your partner.{% endif %}</div>
 {% if saved %}<p><em>Saved. You can finish later using this same link.</em></p>{% endif %}
   <form method="post" class="qn-form">
-    <div class="q"><label for="first_time_attending">{% if personal %}Is this your first time attending a Discovery! training?{% else %}Is this your first time attending {{ enr.program_name }}?{% endif %}</label>
+    <div class="q"><label for="first_time_attending">{% if personal %}Is this your first time attending a Sojourn<span style="color:#FF0000">!</span> training?{% else %}Is this your first time attending {{ enr.program_name }}?{% endif %}</label>
       <select id="first_time_attending" name="first_time_attending">
         <option value="">Choose&hellip;</option>
         <option {{ 'selected' if profile and profile.first_time_attending == 'Yes' else '' }}>Yes</option>

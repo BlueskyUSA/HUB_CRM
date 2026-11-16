@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The Excitement Is Building!!! — {{ program_name }}</title>
-  <meta name="description" content="Past Discovery! volunteers and TAs: add your name so you're among the first to know if and when something new takes shape.">
+  <meta name="description" content="Past Sojourn! volunteers and TAs: add your name so you're among the first to know if and when something new takes shape.">
   <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -110,13 +110,12 @@
       <span class="discovery-eyebrow">The Excitement Is Building!!!</span>
       <h1>Calling all you amazing Facilitators, TA's and many other Volunteers</h1>
       <p class="lead" style="text-align:left;">
-        In 2020 when the Discovery! program closed (due to Covid), many of us who gave
+        In 2020, when our former program closed (due to Covid), many of us who gave
         their time and heart to the training expressed a desire to re-open the program. Nothing
         is official yet, but we are in the early stages to make that happen.
       </p>
       <p class="lead" style="text-align:left;">
-        We will be meeting very soon with all interested volunteers. If you were a Dallas
-        Discovery! volunteer, or you are simply interested to know more about the training, we
+        We will be meeting very soon with all interested volunteers. If you were a volunteer, or you are simply interested to know more about the training, we
         would love to hear from you.
       </p>
       <p class="lead" style="text-align:left;">
@@ -137,7 +136,7 @@
           <div class="field"><label>Email *</label><input type="email" name="email" required></div>
           <div class="field"><label>Phone</label><input name="phone" class="phone-input" placeholder="000-000-0000" maxlength="12"></div>
           <div class="field">
-            <label>Select your Discovery! Role <span class="muted" style="font-weight:400;">(select "Interested Party" if you don't have a past volunteer role in Discovery!, but would like to know more or stay in touch)</span></label>
+            <label>Select your Sojourn<span style="color:#FF0000">!</span> Role <span class="muted" style="font-weight:400;">(select "Interested Party" if you don't have a past volunteer role in Sojourn<span style="color:#FF0000">!</span>, but would like to know more or stay in touch)</span></label>
             <div id="role-rows"></div>
           </div>
           <div class="field"><label>Anything you'd like us to know?</label>
@@ -159,7 +158,7 @@
   <template id="role-row-template">
     <div class="role-row">
       <select name="volunteer_type[]" required>
-        <option value="">Select your Discovery! Role *</option>
+        <option value="">Select your Sojourn! Role *</option>
         <option>Facilitator</option>
         <option>TA</option>
         <option>Trainee</option>

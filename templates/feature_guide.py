@@ -12,7 +12,7 @@ GUIDE_UPDATED = "October 31, 2026"
 E = lambda name, where, who, what, connects="": dict(name=name, where=where, who=who, what=what, connects=connects)
 
 SECTIONS = [
-    ("public", "The public website", "What visitors see. No login needed. The brand on every public page is written Discovery!", [
+    ("public", "The public website", "What visitors see. No login needed. The brand on every public page is written Sojourn!", [
         E("Home page and menu", "The web address itself (/)", "Anyone",
           "The front page, the main menu with the four programs, and a menu bar that reappears after scrolling on the main public pages.",
           "Menu subtitles and program pages are in the templates; upcoming dates come from Programs and Sessions."),
@@ -34,15 +34,15 @@ SECTIONS = [
         E("Stories (In Their Own Words)", "/stories", "Anyone, only when switched on",
           "Approved testimonials. Hidden everywhere on the site until the Owner or Leadership turns the stories switch on (default is off).",
           "Switch is on the Testimonials page; setting stored in app_settings (stories_visible)."),
-        E("Discovery volunteer invitation", "/discovery", "Past Discovery volunteers and TAs",
+        E("Past-volunteer invitation", "/reconnect", "Past volunteers and TAs",
           "A focused page for past volunteers and TAs to add themselves. Chosen roles include Interested Party.", "contacts"),
     ]),
     ("private_links", "Private links people receive", "Links with a private code in them. Only the person who got the link can use it.", [
         E("Complete your profile", "/complete-profile (public link) or /complete-profile/<code> (personal link)", "The person who got the link",
-          "The long form that gathers a person's details, history and agreements. The public link can be posted on social media or in a general email. Includes the question about attending a Discovery training.",
+          "The long form that gathers a person's details, history and agreements. The public link can be posted on social media or in a general email. Includes the question about attending a past training.",
           "Fills in the contact, training_profiles and contracts."),
         E("Connect with us", "/connect/<code>", "The person who got the Excitement email", "A one-click page that tells us the person wants to be contacted.", "Shows up under Contact requests."),
-        E("Request the preliminary plan", "/discovery/plan/<code>", "The person who got the long-form thank-you email", "Lets the person ask for the business plan.", "Business plan email and the contacts record."),
+        E("Request the preliminary plan", "/sojourn-plan/<code>", "The person who got the long-form thank-you email", "Lets the person ask for the business plan.", "Business plan email and the contacts record."),
         E("Questionnaire", "/questionnaire/<code>", "One trainee", "A trainee answers their own questionnaire privately. Nobody else, including a partner, can see the answers from here.", "feedback_responses, enrollments."),
         E("Feedback form", "/feedback/<code>", "One trainee", "The after-training feedback form.", "feedback_responses."),
         E("Share your experience", "/share/<code>, or /share for the open link", "The person invited, or anyone with the open link",
@@ -109,7 +109,7 @@ SECTIONS = [
         E("Marketing & Email Blasts", "Correspondence > Marketing & Email Blasts", "Owner and anyone given Correspondence",
           "Write a letter, choose the audience (a Data Source, program attendees, Guides, volunteers or the entire database), preview, send a test and send. Every blast includes an unsubscribe link.",
           "email_blasts and letters; sent through Brevo. See Brevo."),
-        E("Excitement email and the long-form thank-you", "On a contact's record", "Contacts area", "Send the Excitement email, then the thank-you after someone completes the long form. The thank-you includes a testimonial invitation only for people who say they attended a Discovery training.", "contacts, testimonials."),
+        E("Excitement email and the long-form thank-you", "On a contact's record", "Contacts area", "Send the Excitement email, then the thank-you after someone completes the long form. The thank-you includes a testimonial invitation only for people who say they attended a past training.", "contacts, testimonials."),
         E("Video call link and business plan", "On a contact's record", "Contacts area (business plan: Leadership)", "Send the video call link or the business plan to a contact.", ""),
         E("Brevo (email sender)", "Behind the scenes", "Owner", "All email goes out through Brevo from Kent Hafemann. Emails sent this way do not appear in Kent's own Sent folder, so invitations also BCC Kent.", "Settings in the hosting service."),
     ]),

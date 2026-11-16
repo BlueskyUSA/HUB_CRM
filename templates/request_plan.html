@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Preliminary Discovery Plan — {{ program_name }}</title>
+  <title>Preliminary Sojourn Plan — {{ program_name }}</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,13 +61,13 @@
       {% elif sent == 'held' %}
       <div class="plan-success">
         <h2>Thank you, {{ contact.first_name }}!</h2>
-        <p>We received your request for the Preliminary Discovery Plan. We will send it to you personally very soon.</p>
+        <p>We received your request for the Preliminary Sojourn<span style="color:#FF0000">!</span> Plan. We will send it to you personally very soon.</p>
         <p>Blessings on you,<br>Kent</p>
       </div>
       {% elif sent %}
       <div class="plan-success">
         <h2>On its way, {{ contact.first_name }}!</h2>
-        <p>Check your email in the next few minutes for the Preliminary Discovery Plan.
+        <p>Check your email in the next few minutes for the Preliminary Sojourn<span style="color:#FF0000">!</span> Plan.
         Thank you for wanting to dig a little deeper into this with us.</p>
         <p>Blessings on you,<br>Kent</p>
       </div>
@@ -75,12 +75,12 @@
       <h1>Want the plan?</h1>
       <p class="lead">
         Hi {{ contact.first_name }} &mdash; click below and we'll send you the Preliminary
-        Discovery Plan: our mission and goals, the tasks involved with getting this training
+        Sojourn<span style="color:#FF0000">!</span> Plan: our mission and goals, the tasks involved with getting this training
         running again, and where there might be a place for you.
       </p>
       <div class="plan-form-card">
         <form class="pub-form" method="post">
-          <button class="pub-btn dark" type="submit" style="width:100%">Send me the Preliminary Discovery Plan &rarr;</button>
+          <button class="pub-btn dark" type="submit" style="width:100%">Send me the Preliminary Sojourn<span style="color:#FF0000">!</span> Plan &rarr;</button>
         </form>
       </div>
       {% endif %}

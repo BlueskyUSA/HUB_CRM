@@ -308,7 +308,7 @@ def catalog():
             V("helper_welcome", "Volunteer welcome", "Automatically, when a volunteer joins the helper team.", "New volunteers", sub="Other Volunteers"),
          ]),
         ("testimonials", "Testimonials", "Inviting and checking what people say about the program.", [
-            C("Share your Discovery! experience", "By hand, from the Testimonials page.", "Past trainees"),
+            C("Share your experience", "By hand, from the Testimonials page.", "Past trainees"),
             C("A new testimonial is ready to review", "Automatically, when a testimonial comes in.", "Leadership"),
             C("Please check your story before we share it", "By hand, once a story is ready.", "People who sent a testimonial"),
          ]),

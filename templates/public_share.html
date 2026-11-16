@@ -25,7 +25,7 @@
     <p class="lead">Your story has been received. We will read it, and we will send you the final version to approve before anything is shared. Your words may help someone take their first step.</p>
     {% if pass_msg %}
     <div class="sh-consent" style="margin-top:26px">
-      <b>Know someone else who has been through Discovery!?</b>
+      <b>Know someone else who has been through Sojourn<span style="color:#FF0000">!</span>?</b>
       <p style="margin:8px 0">Pass it on. Here is a note you can send. Change it however you like.</p>
       <textarea id="pass-msg" rows="12" style="width:100%;background:#fff;border:1px solid #c9d8da;border-radius:8px;padding:12px 14px;font:1rem/1.5 Inter,Arial,sans-serif;box-sizing:border-box">{{ pass_msg }}</textarea>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px">
@@ -40,14 +40,14 @@
     (function(){var m=document.getElementById('pass-msg');
       function lk(v){return v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');}
       function upd(){var mm=m.value.match(/https?:\/\/\S+/);if(mm)document.getElementById('pass-check').href=mm[0];var b=encodeURIComponent(m.value);document.getElementById('pass-sms').href='sms:?&body='+b;
-        document.getElementById('pass-mail').href='mailto:?subject='+encodeURIComponent('Would you share your Discovery! experience?')+'&body='+b;}
+        document.getElementById('pass-mail').href='mailto:?subject='+encodeURIComponent('Would you share your Sojourn! experience?')+'&body='+b;}
       m.addEventListener('input',upd);upd();
       document.getElementById('pass-copy').onclick=function(){m.select();try{navigator.clipboard.writeText(m.value);}catch(e){document.execCommand('copy');}document.getElementById('pass-ok').style.display='block';};})();
     </script>
     {% endif %}
   {% else %}
     <h2>Share your experience</h2>
-    <p class="lead">{% if req.first_name and not open_mode %}Hi {{ req.first_name }}, {% endif %}we would love to hear in your own words what {% if program_label %}{{ program_label }}{% else %}Discovery!{% endif %} meant to you. A few sentences is plenty. Please tell us what you experienced and learned, in everyday words, rather than medical or therapy terms. Choose whatever is easiest:</p>
+    <p class="lead">{% if req.first_name and not open_mode %}Hi {{ req.first_name }}, {% endif %}we would love to hear in your own words what {% if program_label %}{{ program_label }}{% else %}Sojourn<span style="color:#FF0000">!</span>{% endif %} meant to you. A few sentences is plenty. Please tell us what you experienced and learned, in everyday words, rather than medical or therapy terms. Choose whatever is easiest:</p>
     <form class="pub-form" method="post" enctype="multipart/form-data" id="shform" style="max-width:none">
       {% if open_mode %}
       <input type="hidden" name="from" value="{{ ref_token or '' }}">
@@ -55,7 +55,7 @@
       <div class="field"><label for="p-name">Your name *</label><input id="p-name" name="name" required autocomplete="name"></div>
       <div class="field"><label for="p-email">Your email</label><input id="p-email" name="email" type="email" autocomplete="email"></div>
       <div class="field"><label for="p-phone">Your cell number</label><input id="p-phone" name="phone" inputmode="tel" autocomplete="tel"><span class="sh-note">Email or cell number, at least one, so we can reach you.</span></div>
-      <div class="field"><label for="p-prog">Which Discovery! program did you take? (optional)</label>
+      <div class="field"><label for="p-prog">Which Sojourn<span style="color:#FF0000">!</span> program did you take? (optional)</label>
         <select id="p-prog" name="program"><option value="GEN">Not sure / more than one</option>{% for code, label in programs if code != 'GEN' %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></div>
       {% endif %}
       <div class="sh-opt">

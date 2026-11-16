@@ -17,7 +17,7 @@ from flask import render_template, request, redirect, url_for, flash, abort, ses
 
 # (code, label) in the order shown on the Stories page; "GEN" = general / more than one program
 STORY_PROGRAMS = [("D4", "The Art of Us"), ("D1", "The Beginning"), ("D2", "Awakening"), ("D3", "Vision"),
-                  ("D5", "Renew"), ("D6", "Spiritual"), ("GEN", "Discovery! in general")]
+                  ("D5", "Renew"), ("D6", "Spiritual"), ("GEN", "The program in general")]
 PROGRAM_LABEL = dict(STORY_PROGRAMS)
 MAX_VIDEO_BYTES = 70 * 1024 * 1024
 NAME_CHOICES = [("full", "My full name"), ("initial", "My first name and last initial"), ("anon", "Anonymous")]
@@ -171,9 +171,9 @@ def pass_it_on(first, link):
     who = (first or "").strip()
     greeting = f"Hey there, it's {who}!" if who else "Hey there!"
     return (greeting + "\n\n"
-            "I just shared a short testimonial about my experience with Discovery!, and I thought you might enjoy "
+            "I just shared a short testimonial about my experience with the program, and I thought you might enjoy "
             "sharing yours, too.\n\n"
-            "We'd love to hear what Discovery! meant to you and what you took away from the experience. It only takes "
+            "We'd love to hear what the program meant to you and what you took away from the experience. It only takes "
             "a few minutes, and you can share your story in writing or through a short video. "
             "Just enter your name, email, and cell number to get started.\n\n"
             "Here's the link to share your story:\n" + link)
@@ -518,8 +518,8 @@ def register(app, crm, leadership_required, get_db, send_email, full_name_sql, p
                 req_row_id = conn.execute("SELECT id FROM testimonial_requests WHERE token = ?", (token,)).fetchone()["id"]
                 link = url_for("public_share", token=token, _external=True)
                 first = (ct["first_name"] or ct["full_name"] or "there").strip()
-                what = PROGRAM_LABEL[program] if program != "GEN" else "Discovery!"
-                sms = (f"Hi {first}, it's Kent. We're inviting former trainees & volunteers to share how Discovery! has touched "
+                what = PROGRAM_LABEL[program] if program != "GEN" else "the program"
+                sms = (f"Hi {first}, it's Kent. We're inviting former trainees & volunteers to share how the program has touched "
                        f"their lives. We'd love to hear about your experience with the training. You can speak it, type it or record it "
                        f"here: {link}"
                        + (f"\n\n{note}" if note else "")

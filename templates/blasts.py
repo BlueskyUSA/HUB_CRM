@@ -944,7 +944,7 @@ def register(app, crm, owner_required, get_db):
             finally:
                 conn.close()
             for sid in ids:
-                run_send(get_db, sid, (os.environ.get("PUBLIC_BASE_URL") or "https://dallas-discovery-crm.onrender.com").rstrip("/"))
+                run_send(get_db, sid, (os.environ.get("PUBLIC_BASE_URL") or "https://sojourn.blueskyusa.net").rstrip("/"))
         except Exception as e:
             print(f"Couldn't resume email blasts: {e}", flush=True)
 

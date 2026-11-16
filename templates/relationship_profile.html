@@ -6,7 +6,7 @@
 
 <div class="card">
   <form method="post">
-    <div class="field"><label>{{ 'Is this your first time attending a Discovery training?' if enrollment.code == 'D1' else 'Is this your first time attending The Art of Us?' }}</label>
+    <div class="field"><label>{{ 'Is this your first time attending a Sojourn training?' if enrollment.code == 'D1' else 'Is this your first time attending The Art of Us?' }}</label>
       <select name="first_time_attending">
         <option value="">—</option>
         <option {{ 'selected' if profile and profile.first_time_attending == 'Yes' else '' }}>Yes</option>

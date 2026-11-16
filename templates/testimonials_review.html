@@ -17,7 +17,7 @@
 <p class="muted">Every request you send is listed here, from the moment it goes out until it is published. The ones that need you are at the top.</p>
 {% if text_only %}
 <div class="card" style="border-left:4px solid #c9a227">
-  <b>Said they attended Discovery!, but no email on file ({{ text_only|length }}).</b> Ask them for a testimonial by text:
+  <b>Said they attended Sojourn<span style="color:#FF0000">!</span>, but no email on file ({{ text_only|length }}).</b> Ask them for a testimonial by text:
   <table class="stack" style="margin-top:6px">
   {% for c in text_only %}<tr><td style="font-weight:600">{{ c.full_name }}</td><td>{{ c.cell_phone or c.home_phone }}</td>
     <td><a class="btn secondary" href="{{ url_for('.testimonial_request', c=c.id) }}">Make a text link</a></td></tr>{% endfor %}
