@@ -21,7 +21,7 @@ import os
 
 PROGRAM_NAME = os.environ.get("PROGRAM_NAME", "Sojourn").strip() or "Sojourn"
 PUBLIC_BASE_URL = (
-    os.environ.get("PUBLIC_BASE_URL", "https://dallas-discovery-crm.onrender.com").strip().rstrip("/")
+    os.environ.get("PUBLIC_BASE_URL", "https://sojourn.blueskyusa.net").strip().rstrip("/")
 )
 # The public sign-up page people are sent to from the emails.
-DISCOVERY_URL = PUBLIC_BASE_URL + "/discovery"
+DISCOVERY_URL = PUBLIC_BASE_URL + "/reconnect"

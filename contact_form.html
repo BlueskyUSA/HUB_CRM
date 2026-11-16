@@ -259,10 +259,10 @@
 
     </div>
     <div style="margin-bottom:14px">
-      <h3>Discovery history</h3>
+      <h3>Sojourn<span style="color:#FF0000">!</span> history</h3>
       <div class="grid2" style="margin-top:10px">
       <div class="field">
-        <div class="field"><label>Previously enrolled in Discovery trainings?</label>
+        <div class="field"><label>Previously enrolled in Sojourn<span style="color:#FF0000">!</span> trainings?</label>
           <select name="discovery_attendance" class="yesno-toggle" data-show-target="discovery_dates_box">
             <option value="" {% if contact and contact.discovery_attendance == '' %}selected{% endif %}>—</option>
             <option {% if contact and contact.discovery_attendance == 'Yes' %}selected{% endif %}>Yes</option>
@@ -273,8 +273,8 @@
           <div class="field"><label>The Beginning: month &amp; year</label><input name="d1_month_year" placeholder="e.g. March 2024" value="{{ contact.d1_month_year if contact and contact.d1_month_year else '' }}"></div>
           <div class="field"><label>Awakening: month &amp; year</label><input name="d2_month_year" placeholder="e.g. April 2024" value="{{ contact.d2_month_year if contact and contact.d2_month_year else '' }}"></div>
           <div class="field"><label>Vision: month &amp; year</label><input name="d3_month_year" placeholder="e.g. May 2024" value="{{ contact.d3_month_year if contact and contact.d3_month_year else '' }}"></div>
-          <div class="field"><label>Refocus (Discovery)</label><input name="refocus_month_year" placeholder="e.g. June 2024" value="{{ contact.refocus_month_year if contact and contact.refocus_month_year else '' }}"></div>
-          <div class="field" style="margin-bottom:0"><label>The Art of Us (Discovery!)</label><input name="relationship_training_month_year" placeholder="e.g. July 2024" value="{{ contact.relationship_training_month_year if contact and contact.relationship_training_month_year else '' }}"></div>
+          <div class="field"><label>Refocus (Sojourn<span style="color:#FF0000">!</span>)</label><input name="refocus_month_year" placeholder="e.g. June 2024" value="{{ contact.refocus_month_year if contact and contact.refocus_month_year else '' }}"></div>
+          <div class="field" style="margin-bottom:0"><label>The Art of Us (Sojourn<span style="color:#FF0000">!</span>)</label><input name="relationship_training_month_year" placeholder="e.g. July 2024" value="{{ contact.relationship_training_month_year if contact and contact.relationship_training_month_year else '' }}"></div>
         </div>
       </div>
       </div>

@@ -13,7 +13,7 @@ Safe to run more than once -- it just sends another copy of the same email.
 from email_utils import send_email, EmailSendError
 
 TO_EMAIL = "khres53@gmail.com"
-SITE_BASE = "https://dallas-discovery-crm.onrender.com"
+SITE_BASE = "https://sojourn.blueskyusa.net"
 SHORT_FORM_URL = f"{SITE_BASE}/discovery"
 LONG_FORM_URL = f"{SITE_BASE}/complete-profile"
 

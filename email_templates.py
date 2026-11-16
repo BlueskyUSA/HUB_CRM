@@ -280,7 +280,7 @@ def longform_thankyou_content(first_name, connect_url, plan_url, share_url=None)
     if share_url:
         share_html = (
             "<p><strong>One more thing:</strong> you may have heard we are inviting former trainees &amp; volunteers to "
-            "share how Discovery! has touched their lives, and the lives of their family and friends. We'd love to hear "
+            "share how the program has touched their lives, and the lives of their family and friends. We'd love to hear "
             "about your experience with the training. It only takes a couple of minutes. You can speak it, type it, or "
             "record yourself. Your story may help someone else take their first step.</p>"
             f'<p style="margin:22px 0"><a href="{share_url}" style="display:inline-block; background:#0c4561; color:#ffffff; '
@@ -289,7 +289,7 @@ def longform_thankyou_content(first_name, connect_url, plan_url, share_url=None)
             "testimonials to the website once enough of you have responded.</p>"
         )
         share_text = (
-            "One more thing: you may have heard we are inviting former trainees & volunteers to share how Discovery! "
+            "One more thing: you may have heard we are inviting former trainees & volunteers to share how the program "
             "has touched their lives, and the lives of their family and friends. We'd love to hear about your experience "
             "with the training. It only takes a couple of minutes. You can speak it, type it, or record yourself. Your "
             "story may help someone else take their first step.\n\n"
@@ -917,9 +917,9 @@ GUIDE_LETTERS = {
         "title": "Testimonial request (email)",
         "audience": "Former trainees and volunteers you invite to share their story",
         "greeting": "Hi",
-        "subject": "Share your Discovery! experience",
+        "subject": "Share your experience",
         "paras": [
-            "You may have heard we are inviting former trainees & volunteers to share how Discovery! has touched their lives, "
+            "You may have heard we are inviting former trainees & volunteers to share how the program has touched their lives, "
             "and the lives of their family and friends. We'd love to hear about your experience with the training. It only takes a "
             "couple of minutes. You can speak it, type it, or record yourself. Your story may help someone else take their first step.",
             "{link}",

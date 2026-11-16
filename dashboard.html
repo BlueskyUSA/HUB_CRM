@@ -2,7 +2,7 @@
 {% block title %}HUB Dashboard — {{ program_name }}{% endblock %}
 {% block content %}
 <h1>HUB Dashboard</h1>
-<p class="muted">{{ program_name }} — registration &amp; training management</p>
+<p class="muted">{{ program_name|bang }} — registration &amp; training management</p>
 
 {% if show_alerts %}
 <div class="card" style="max-width:860px; border-left:5px solid {{ '#b3412f' if alerts and alerts|selectattr('level','equalto','urgent')|list else ('#a8892f' if alerts else '#6b8f71') }}">
@@ -66,7 +66,7 @@
         <li><strong>Contacts</strong> &ndash; Find, Edit, and Add Contacts to the database.</li>
         <li><strong>Send Emails or Text Messages</strong> from contacts page, including:
           <ol type="i" style="padding-left:24px; margin:4px 0">
-            <li><strong>Excitement Letter</strong> &ndash; opening Discovery;</li>
+            <li><strong>Excitement Letter</strong> &ndash; opening Sojourn<span style="color:#FF0000">!</span>;</li>
             <li><strong>Generate Link</strong> &ndash; requesting completion of Contact form;</li>
             <li><strong>Business Plan</strong> &ndash; Sent to those who are interested;</li>
             <li><strong>Contract Information Request</strong> &ndash; Automatic email updating contact form.</li>
@@ -88,7 +88,7 @@
   {% if session.staff_role == 'Accounting' %}
   <p>Your login is <strong>view-only</strong>. You can read everything you have been given, but nothing you do here changes the records.</p>
   {% endif %}
-  <p style="margin-bottom:0">Trainee and leadership information here is confidential. Please use it only for Sojourn. Questions or something not working? Tell the Owner.</p>
+  <p style="margin-bottom:0">Trainee and leadership information here is confidential. Please use it only for Sojourn<span style="color:#FF0000">!</span> Questions or something not working? Tell the Owner.</p>
 </div>
 
 {% endblock %}

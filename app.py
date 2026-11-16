@@ -1105,7 +1105,7 @@ def export_for_claude():
     conn.close()
     resp = make_response(buf.getvalue())
     resp.headers["Content-Type"] = "application/zip"
-    resp.headers["Content-Disposition"] = f"attachment; filename=dallas-discovery-data-{date.today().isoformat()}.zip"
+    resp.headers["Content-Disposition"] = f"attachment; filename=sojourn-data-{date.today().isoformat()}.zip"
     print(f"Owner downloaded a data snapshot ({'with' if with_private else 'without'} contact details): {', '.join(summary)}", flush=True)
     return resp
 
@@ -2475,7 +2475,7 @@ def profile_stages(conn, contact):
             dict(done=not bm, label="Basic info complete", note="" if not bm else "missing: " + ", ".join(bm)),
             dict(done=not pm, label="Personal info complete", note="" if not pm else "missing: " + ", ".join(pm)),
             dict(done=(not bm and not pm), label="Profile complete", note="Basic + Personal info" if (not bm and not pm) else "needs Basic and Personal info", strong=True),
-            dict(done=hd, label="Discovery history", note=hn + " (not required for the Profile)"),
+            dict(done=hd, label="Sojourn history", note=hn + " (not required for the Profile)"),
         ])
 
 
@@ -3503,7 +3503,7 @@ def public_connect_request(token):
     return render_template("connect.html", contact=contact, submitted=submitted, emailed=emailed_flag)
 
 
-@app.route("/discovery/plan/<token>", methods=["GET", "POST"])
+@app.route("/sojourn-plan/<token>", methods=["GET", "POST"])
 def request_preliminary_plan(token):
     """Public, no-login page linked from the long-form thank-you email's
     "Send me the Preliminary Discovery Plan" button. Deliberately opt-in
@@ -7456,7 +7456,7 @@ def finance_export():
                     r["reference"], r["covers"], r["note"], BOOKS_ENTITY, r["recorded_by"]])
     resp = make_response(out.getvalue())
     resp.headers["Content-Type"] = "text/csv; charset=utf-8"
-    resp.headers["Content-Disposition"] = f"attachment; filename=discovery-income-{start}-to-{end}.csv"
+    resp.headers["Content-Disposition"] = f"attachment; filename=sojourn-income-{start}-to-{end}.csv"
     return resp
 
 
@@ -7857,7 +7857,7 @@ def public_contact():
     return render_template("public_contact.html")
 
 
-@app.route("/discovery", methods=["GET", "POST"])
+@app.route("/reconnect", methods=["GET", "POST"])
 def public_discovery():
     """Standalone invitation page for past Discovery volunteers/TAs to add
     themselves to the contact list. Deliberately not built on base.html --
@@ -8052,6 +8052,18 @@ def public_discovery():
     # earlier years need to be able to pick their actual year too.
     years = list(range(current_year, 1989, -1))
     return render_template("public_discovery.html", submitted=submitted, emailed=emailed_flag, years=years)
+
+
+# Old web addresses (links already sent in earlier emails) keep working by
+# forwarding to the new names.
+@app.route("/discovery", methods=["GET", "POST"])
+def old_discovery_address():
+    return redirect(url_for("public_discovery", **request.args.to_dict()), code=308)
+
+
+@app.route("/discovery/plan/<token>", methods=["GET", "POST"])
+def old_plan_address(token):
+    return redirect(url_for("request_preliminary_plan", token=token, **request.args.to_dict()), code=308)
 
 
 @app.route("/donate", methods=["GET", "POST"])
@@ -8972,7 +8984,7 @@ def send_due_completion_letters(today=None):
                              (token, r["contact_id"]))
                 conn.commit()
                 token = conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (r["contact_id"],)).fetchone()["profile_token"]
-            with app.test_request_context(base_url=os.environ.get("PUBLIC_BASE_URL", "https://dallas-discovery-crm.onrender.com")):
+            with app.test_request_context(base_url=os.environ.get("PUBLIC_BASE_URL", "https://sojourn.blueskyusa.net")):
                 url = url_for("public_complete_profile", token=token, contracts=1, _external=True)
             letter = completion_letter_content(r["first_name"], url, code, r["program_name"])
             if not letter:
@@ -9095,7 +9107,7 @@ def _call_sweep_loop():
     while True:
         time.sleep(300)
         try:
-            call_flow.sweep(get_db, (os.environ.get("PUBLIC_BASE_URL") or "https://dallas-discovery-crm.onrender.com").rstrip("/"))
+            call_flow.sweep(get_db, (os.environ.get("PUBLIC_BASE_URL") or "https://sojourn.blueskyusa.net").rstrip("/"))
         except Exception as e:  # never let the loop die
             print(f"call request check failed: {e}", flush=True)
         try:

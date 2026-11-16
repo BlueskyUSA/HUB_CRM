@@ -1,0 +1,101 @@
+{% extends "crm_base.html" %}
+{% block title %}Hub Ownership — {{ program_name }} ERP{% endblock %}
+{% block content %}
+<h1>Hub Ownership</h1>
+<p class="muted">Who owns the Hub and the Sojourn<span style="color:#FF0000">!</span> assets, the papers that prove it, and who helps. Visible to the Owner and Administrators.
+<b>Do not enter passwords, personal Social Security numbers or bank account numbers here.</b> A business tax ID (EIN) is fine. Put scanned documents in a shared folder and note the place under "Where kept".</p>
+
+<div class="card" id="entity">
+  <h3 style="margin-top:0">Entities</h3>
+  {% for e in entities %}
+  <form method="post" action="{{ url_for('.hub_ownership_save', kind='entity') }}" style="border-top:1px solid #ddd; padding:8px 0">
+    <input type="hidden" name="id" value="{{ e.id }}">
+    <div style="display:flex; gap:6px; flex-wrap:wrap">
+      <input name="name" value="{{ e.name or '' }}" placeholder="Legal name" style="flex:2 1 240px; font-weight:700">
+      <input name="kind" value="{{ e.kind or '' }}" placeholder="Type (LLC, nonprofit...)" style="flex:1 1 140px">
+      <select name="status" style="flex:0 1 120px">{% for s in entity_status %}<option {{ 'selected' if e.status == s }}>{{ s }}</option>{% endfor %}</select>
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">
+      <input name="ein" value="{{ e.ein or '' }}" placeholder="EIN (tax ID)" style="flex:1 1 130px">
+      <input name="state" value="{{ e.state or '' }}" placeholder="State" style="flex:0 1 100px">
+      <input name="formed_on" value="{{ e.formed_on or '' }}" placeholder="Date formed" style="flex:1 1 120px">
+      <input name="registered_agent" value="{{ e.registered_agent or '' }}" placeholder="Registered agent" style="flex:1 1 180px">
+    </div>
+    <input name="address" value="{{ e.address or '' }}" placeholder="Address" style="width:100%; margin-top:6px">
+    <input name="notes" value="{{ e.notes or '' }}" placeholder="What it does / notes" style="width:100%; margin-top:6px">
+    <div style="margin-top:6px; display:flex; gap:8px; align-items:center">
+      <button class="btn" type="submit" style="padding:2px 12px">Save</button>
+      {% if e.updated_at %}<span class="muted" style="font-size:.8rem">Updated {{ e.updated_at }}{% if e.updated_by %} by {{ e.updated_by }}{% endif %}</span>{% endif %}
+    </div>
+  </form>
+  <form method="post" action="{{ url_for('.hub_ownership_delete', kind='entity', rid=e.id) }}" onsubmit="return confirm('Remove this entity from the list?');" style="margin:0 0 6px"><button class="btn danger" type="submit" style="padding:1px 8px; font-size:.8rem">Remove</button></form>
+  {% endfor %}
+  <form method="post" action="{{ url_for('.hub_ownership_save', kind='entity') }}" style="border-top:2px solid #bbb; padding-top:8px">
+    <b>Add entity</b>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">
+      <input name="name" placeholder="Legal name" required style="flex:2 1 240px"><input name="kind" placeholder="Type" style="flex:1 1 140px">
+      <input type="hidden" name="status" value="Planned"><button class="btn" type="submit">Add</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" id="doc">
+  <h3 style="margin-top:0">Documents</h3>
+  <p class="muted">A checklist of the papers to collect. Set the status as each is done and note where the original is kept.</p>
+  {% for d in docs %}
+  <form method="post" action="{{ url_for('.hub_ownership_save', kind='doc') }}" style="border-top:1px solid #ddd; padding:8px 0">
+    <input type="hidden" name="id" value="{{ d.id }}">
+    <div style="display:flex; gap:6px; flex-wrap:wrap">
+      <input name="entity" value="{{ d.entity or '' }}" placeholder="Which entity" style="flex:0 1 130px">
+      <input name="title" value="{{ d.title or '' }}" placeholder="Document" style="flex:3 1 280px; font-weight:700">
+      <select name="status" style="flex:0 1 120px">{% for s in doc_status %}<option {{ 'selected' if d.status == s }}>{{ s }}</option>{% endfor %}</select>
+      <input name="doc_date" value="{{ d.doc_date or '' }}" placeholder="Date" style="flex:0 1 110px">
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">
+      <input name="where_kept" value="{{ d.where_kept or '' }}" placeholder="Where kept (folder, safe, attorney)" style="flex:1 1 220px">
+      <input name="link" value="{{ d.link or '' }}" placeholder="Link to the scan (optional)" style="flex:1 1 220px">
+    </div>
+    <input name="notes" value="{{ d.notes or '' }}" placeholder="Notes" style="width:100%; margin-top:6px">
+    <div style="margin-top:6px; display:flex; gap:8px; align-items:center">
+      <button class="btn" type="submit" style="padding:2px 12px">Save</button>
+      {% if d.link %}<a href="{{ d.link }}" target="_blank" rel="noopener" style="font-size:.85rem">Open</a>{% endif %}
+      <span class="badge {{ 'good' if d.status == 'Done' }}">{{ d.status }}</span>
+      {% if d.updated_at %}<span class="muted" style="font-size:.8rem">Updated {{ d.updated_at }}{% if d.updated_by %} by {{ d.updated_by }}{% endif %}</span>{% endif %}
+    </div>
+  </form>
+  <form method="post" action="{{ url_for('.hub_ownership_delete', kind='doc', rid=d.id) }}" onsubmit="return confirm('Remove this document from the list?');" style="margin:0 0 6px"><button class="btn danger" type="submit" style="padding:1px 8px; font-size:.8rem">Remove</button></form>
+  {% endfor %}
+  <form method="post" action="{{ url_for('.hub_ownership_save', kind='doc') }}" style="border-top:2px solid #bbb; padding-top:8px">
+    <b>Add document</b>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">
+      <input name="entity" placeholder="Which entity" style="flex:0 1 130px"><input name="title" placeholder="Document" required style="flex:3 1 280px">
+      <input type="hidden" name="status" value="Not started"><button class="btn" type="submit">Add</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" id="person">
+  <h3 style="margin-top:0">People who help</h3>
+  {% for p in people %}
+  <form method="post" action="{{ url_for('.hub_ownership_save', kind='person') }}" style="border-top:1px solid #ddd; padding:8px 0">
+    <input type="hidden" name="id" value="{{ p.id }}">
+    <div style="display:flex; gap:6px; flex-wrap:wrap">
+      <input name="role" value="{{ p.role or '' }}" placeholder="Role" style="flex:1 1 150px; font-weight:700">
+      <input name="name" value="{{ p.name or '' }}" placeholder="Name" style="flex:1 1 150px">
+      <input name="firm" value="{{ p.firm or '' }}" placeholder="Firm" style="flex:1 1 150px">
+      <input name="email" value="{{ p.email or '' }}" placeholder="Email" style="flex:1 1 170px">
+      <input name="phone" value="{{ p.phone or '' }}" placeholder="Phone" style="flex:1 1 120px">
+    </div>
+    <input name="notes" value="{{ p.notes or '' }}" placeholder="Notes" style="width:100%; margin-top:6px">
+    <div style="margin-top:6px"><button class="btn" type="submit" style="padding:2px 12px">Save</button></div>
+  </form>
+  <form method="post" action="{{ url_for('.hub_ownership_delete', kind='person', rid=p.id) }}" onsubmit="return confirm('Remove this person from the list?');" style="margin:0 0 6px"><button class="btn danger" type="submit" style="padding:1px 8px; font-size:.8rem">Remove</button></form>
+  {% endfor %}
+  <form method="post" action="{{ url_for('.hub_ownership_save', kind='person') }}" style="border-top:2px solid #bbb; padding-top:8px">
+    <b>Add person</b>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">
+      <input name="role" placeholder="Role (attorney, CPA...)" style="flex:1 1 150px"><input name="name" placeholder="Name" required style="flex:1 1 150px"><button class="btn" type="submit">Add</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

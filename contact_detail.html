@@ -255,7 +255,7 @@
 {% if guide %}
 <div class="card" style="border-left:4px solid #3d5a3d">
   <h3 style="margin-top:0">{{ guide.role }} <span class="muted" style="font-weight:400; font-size:.8rem">({{ guide.group }})</span></h3>
-  <p class="muted" style="margin-top:0">{{ contact.full_name }} is a Sojourn {{ guide.role }}. Manage Guides on the Guides page.</p>
+  <p class="muted" style="margin-top:0">{{ contact.full_name }} is a Sojourn<span style="color:#FF0000">!</span> {{ guide.role }}. Manage Guides on the Guides page.</p>
   {% if guide.role != 'Sponsor' and (session.is_owner or session.staff_role == 'Leadership') %}
   {% if contact.email %}
   <form method="post" action="{{ url_for('.call_volunteer_email_training', vid=guide.id) }}"
@@ -271,7 +271,7 @@
 <div class="card">
   <h3 style="margin-top:0">Business plan <span class="muted" style="font-weight:400; font-size:0.8rem">(Leadership only)</span></h3>
   <p class="muted" style="margin-top:0">
-    Sends {{ contact.full_name }} the Preliminary Business Plan for Discovery -- our mission, goals
+    Sends {{ contact.full_name }} the Preliminary Business Plan for Sojourn<span style="color:#FF0000">!</span> -- our mission, goals
     and the help we still need. It goes out immediately.
   </p>
   <p style="margin-top:0">
@@ -294,7 +294,7 @@
   <h3 style="margin-top:0">Contract Information Request <span class="muted" style="font-weight:400; font-size:0.8rem">(Leadership only)</span></h3>
   <p class="muted" style="margin-top:0">
     Upon completion of each training, automatically emails {{ contact.full_name }} a letter asking, as a favor,
-    to type in their own Contract, Stretch Song, Poem and the rest, to save Sojourn staff time.
+    to type in their own Contract, Stretch Song, Poem and the rest, to save Sojourn<span style="color:#FF0000">!</span> staff time.
     {% if auto_letters_on %}Automatic sending is <strong>on</strong>.{% else %}Automatic sending is currently <strong>off</strong>.{% endif %}
     {% if letters_sent %}Already sent: {% for l in letters_sent %}{{ l.program_code|sess_label }} ({{ l.sent_at|fdate }}){% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}
     The button below sends one right now.

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Share Your Experience — {{ public_brand }}{% endblock %}
+{% block site_header %}{% include "_helper_header.html" %}{% endblock %}
+{% block content %}
+<style>
+.sh-opt{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px}
+.sh-opt button{flex:1 1 150px;padding:14px 12px;border:2px solid #176878;background:#fff;color:#176878;border-radius:10px;font:600 1rem Inter,Arial,sans-serif;cursor:pointer}
+.sh-opt button.on{background:#176878;color:#fff}
+.sh-box{display:none;margin:0 0 18px}.sh-box.on{display:block}
+.sh-note{font-size:.9rem;color:#5a6b75}
+#sh-vid{width:100%;max-width:480px;border-radius:10px;background:#000}
+.sh-rec{background:#b3261e!important;color:#fff!important;border-color:#b3261e!important}
+.sh-consent{background:#f5f9f9;border:1px solid #d8e9ea;border-radius:8px;padding:12px 14px;margin:14px 0;font-size:.95rem}
+</style>
+<section class="pub-section">
+  <div class="pub-container" style="max-width:680px">
+  {% if not req %}
+    <h2>This link is not valid</h2>
+    <p class="lead">Please check the link in your message, or reply to us and we will send a new one.</p>
+  {% elif already %}
+    <h2>Thank you</h2>
+    <p class="lead">We already received your story. If you would like to add something or have it removed, just reply to our message.</p>
+  {% elif done %}
+    <h2>Thank you</h2>
+    <p class="lead">Your story has been received. We will read it, and we will send you the final version to approve before anything is shared. Your words may help someone take their first step.</p>
+    {% if pass_msg %}
+    <div class="sh-consent" style="margin-top:26px">
+      <b>Know someone else who has been through Sojourn<span style="color:#FF0000">!</span>?</b>
+      <p style="margin:8px 0">Pass it on. Here is a note you can send. Change it however you like.</p>
+      <textarea id="pass-msg" rows="12" style="width:100%;background:#fff;border:1px solid #c9d8da;border-radius:8px;padding:12px 14px;font:1rem/1.5 Inter,Arial,sans-serif;box-sizing:border-box">{{ pass_msg }}</textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px">
+        <button type="button" class="pub-btn dark" id="pass-copy">Copy the note</button>
+        <a class="pub-btn" id="pass-sms" href="#">Text it</a>
+        <a class="pub-btn" id="pass-mail" href="#">Email it</a>
+      </div>
+      <p class="sh-note" style="margin:6px 0 0"><a id="pass-check" href="#" target="_blank" rel="noopener">Check that your link works</a></p>
+      <p class="sh-note" id="pass-ok" style="display:none">Copied. Paste it into a text or email.</p>
+    </div>
+    <script>
+    (function(){var m=document.getElementById('pass-msg');
+      function lk(v){return v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');}
+      function upd(){var mm=m.value.match(/https?:\/\/\S+/);if(mm)document.getElementById('pass-check').href=mm[0];var b=encodeURIComponent(m.value);document.getElementById('pass-sms').href='sms:?&body='+b;
+        document.getElementById('pass-mail').href='mailto:?subject='+encodeURIComponent('Would you share your Sojourn! experience?')+'&body='+b;}
+      m.addEventListener('input',upd);upd();
+      document.getElementById('pass-copy').onclick=function(){m.select();try{navigator.clipboard.writeText(m.value);}catch(e){document.execCommand('copy');}document.getElementById('pass-ok').style.display='block';};})();
+    </script>
+    {% endif %}
+  {% else %}
+    <h2>Share your experience</h2>
+    <p class="lead">{% if req.first_name and not open_mode %}Hi {{ req.first_name }}, {% endif %}we would love to hear in your own words what {% if program_label %}{{ program_label }}{% else %}Sojourn<span style="color:#FF0000">!</span>{% endif %} meant to you. A few sentences is plenty. Please tell us what you experienced and learned, in everyday words, rather than medical or therapy terms. Choose whatever is easiest:</p>
+    <form class="pub-form" method="post" enctype="multipart/form-data" id="shform" style="max-width:none">
+      {% if open_mode %}
+      <input type="hidden" name="from" value="{{ ref_token or '' }}">
+      <div style="position:absolute;left:-9999px" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
+      <div class="field"><label for="p-name">Your name *</label><input id="p-name" name="name" required autocomplete="name"></div>
+      <div class="field"><label for="p-email">Your email</label><input id="p-email" name="email" type="email" autocomplete="email"></div>
+      <div class="field"><label for="p-phone">Your cell number</label><input id="p-phone" name="phone" inputmode="tel" autocomplete="tel"><span class="sh-note">Email or cell number, at least one, so we can reach you.</span></div>
+      <div class="field"><label for="p-prog">Which Sojourn<span style="color:#FF0000">!</span> program did you take? (optional)</label>
+        <select id="p-prog" name="program"><option value="GEN">Not sure / more than one</option>{% for code, label in programs if code != 'GEN' %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></div>
+      {% endif %}
+      <div class="sh-opt">
+        <button type="button" data-m="type" class="on">&#9998; Type it</button>
+        <button type="button" data-m="speak" id="b-speak">&#127908; Speak it</button>
+        <button type="button" data-m="video">&#127909; Record a video</button>
+      </div>
+
+      <div class="sh-box on" id="m-type"></div>
+      <div class="sh-box" id="m-speak">
+        <button type="button" class="pub-btn dark" id="speak-btn">Start speaking</button>
+        <span class="sh-note" id="speak-msg"> Tap, then talk. Your words appear in the box below so you can fix anything.</span>
+      </div>
+      <div class="sh-box" id="m-video">
+        <video id="sh-vid" playsinline muted></video>
+        <p>
+          <button type="button" class="pub-btn dark" id="v-start">Turn on camera</button>
+          <button type="button" class="pub-btn dark" id="v-rec" style="display:none">&#9679; Start recording</button>
+          <button type="button" class="pub-btn dark" id="v-stop" style="display:none">Stop</button>
+          <button type="button" class="pub-btn" id="v-redo" style="display:none">Record again</button>
+        </p>
+        <p class="sh-note" id="v-msg">Up to 2 minutes. You can watch it before you send it.</p>
+        <p class="sh-note">Prefer to use a video already on your phone? <label style="display:inline;font-weight:600;color:#176878;cursor:pointer;text-decoration:underline">Choose a file<input type="file" name="video" id="v-file" accept="video/*" style="display:none"></label> (up to {{ max_mb }} MB)</p>
+      </div>
+
+      <div class="field">
+        <label for="body">Your words (type, or let the microphone fill this in)</label>
+        <textarea id="body" name="body" rows="7" placeholder="What was your experience like? What changed for you?"></textarea>
+      </div>
+      <div class="field"><label for="attended">When did you attend? (optional)</label><input id="attended" name="attended" maxlength="60" placeholder="e.g. 2018"></div>
+      <div class="field">
+        <label>How should your name appear?</label>
+        {% for v, l in name_choices %}<label style="font-weight:400"><input type="radio" name="name_choice" value="{{ v }}" {% if v == 'initial' %}checked{% endif %} style="width:auto;display:inline"> {{ l }}</label>{% endfor %}
+      </div>
+      <div class="sh-consent"><label style="font-weight:400;margin:0"><input type="checkbox" name="consent" value="1" required style="width:auto;display:inline"> {{ consent_text }}</label></div>
+      <p class="sh-note">We will send you the final version to approve before anything is published.</p>
+      {% if not open_mode %}<p class="sh-note">This link is just for you. After you send your story, you will get a note you can pass along to a friend.</p>{% endif %}
+      <button class="pub-btn dark" type="submit" id="send-btn">Send my story</button>
+    </form>
+<script>
+(function(){
+  var boxes={type:'m-type',speak:'m-speak',video:'m-video'};
+  document.querySelectorAll('.sh-opt button').forEach(function(b){b.onclick=function(){
+    document.querySelectorAll('.sh-opt button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');
+    Object.keys(boxes).forEach(function(k){document.getElementById(boxes[k]).classList.toggle('on',k===b.dataset.m)});};});
+  // dictation
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition, sb=document.getElementById('speak-btn'), body=document.getElementById('body'), rec=null, on=false;
+  if(!SR){document.getElementById('speak-msg').textContent=' Dictation is not available in this browser. Tap in the box below and use the microphone key on your keyboard instead.';sb.style.display='none';}
+  else{sb.onclick=function(){
+    if(on){rec.stop();return;}
+    rec=new SR();rec.lang='en-US';rec.continuous=true;rec.interimResults=false;
+    rec.onresult=function(e){for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal){body.value=(body.value+' '+e.results[i][0].transcript).trim();}}};
+    rec.onend=function(){on=false;sb.textContent='Start speaking';sb.classList.remove('sh-rec');};
+    rec.onerror=function(){on=false;sb.textContent='Start speaking';sb.classList.remove('sh-rec');};
+    rec.start();on=true;sb.textContent='Stop';sb.classList.add('sh-rec');};}
+  // video recorder
+  var vid=document.getElementById('sh-vid'),stream=null,mr=null,chunks=[],timer=null,
+      s1=document.getElementById('v-start'),s2=document.getElementById('v-rec'),s3=document.getElementById('v-stop'),s4=document.getElementById('v-redo'),msg=document.getElementById('v-msg'),file=document.getElementById('v-file');
+  vid.style.display='none';
+  function stopStream(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null;}}
+  s1.onclick=function(){
+    if(!navigator.mediaDevices||!window.MediaRecorder){msg.textContent='Recording in the page is not available here. Please use "Choose a file" below, which opens your phone camera.';return;}
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true}).then(function(s){
+      stream=s;vid.srcObject=s;vid.muted=true;vid.controls=false;vid.style.display='block';vid.play();s1.style.display='none';s2.style.display='inline-block';msg.textContent='When you are ready, press Start recording.';
+    }).catch(function(){msg.textContent='We could not turn on the camera. Please allow camera and microphone, or use "Choose a file" below.';});};
+  s2.onclick=function(){
+    chunks=[];var opts={videoBitsPerSecond:1500000,audioBitsPerSecond:64000};
+    try{mr=new MediaRecorder(stream,opts);}catch(e){mr=new MediaRecorder(stream);}
+    mr.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+    mr.onstop=function(){
+      clearTimeout(timer);var type=mr.mimeType||'video/webm',ext=type.indexOf('mp4')>-1?'mp4':'webm',blob=new Blob(chunks,{type:type});
+      var f=new File([blob],'story.'+ext,{type:type}),dt=new DataTransfer();dt.items.add(f);file.files=dt.files;
+      stopStream();vid.srcObject=null;vid.src=URL.createObjectURL(blob);vid.muted=false;vid.controls=true;
+      s3.style.display='none';s4.style.display='inline-block';msg.textContent='Watch it. If you like it, just finish the form and send. Otherwise record again.';};
+    mr.start();s2.style.display='none';s3.style.display='inline-block';msg.textContent='Recording... (stops by itself at 2 minutes)';
+    timer=setTimeout(function(){if(mr.state!=='inactive')mr.stop();},120000);};
+  s3.onclick=function(){if(mr&&mr.state!=='inactive')mr.stop();};
+  s4.onclick=function(){file.value='';vid.removeAttribute('src');vid.load();s4.style.display='none';s1.style.display='inline-block';s1.click();};
+  file.onchange=function(){if(file.files.length){msg.textContent='Video chosen: '+file.files[0].name;}};
+})();
+</script>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -12,7 +12,7 @@ PURPOSE = {
     "venue": "Tells people where the training is held and what the hotel stay and meals include.",
     # Contacts
     "profile_request": "Asks a contact to complete or update their profile. The same wording opens their profile page.",
-    "testimonial_request": "Invites a former trainee or volunteer to share their Discovery! experience.",
+    "testimonial_request": "Invites a former trainee or volunteer to share their experience.",
     "needs_request": "Asks session team members about food and physical needs before a session.",
     "video_call": "Sends a Google Meet link so a conversation can happen by video.",
     # Trainees
@@ -57,7 +57,7 @@ PURPOSE = {
     "sponsor_page": "Thanks the sponsor once their contact form is complete and gives them their page.",
     "helper_welcome": "Welcomes a new volunteer to the helper team.",
     # Testimonials
-    "Share your Discovery! experience": "Invites a past trainee to share their story.",
+    "Share your experience": "Invites a past trainee to share their story.",
     "A new testimonial is ready to review": "Tells Leadership a testimonial came in and is waiting for review.",
     "Please check your story before we share it": "Asks the person who wrote a testimonial to approve it before it is shared.",
     # Marketing / internal
