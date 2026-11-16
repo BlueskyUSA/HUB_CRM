@@ -45,6 +45,12 @@ def ensure_tables(get_db):
         return
     conn = get_db()
     try:
+        conn.execute("""CREATE TABLE IF NOT EXISTS email_images (
+            token TEXT PRIMARY KEY,
+            mime TEXT NOT NULL,
+            data BYTEA NOT NULL,
+            created_at TEXT
+        )""")
         conn.execute("""CREATE TABLE IF NOT EXISTS blast_audiences (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
@@ -331,7 +337,7 @@ def build(letter, aud, first, contact_id, base_url):
     return letter["subject"], "".join(html_parts) + footer_h, text + footer_t
 
 
-def docx_to_html(raw):
+def docx_to_html(raw, save_image=None):
     """(subject or None, safe html) from a Word file, keeping bold, italic, underline, color, size, links, headings, lists and alignment."""
     import zipfile, io
     import xml.etree.ElementTree as ET
@@ -363,10 +369,43 @@ def docx_to_html(raw):
     def on(el):
         return el is not None and el.get(W + "val", "1").lower() not in ("0", "false", "none")
 
+    A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+    WP = "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}"
+
+    def image_html(dr):
+        """A picture in the Word file -> a hosted <img> (needs save_image); skipped if it cannot be used."""
+        if save_image is None:
+            return ""
+        blip = next(dr.iter(A + "blip"), None)
+        if blip is None:
+            return ""
+        target = rels.get(blip.get(R + "embed"), "")
+        if not target or target.startswith(("http://", "https://")):
+            return ""
+        path = target.lstrip("/") if target.startswith("/") else "word/" + target
+        ext = path.rsplit(".", 1)[-1].lower()
+        mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif"}.get(ext)
+        if not mime:
+            return ""
+        try:
+            data = z.read(path)
+        except KeyError:
+            return ""
+        if len(data) > 1_500_000:
+            return ""
+        url = save_image(data, mime)
+        ext_el = next(dr.iter(WP + "extent"), None)
+        width = ""
+        if ext_el is not None and (ext_el.get("cx") or "").isdigit():
+            width = f' width="{max(40, min(640, int(ext_el.get("cx")) // 9525))}"'
+        return f'<img src="{_html.escape(url, quote=True)}"{width} alt="" style="max-width:100%;height:auto;border:0">'
+
     def run_html(r):
         parts = []
         for c in r:
-            if c.tag == W + "t":
+            if c.tag == W + "drawing":
+                parts.append(image_html(c))
+            elif c.tag == W + "t":
                 parts.append(_html.escape(c.text or ""))
             elif c.tag == W + "br":
                 parts.append("<br>")
@@ -414,7 +453,7 @@ def docx_to_html(raw):
     for p in doc.iter(W + "p"):
         inner = walk(p)
         plain = re.sub(r"<[^>]+>", "", inner.replace("<br>", "\n"))
-        if not plain.strip():
+        if not plain.strip() and "<img" not in inner:
             continue
         pp = p.find(W + "pPr")
         style, jc, numid = "", "", None
@@ -560,6 +599,35 @@ def programs_and_sessions(conn):
 def register(app, crm, owner_required, get_db):
     base = lambda: cf._base_url()
 
+    def _save_image(data, mime):
+        """Keep a picture from an uploaded Word letter so emails can show it. Returns its public web address."""
+        token = hashlib.sha256(data).hexdigest()[:32]
+        c = get_db()
+        try:
+            if not c.execute("SELECT 1 FROM email_images WHERE token = ?", (token,)).fetchone():
+                c.execute("INSERT INTO email_images (token, mime, data, created_at) VALUES (?, ?, ?, ?)",
+                          (token, mime, data, cf._ts(cf._utc_now())))
+                c.commit()
+        finally:
+            c.close()
+        return f"{base()}/email-images/{token}"
+
+    @app.route("/email-images/<token>")
+    def email_image(token):
+        if not re.fullmatch(r"[0-9a-f]{32}", token):
+            abort(404)
+        c = get_db()
+        try:
+            row = c.execute("SELECT mime, data FROM email_images WHERE token = ?", (token,)).fetchone()
+        finally:
+            c.close()
+        if not row:
+            abort(404)
+        from flask import Response
+        resp = Response(bytes(row["data"]), mimetype=row["mime"])
+        resp.headers["Cache-Control"] = "public, max-age=2592000"
+        return resp
+
     def _aud(conn, aid):
         a = conn.execute("SELECT * FROM blast_audiences WHERE id = ?", (aid,)).fetchone()
         if not a:
@@ -699,7 +767,7 @@ def register(app, crm, owner_required, get_db):
                         return redirect(url_for(".email_blast_edit", aid=aid))
                     try:
                         if ext == "docx":
-                            subject, body = docx_to_html(f.read(3_000_000))
+                            subject, body = docx_to_html(f.read(3_000_000), save_image=_save_image)
                             lkind = "html"
                         else:
                             subject, body = parse_upload(f)
@@ -763,7 +831,7 @@ def register(app, crm, owner_required, get_db):
                     flash("Choose a Word (.docx) file to replace this letter.")
                     return back
                 try:
-                    subj, body = docx_to_html(f.read(3_000_000))
+                    subj, body = docx_to_html(f.read(3_000_000), save_image=_save_image)
                 except Exception as e:
                     flash(f"That file could not be read ({e}). Please save it as a Word (.docx) file and try again.")
                     return back
