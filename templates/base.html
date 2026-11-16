@@ -22,6 +22,8 @@
     }
     .sj-wordmark { font-family: 'Times New Roman', Times, serif; font-weight: 700; font-style: italic; color: #003B49; font-size: 2rem; line-height: 1; display: inline-block; }
     .sj-sub { display: block; font-family: 'Times New Roman', Times, serif; font-weight: 400; font-style: italic; font-size: .38em; line-height: 1.25; margin-top: 3px; letter-spacing: 0; text-transform: none; text-shadow: none; }
+    .sj-waves { display: block; width: 3.1em; height: .3em; margin: .06em 0 .02em .32em; overflow: visible; }
+    .hx-brand, .pg-brand, .wi-brand { --w1: #fff; }
     .sj-wordmark em { color: #FF0000; font-style: italic; }
     .pub-login { color: var(--pub-muted); text-decoration: none; font-size: 0.92rem; font-weight: 500; }
     .pub-login:hover { color: var(--pub-text); }
@@ -38,7 +40,7 @@
 {% block site_header %}
   <header class="pub-topbar">
     <a class="pub-brand" href="{{ url_for('public_home') }}">
-      <span class="sj-wordmark" aria-label="{{ public_brand }}">Sojourn<em>!</em><small class="sj-sub">A Journey of Curiosity and Possibility</small></span>
+      <span class="sj-wordmark" aria-label="{{ public_brand }}">Sojourn<em>!</em><svg class="sj-waves" viewBox="324 220 552 126" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M 330 268 C 420 228, 500 308, 600 268 S 780 228, 870 268" fill="none" stroke="var(--w1,#003B49)" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="M 330 298 C 420 338, 500 258, 600 298 S 780 338, 870 298" fill="none" stroke="#27C4C0" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg><small class="sj-sub">A Journey of Curiosity and Possibility</small></span>
     </a>
     <nav class="pub-nav">
       <a href="{{ url_for('public_home') }}">Home</a>
