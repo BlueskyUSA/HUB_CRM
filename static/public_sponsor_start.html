@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Sponsor a Friend — {{ program_name }}{% endblock %}
+{% block content %}
+<section class="pub-section">
+  <div class="pub-container" style="max-width:640px">
+    {% if session.staff_id %}<p style="margin:0 0 12px"><a class="pub-btn secondary" href="{{ url_for('crm.dashboard') }}">&larr; Back to the team site</a></p>{% endif %}
+
+    <h2>Sponsor a Friend</h2>
+    <p class="lead">Do you have a friend or family member who would love Sojourn?</p>
+    <p>We invite you to become a sponsor and help us welcome your friends into the training. We&rsquo;ve automated much of the sponsorship process, so it&rsquo;s easy for you to help. Please take a moment to read our <a href="{{ url_for('public_sponsor_training') }}">brief Sponsor guide</a> before you begin.</p>
+    <p>Thank you so much for your leadership, love, energy, and giving heart.<br>The Sojourn Team</p>
+    {% if error %}<p class="flash">{{ error }}</p>{% endif %}
+    <form class="pub-form" method="post">
+      {{ bot_field() }}
+      <div style="display:none"><input name="website" tabindex="-1" autocomplete="off"></div>
+      <h3 style="margin:18px 0 6px">About you</h3>
+      <div class="field"><label for="sp-mf">Your first name *</label><input id="sp-mf" name="my_first" required maxlength="80" autocomplete="given-name" value="{{ form.get('my_first','') }}"></div>
+      <div class="field"><label for="sp-ml">Your last name</label><input id="sp-ml" name="my_last" maxlength="80" autocomplete="family-name" value="{{ form.get('my_last','') }}"></div>
+      <div class="field"><label for="sp-me">Your email *</label><input id="sp-me" type="email" name="my_email" required maxlength="200" autocomplete="email" value="{{ form.get('my_email','') }}"></div>
+      <div class="field"><label for="sp-mp">Your cell phone *</label><input id="sp-mp" name="my_phone" class="phone-input" required maxlength="30" autocomplete="tel" value="{{ form.get('my_phone','') }}"></div>
+      <h3 style="margin:18px 0 6px">The person you would like to sponsor</h3>
+      <div class="field"><label for="sp-first">Their first name *</label><input id="sp-first" name="first_name" required maxlength="80" value="{{ form.get('first_name','') }}"></div>
+      <div class="field"><label for="sp-last">Their last name</label><input id="sp-last" name="last_name" maxlength="80" value="{{ form.get('last_name','') }}"></div>
+      <div class="field"><label for="sp-em">Their email *</label><input id="sp-em" type="email" name="email" required maxlength="200" value="{{ form.get('email','') }}"></div>
+      <div class="field"><label for="sp-ph">Their cell phone</label><input id="sp-ph" name="phone" class="phone-input" maxlength="30" value="{{ form.get('phone','') }}"></div>
+      <div class="field"><label for="sp-prog">Which program might fit?</label>
+        <select id="sp-prog" name="program_code">{% for code, label in programs %}<option value="{{ code }}" {{ 'selected' if form.get('program_code','') == code }}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="sp-note">Anything we should know? (optional)</label><textarea id="sp-note" name="note" rows="3" maxlength="1500">{{ form.get('note','') }}</textarea></div>
+      <h3 style="margin:18px 0 6px">Your permission</h3>
+      <p style="line-height:1.6">{{ consent }}</p>
+      <div class="field"><label style="display:flex; gap:10px; align-items:flex-start; font-weight:400; font-size:1rem"><input type="checkbox" name="agree" value="1" required style="width:auto; flex:0 0 auto; margin-top:4px"><span>I have read this and I agree.</span></label></div>
+      <div class="field"><label for="sp-sign">Type your full name to sign *</label><input id="sp-sign" name="full_name" required maxlength="120" autocomplete="name"></div>
+      <button class="pub-btn dark" type="submit">Submit</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

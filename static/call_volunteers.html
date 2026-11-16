@@ -1,0 +1,128 @@
+{% extends "crm_base.html" %}
+{% block title %}Guides — {{ program_name }}{% endblock %}
+{% block content %}
+{% from "_letter_buttons.html" import letter_buttons %}
+<h1>Guides</h1>
+{% for m in get_flashed_messages() %}<p class="flash">{{ m }}</p>{% endfor %}
+<p style="max-width:860px; margin:8px 0 14px">{{ guide_note[0] }}</p>
+<details class="card" style="max-width:860px; margin-bottom:16px">
+  <summary style="cursor:pointer; font-weight:700">How it Works</summary>
+  {% for p in guide_note[1:] %}{% if not p.startswith('## ') %}<p style="margin:8px 0 0">{{ p }}</p>{% endif %}{% endfor %}
+</details>
+{% if welcome_video %}
+<div class="card" style="max-width:760px">
+  <h2 style="margin:0 0 2px">Welcome to the Guides</h2>
+  <p class="muted" style="margin:0 0 10px">A message from Coach Kent</p>
+  {% if welcome_video.kind == 'frame' %}<div style="position:relative;padding-top:56.25%"><iframe src="{{ welcome_video.src }}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allow="fullscreen; picture-in-picture" allowfullscreen title="Welcome to the Guides"></iframe></div>
+  {% else %}<video controls playsinline preload="metadata" style="width:100%;border-radius:8px"><source src="{{ welcome_video.src }}"></video>{% endif %}
+</div>
+{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <h3 style="margin-top:0">Guide Training &amp; Letters</h3>
+  <p style="margin:0 0 6px"><a class="btn secondary" href="{{ url_for('public_cep_training') }}">Training Modules</a></p>
+  <p style="margin:0 0 4px" class="muted">Letters we send to clients (the Guides can read each one):</p>
+  <p style="margin:0">{{ letter_buttons(client_letters, None, 'btn secondary', 'btn', False) }}</p>
+</div>
+{% for g in groups %}
+{% set nice = {'CAPTAIN': 'Guide Team Captain', 'D1': 'The Beginning', 'D4': 'The Art of Us', 'ALL': 'Everything Else'} %}
+{% set collapse = true %}
+<div class="card" style="margin-bottom:16px">
+  {% if collapse %}<details {{ 'open' if push_pid and g.vols|selectattr('id', 'equalto', push_pid)|list else '' }}><summary style="cursor:pointer; list-style-position:inside"><h3 style="display:inline; margin:0">{{ nice.get(g.code, g.label) }} <span class="muted" style="font-weight:400">({{ g.vols|length }} of {{ g.max }})</span></h3>{% if g.code == 'ALL' %}<div class="muted" style="font-size:.85rem; margin-top:4px">Also the back-up when a program has no Guides, or someone is &ldquo;Not sure&rdquo;.</div>{% endif %}</summary><div style="margin-top:12px">
+  {% else %}<h3 style="margin-top:0">{{ g.label }} <span class="muted">({{ g.vols|length }} of {{ g.max }})</span></h3>{% endif %}
+  <table class="stack nohead">
+    {% for v in g.vols %}
+    <tr id="v{{ v.id }}"><td style="font-size:1.35rem; font-weight:700; line-height:1.2">{{ v.name }}</td><td>{{ v.phone_pretty }}</td><td>{{ v.email }}</td>
+      <td><form method="post" class="inline"><input type="hidden" name="action" value="remove"><input type="hidden" name="id" value="{{ v.id }}"><button class="btn secondary" type="submit" onclick="return confirm('Remove {{ v.name }} from this group?')">Remove</button></form>
+      <form method="post" action="{{ url_for('.call_volunteer_email_training', vid=v.id) }}" class="inline" style="margin-top:4px" onsubmit="return confirm('Email the complete Guide Training to {{ v.name }} ({{ v.email }}) now?');"><button class="btn secondary" type="submit">Email Guide Training</button></form></td></tr>
+    <tr><td colspan="4" style="border-top:0; padding-top:0">
+      <details{% if not v.consent_at or (push_pid == v.id and push_note and push_note[1].startswith('Permission')) %} open{% endif %}><summary class="muted" style="cursor:pointer; font-size:.88rem">Permission to share {{ v.name.split()[0] }}&rsquo;s name, cell and email: {% if v.consent_at %}<strong style="color:#2e7d32">given {{ v.consent_when }}</strong>{% else %}<strong style="color:#a15c00">not given yet</strong>{% endif %}</summary>
+        <div style="margin:8px 0 6px; line-height:1.55; font-size:.92rem">
+          {% if push_pid == v.id and push_note and push_note[1].startswith('Permission') %}<p style="margin:0 0 8px; padding:8px 10px; border-radius:6px; font-weight:600; background:#e6f4ea; color:#1e6b34">{{ push_note[1] }}</p>{% endif %}
+          {% if v.consent_at %}
+            <p style="margin:0 0 6px">{{ v.name.split()[0] }} gave permission on {{ v.consent_when }}, signing as <strong>{{ v.consent_name }}</strong>. This is saved with the exact wording they agreed to.</p>
+            <form method="post" class="inline"><input type="hidden" name="action" value="clear_consent"><input type="hidden" name="id" value="{{ v.id }}"><button class="btn secondary" type="submit" onclick="return confirm('Clear {{ v.name }}\'s permission? They will not be able to take requests until they give it again.')">Clear permission</button></form>
+          {% else %}
+            <p style="margin:0 0 6px">Before {{ v.name.split()[0] }} can respond to a &ldquo;Curious&rdquo; form request, Sojourn needs {{ v.name.split()[0] }}&rsquo;s permission to share their name, cell phone number and email address with the people who submit the &ldquo;Curious&rdquo; form. Send {{ v.name.split()[0] }} this link. It takes about a minute:</p>
+            <input readonly value="{{ v.consent_url }}" onclick="this.select()" style="width:100%; max-width:520px">
+            <p style="margin:8px 0 0">
+              <a class="btn secondary" href="sms:{{ v.cell_phone|replace('-','')|replace(' ','') }}?&amp;body={{ ('Hi ' ~ v.name.split()[0] ~ ', here is the one-minute permission form for the Sojourn Guides: ' ~ v.consent_url)|urlencode }}">Text it from my phone</a>
+              <a class="btn secondary" href="mailto:{{ v.email }}?subject={{ 'Sojourn Guides: your permission'|urlencode }}&amp;body={{ ('Hi ' ~ v.name.split()[0] ~ ',\n\nPlease open this link and give your permission for Sojourn to share your name, cell phone number and email with the people you will be speaking with. It takes about a minute.\n\n' ~ v.consent_url ~ '\n\nThank you!\nThe Sojourn Team')|urlencode }}">Email it</a>
+            </p>
+          {% endif %}
+        </div>
+      </details></td></tr>
+    <tr><td colspan="4" style="border-top:0; padding-top:0">
+      <details{% if not v.push_user_key or push_pid == v.id %} open{% endif %}><summary class="muted" style="cursor:pointer; font-size:.88rem">Phone alerts for {{ v.name.split()[0] }}: {% if v.push_user_key %}<strong style="color:#2e7d32">on</strong>{% else %}<strong style="color:#a15c00">not set up</strong>{% endif %}</summary>
+        <div style="margin:8px 0 6px; line-height:1.55; font-size:.92rem">
+          {% if push_pid == v.id and push_note and not push_note[1].startswith('Permission') %}<p style="margin:0 0 8px; padding:8px 10px; border-radius:6px; font-weight:600; {% if push_note[0] == 'ok' %}background:#e6f4ea; color:#1e6b34{% else %}background:#fdecea; color:#a12a1f{% endif %}">{{ push_note[1] }}</p>{% endif %}
+          {% if not pushover_ready %}<p style="margin:0 0 8px; color:#a15c00"><strong>Not connected yet.</strong> Add <code>PUSHOVER_APP_TOKEN</code> in Render&rsquo;s Environment (see the instructions Claude gave you), then alerts can go out.</p>{% endif %}
+          <p style="margin:0 0 6px">{{ v.name.split()[0] }} installs the <strong>Pushover</strong> app, creates a free account, and sends you the <strong>User Key</strong> shown at the top of the app (30 letters and numbers). Paste it here:</p>
+          <form method="post" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <input type="hidden" name="action" value="set_push_key"><input type="hidden" name="id" value="{{ v.id }}">
+            <input name="push_key" placeholder="Pushover User Key" value="{{ v.push_user_key or '' }}" maxlength="40" autocomplete="off" style="min-width:300px">
+            <button class="btn" type="submit">Save</button>
+          </form>
+          {% if v.push_user_key %}
+          <form method="post" class="inline" style="margin-top:8px"><input type="hidden" name="action" value="test_push"><input type="hidden" name="id" value="{{ v.id }}"><button class="btn secondary" type="submit">Send a test alert</button></form>
+          {% endif %}
+        </div>
+      </details></td></tr>
+    {% else %}<tr><td class="muted">No one yet.</td></tr>{% endfor %}
+  </table>
+  {% if g.vols|length < g.max %}
+  <details class="picker" data-prog="{{ g.code }}" style="margin-top:12px">
+    <summary class="btn">Choose from my people</summary>
+    <div style="margin-top:10px">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+        <input class="pk-q" placeholder="Search any part of a name, email, or phone" style="min-width:280px" autocomplete="off">
+        <select class="pk-mode">
+          {% if g.code in ('D1','D4') %}<option value="team|{{ g.code }}">Team who served on {{ 'The Beginning' if g.code == 'D1' else 'The Art of Us' }}</option>{% endif %}
+          <option value="team|">All team members</option>
+          <option value="all|">Everyone in Contacts (type to search)</option>
+        </select>
+      </div>
+      <p class="muted pk-hint" style="margin:6px 0">Team members are people who have served on a session team or have a login, most recent first.</p>
+      <div class="pk-list" style="max-height:320px; overflow:auto; border:1px solid #d9e2ec; border-radius:10px; background:#fff"></div>
+    </div>
+  </details>
+  <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Or type someone in by hand</summary>
+  <form method="post" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+    <input type="hidden" name="action" value="add"><input type="hidden" name="program_code" value="{{ g.code }}">
+    <input name="name" placeholder="Name" required><input name="cell_phone" class="phone-input" placeholder="Cell 000-000-0000" required>
+    <input type="email" name="email" placeholder="Email" required><button class="btn" type="submit">Add</button>
+  </form></details>
+  {% endif %}
+  {% if collapse %}</div></details>{% endif %}
+</div>
+{% endfor %}
+<script src="{{ url_for('static', filename='phone-mask.js') }}"></script>
+<script>
+(function () {
+  var URL = "{{ url_for('.call_volunteer_people') }}";
+  function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  document.querySelectorAll('details.picker').forEach(function (box) {
+    var q = box.querySelector('.pk-q'), mode = box.querySelector('.pk-mode'), list = box.querySelector('.pk-list'), hint = box.querySelector('.pk-hint');
+    var prog = box.dataset.prog, timer = null;
+    function load() {
+      var m = mode.value.split('|');
+      fetch(URL + '?mode=' + m[0] + '&prog=' + encodeURIComponent(m[1] || '') + '&q=' + encodeURIComponent(q.value)).then(function (r) { return r.json(); }).then(function (rows) {
+        if (!rows.length) { list.innerHTML = '<p class="muted" style="padding:10px">' + (m[0] === 'all' && q.value.length < 2 ? 'Type at least two letters.' : 'No one found. Try fewer letters, or switch to \u201cEveryone in Contacts\u201d.') + '</p>'; return; }
+        list.innerHTML = rows.map(function (p) {
+          var need = (!p.cell || !p.email);
+          return '<form method="post" style="display:flex; gap:10px; align-items:center; padding:8px 10px; border-bottom:1px solid #eef2f6; flex-wrap:wrap">' +
+            '<input type="hidden" name="action" value="add_contact"><input type="hidden" name="program_code" value="' + prog + '"><input type="hidden" name="contact_id" value="' + p.id + '">' +
+            '<div style="flex:1 1 220px"><strong>' + esc(p.name) + '</strong>' + (p.team ? ' <span class="badge">Team</span>' : '') +
+            '<br><span class="muted">' + esc(p.last ? 'Last served: ' + p.last : (p.team ? 'Team' : 'Contact')) + (p.sessions > 1 ? ' (' + p.sessions + ' sessions)' : '') + '</span></div>' +
+            (p.cell ? '<span>' + esc(p.cell) + '</span>' : '<input name="cell_phone" class="phone-input" placeholder="Cell needed" required style="width:130px">') +
+            (p.email ? '' : '<input type="email" name="email" placeholder="Email needed" required style="width:170px">') +
+            (p.already ? '<span class="muted">Already a volunteer</span>' : '<button class="btn" type="submit">Add</button>') + '</form>';
+        }).join('');
+      });
+    }
+    box.addEventListener('toggle', function () { if (box.open) load(); });
+    q.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(load, 250); });
+    mode.addEventListener('change', load);
+  });
+})();
+</script>
+{% endblock %}
