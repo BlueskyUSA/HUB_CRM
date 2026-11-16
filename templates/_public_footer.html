@@ -2,10 +2,12 @@
 .sf{background:#f5f9f9;border-top:1px solid #d8e9ea;text-align:center;padding:34px 14px 24px;font-family:Inter,Arial,sans-serif}
 .sf-links{font-size:1.2rem;font-weight:600;line-height:2.2}
 .sf-links a{margin:0 16px;color:#176878;white-space:nowrap;text-decoration:underline}
+.sf-logo{display:block;margin:0 auto 16px;width:min(320px,72%);height:auto}
 .sf-fine{font-size:.85rem;color:#5a6b75;margin-top:8px}
 .sf-fine a{color:#5a6b75}
 </style>
 <footer class="sf">
+  <img class="sf-logo" src="{{ url_for('static', filename='sojourn-logo.svg') }}" alt="Sojourn! A Journey of Curiosity and Possibility">
   <div class="sf-links"><a href="{{ url_for('public_about_program') }}">About Us</a>{% if stories_visible %}<a href="{{ url_for('public_stories') }}">In Their Own Words</a>{% endif %}<a href="{{ url_for('public_contact') }}">Contact</a><a href="{{ url_for('public_donate') }}">Donate</a></div>
-  <div class="sf-fine">&copy; 2026 {{ public_brand }} All rights reserved. &nbsp;&middot;&nbsp; <a href="{{ url_for('public_sponsor') }}">For Volunteers: Sponsor a Friend</a> &nbsp;&middot;&nbsp; <a href="{{ url_for('crm.dashboard') }}">Team Login</a></div>
+  <div class="sf-fine">&copy; 2026 {{ public_brand }}. All rights reserved. &nbsp;&middot;&nbsp; <a href="{{ url_for('public_sponsor') }}">For Volunteers: Sponsor a Friend</a> &nbsp;&middot;&nbsp; <a href="{{ url_for('crm.dashboard') }}">Team Login</a></div>
 </footer>

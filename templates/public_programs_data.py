@@ -1,4 +1,4 @@
-"""Public wording for the four Discovery! programs (front-end only).
+"""Public wording for the four Sojourn programs (front-end only).
 The internal CRM codes stay as they are: D4 = The Art of Us, D1 = The Beginning,
 D2 = Awakening, D3 = Vision. Dates are tentative months until real dates are set."""
 
@@ -29,21 +29,22 @@ PROGRAM_PAGES = {
                    "Come to understand where you've been, notice the patterns that still shape your days, and discover what's possible next."],
         "faq": [("Do I need to have had a difficult past?", "Not at all. Everyone's story shapes who they are today. The Beginning is for anyone who wants to understand themselves more fully."),
                 ("Is this a lecture-based seminar?", "No. The approach is experiential, with interactive exercises, opportunities for reflection, and conversations with others."),
-                ("Do I have to take another Discovery! program first?", "No. The Beginning is the first step in the personal-growth sequence, with no prerequisites."),
+                ("Do I have to take another Sojourn program first?", "No. The Beginning is the first step in the personal-growth sequence, with no prerequisites."),
                 ("When can I register?", "Right now. Reserve your spot and we'll contact you with dates and next steps.")],
         "when": "Friday 10:00 am through Sunday 3:00 pm",
-        "fit": "The Beginning is the first step in the three-part personal-growth sequence. It has no prior Discovery! seminar requirement. Completing it prepares you to participate in Awakening, followed by Vision.",
+        "fit": "The Beginning is the first step in the three-part personal-growth sequence. It has no prior Sojourn seminar requirement. Completing it prepares you to participate in Awakening, followed by Vision.",
         "schedule": "Planned for April, with additional sessions alongside Awakening in May and alongside Awakening and Vision in June.",
     },
     "awakening": {
         "code": "D2", "num": "PROGRAM 3 · THE PRESENT", "title": "Awakening",
         "tagline": "Become More Aware of Your Present.",
-        "intro": "Awakening is the second three-day seminar in the Discovery! personal-growth sequence. It builds on the insights of The Beginning and invites you to bring greater awareness to your thoughts, emotions, relationships, and choices, and to discover new ways of responding to life today.",
+        "intro": "Awakening is the second three-day seminar in the Sojourn personal-growth sequence. It builds on the insights of The Beginning and invites you to bring greater awareness to your thoughts, emotions, relationships, and choices, and to discover new ways of responding to life today.",
         "points": [],
                 "banner": "You can't change what you haven't noticed.",
         "closing": ["Awareness doesn't ask you to be different. It shows you what's already there.", "Once you see it, you get to choose."],
         "isthis": ["If you've completed The Beginning and you're ready to bring greater awareness to your thoughts, emotions, relationships, and choices, Awakening is your next step.",
-                   "Come to notice what really drives your responses, and where you get stuck. Discover new ways of living life today!"],
+                   "Come to notice what really drives your responses, and where you get stuck.",
+                   "What might become possible when you begin to understand yourself in a new way?"],
         "faq": [("Do I need to complete The Beginning first?", "Yes. Awakening builds on the insights of The Beginning, so completing it first is required."),
                 ("Is this a lecture-based seminar?", "No. The approach is experiential, with interactive exercises, opportunities for reflection, and conversations with others."),
                 ("When can I register?", "Right now. Reserve your spot and we'll contact you with dates and next steps.")],
@@ -53,7 +54,7 @@ PROGRAM_PAGES = {
     "vision": {
         "code": "D3", "num": "PROGRAM 4 · THE FUTURE", "title": "Vision",
         "tagline": "Envision Your Future. Live With Greater Intention.",
-        "intro": "Vision is the third three-day seminar in the Discovery! personal-growth sequence. It invites you to clarify what matters most, imagine new possibilities, and begin shaping a future that reflects your values and intentions.",
+        "intro": "Vision is the third three-day seminar in the Sojourn personal-growth sequence. It invites you to clarify what matters most, imagine new possibilities, and begin shaping a future that reflects your values and intentions.",
         "points": [],
                 "banner": "The future you imagine shapes the choices you make today.",
         "closing": ["What you picture, you begin to pursue.", "What you never imagine, you never build."],

@@ -38,7 +38,7 @@
 {% set personal = (enr is not none and enr.code == 'D1') %}
 <div class="qn-wrap">
 <div class="qn-hero">
-  <p class="kicker">Discovery!</p>
+  <p class="kicker">Sojourn</p>
   <h1>Your questionnaire</h1>
   <p class="meta">{{ enr.program_name }}{% if enr.session_date %} &middot; {{ enr.session_date|fdate }}{% endif %}</p>
 </div>
@@ -46,18 +46,18 @@
 {% if done %}
 <div class="qn-done"><p style="margin:0; font-size:1.05rem"><strong>Thank you, {{ enr.first_name }}.</strong> We have your questionnaire. You can come back to this same link and change your answers any time before the training.</p></div>
 {% endif %}
-<p class="qn-intro">Hello and welcome to Discovery! {{ enr.program_name }}. We are excited you have chosen to participate in this wonderful program, and we are confident you will experience extremely positive growth {% if personal %}and outcomes in your life.</p>{% else %}and outcomes in your relationship.</p>{% endif %}
+<p class="qn-intro">Hello and welcome to {{ enr.program_name }}. We are excited you have chosen to participate in this wonderful program, and we are confident you will experience extremely positive growth {% if personal %}and outcomes in your life.</p>{% else %}and outcomes in your relationship.</p>{% endif %}
 <div class="qn-private"><strong>Just for you.</strong> These questions are for you alone. Please answer in your own words &mdash; there are no right or wrong answers. {% if personal %}Your answers are seen only by our training team.{% else %}Your answers are seen only by our training team, never by your partner.{% endif %}</div>
 {% if saved %}<p><em>Saved. You can finish later using this same link.</em></p>{% endif %}
   <form method="post" class="qn-form">
-    <div class="q"><label for="first_time_attending">{% if personal %}Is this your first time attending a Discovery! training?{% else %}Is this your first time attending Discovery! {{ enr.program_name }}?{% endif %}</label>
+    <div class="q"><label for="first_time_attending">{% if personal %}Is this your first time attending a Discovery! training?{% else %}Is this your first time attending {{ enr.program_name }}?{% endif %}</label>
       <select id="first_time_attending" name="first_time_attending">
         <option value="">Choose&hellip;</option>
         <option {{ 'selected' if profile and profile.first_time_attending == 'Yes' else '' }}>Yes</option>
         <option {{ 'selected' if profile and profile.first_time_attending == 'No' else '' }}>No</option>
       </select>
     </div>
-    <div class="q"><label for="training_goals">What do you want to get out of Discovery! {{ enr.program_name }}?</label>
+    <div class="q"><label for="training_goals">What do you want to get out of {{ enr.program_name }}?</label>
       <textarea id="training_goals" name="training_goals" rows="3">{{ profile.training_goals if profile and profile.training_goals else '' }}</textarea></div>
     {% if is_couples %}
     <div class="q"><label for="relationship_length">{% if personal %}TBD (to be determined){% else %}How long have you been in your relationship?{% endif %}</label>
@@ -97,7 +97,7 @@
   </form>
   <div class="qn-thanks">
     <p style="margin:0 0 10px"><strong>Thank you for your responses.</strong> We look forward to meeting you{% if not personal %} and your partner{% endif %}.</p>
-    {% if enr.code == 'D4' %}<div class="qn-note">If possible, please come rested. It is best to arrive around <strong>5:30 pm</strong> to register at the hotel, find your room, get settled, relax, grab a bite to eat, and register at the Discovery! Relationship table in front of the training room. The training begins promptly at <strong>7:00 pm</strong>.</div>{% endif %}
+    {% if enr.code == 'D4' %}<div class="qn-note">If possible, please come rested. It is best to arrive around <strong>5:30 pm</strong> to register at the hotel, find your room, get settled, relax, grab a bite to eat, and register at the Sojourn check-in table in front of the training room. The training begins promptly at <strong>7:00 pm</strong>.</div>{% endif %}
   </div>
 </div>
 </div>

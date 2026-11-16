@@ -42,11 +42,11 @@
             <p style="margin:0 0 6px">{{ v.name.split()[0] }} gave permission on {{ v.consent_when }}, signing as <strong>{{ v.consent_name }}</strong>. This is saved with the exact wording they agreed to.</p>
             <form method="post" class="inline"><input type="hidden" name="action" value="clear_consent"><input type="hidden" name="id" value="{{ v.id }}"><button class="btn secondary" type="submit" onclick="return confirm('Clear {{ v.name }}\'s permission? They will not be able to take requests until they give it again.')">Clear permission</button></form>
           {% else %}
-            <p style="margin:0 0 6px">Before {{ v.name.split()[0] }} can respond to a &ldquo;Curious&rdquo; form request, Dallas Discovery needs {{ v.name.split()[0] }}&rsquo;s permission to share their name, cell phone number and email address with the people who submit the &ldquo;Curious&rdquo; form. Send {{ v.name.split()[0] }} this link. It takes about a minute:</p>
+            <p style="margin:0 0 6px">Before {{ v.name.split()[0] }} can respond to a &ldquo;Curious&rdquo; form request, Sojourn needs {{ v.name.split()[0] }}&rsquo;s permission to share their name, cell phone number and email address with the people who submit the &ldquo;Curious&rdquo; form. Send {{ v.name.split()[0] }} this link. It takes about a minute:</p>
             <input readonly value="{{ v.consent_url }}" onclick="this.select()" style="width:100%; max-width:520px">
             <p style="margin:8px 0 0">
-              <a class="btn secondary" href="sms:{{ v.cell_phone|replace('-','')|replace(' ','') }}?&amp;body={{ ('Hi ' ~ v.name.split()[0] ~ ', here is the one-minute permission form for the Discovery Guides: ' ~ v.consent_url)|urlencode }}">Text it from my phone</a>
-              <a class="btn secondary" href="mailto:{{ v.email }}?subject={{ 'Dallas Discovery Guides: your permission'|urlencode }}&amp;body={{ ('Hi ' ~ v.name.split()[0] ~ ',\n\nPlease open this link and give your permission for Dallas Discovery to share your name, cell phone number and email with the people you will be speaking with. It takes about a minute.\n\n' ~ v.consent_url ~ '\n\nThank you!\nThe Discovery Team')|urlencode }}">Email it</a>
+              <a class="btn secondary" href="sms:{{ v.cell_phone|replace('-','')|replace(' ','') }}?&amp;body={{ ('Hi ' ~ v.name.split()[0] ~ ', here is the one-minute permission form for the Sojourn Guides: ' ~ v.consent_url)|urlencode }}">Text it from my phone</a>
+              <a class="btn secondary" href="mailto:{{ v.email }}?subject={{ 'Sojourn Guides: your permission'|urlencode }}&amp;body={{ ('Hi ' ~ v.name.split()[0] ~ ',\n\nPlease open this link and give your permission for Sojourn to share your name, cell phone number and email with the people you will be speaking with. It takes about a minute.\n\n' ~ v.consent_url ~ '\n\nThank you!\nThe Sojourn Team')|urlencode }}">Email it</a>
             </p>
           {% endif %}
         </div>

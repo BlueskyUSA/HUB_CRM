@@ -20,6 +20,8 @@
       .pub-topbar .pub-login { justify-self: end; }
       .pub-topbar .pub-nav a:first-child { margin-left: 0; }
     }
+    .sj-wordmark { font-family: 'Times New Roman', Times, serif; font-weight: 700; font-style: italic; color: #003B49; font-size: 2rem; line-height: 1; }
+    .sj-wordmark em { color: #FF0000; font-style: italic; }
     .pub-login { color: var(--pub-muted); text-decoration: none; font-size: 0.92rem; font-weight: 500; }
     .pub-login:hover { color: var(--pub-text); }
     @media (max-width: 899px) {
@@ -35,8 +37,7 @@
 {% block site_header %}
   <header class="pub-topbar">
     <a class="pub-brand" href="{{ url_for('public_home') }}">
-      <img src="{{ url_for('static', filename='logo-emblem.png') }}" alt="{{ public_brand }} emblem">
-      {{ public_brand }}
+      <span class="sj-wordmark" aria-label="{{ public_brand }}">Sojourn<em>!</em></span>
     </a>
     <nav class="pub-nav">
       <a href="{{ url_for('public_home') }}">Home</a>

@@ -2,13 +2,13 @@
 {% block title %}Call requests — {{ program_name }}{% endblock %}
 {% block content %}
 <h1>Call requests</h1>
-<p class="muted">People who asked a Discovery team member to call them. A volunteer claims each one from their personal link and logs the call afterward.
+<p class="muted">People who asked a Sojourn team member to call them. A volunteer claims each one from their personal link and logs the call afterward.
   If nobody claims one in 2 hours the volunteers are alerted again and you are emailed.</p>
 {% for m in get_flashed_messages() %}<p class="flash">{{ m }}</p>{% endfor %}
 <div class="card" style="margin-bottom:14px">
   {% if live %}<strong style="color:#1a7f37">Sending is ON.</strong>{% else %}<strong style="color:#b45309">Sending is OFF.</strong> Requests are saved here, but no emails go to volunteers or to the person who asked. (Turn on by setting CALL_ALERTS_LIVE=1 in Render.){% endif %}
   Alerts go out 8 am&ndash;8 pm Central{% if live %} (right now: {{ 'open' if in_hours else 'closed, will send at 8 am' }}){% endif %}.
-  &nbsp; Volunteers: {% for code, label in pool_list %}{{ code }}: {{ pools[code] }}{% if not loop.last %} &middot; {% endif %}{% endfor %}
+  &nbsp; Volunteers: {% for code, label in pool_list %}{{ {'CAPTAIN': 'Captain', 'ALL': 'Everything else'}.get(code) or (code|sess_label) }}: {{ pools[code] }}{% if not loop.last %} &middot; {% endif %}{% endfor %}
   {% if has_guides_access %}&nbsp; <a href="{{ url_for('.call_volunteers_page') }}">Manage the Guides &rarr;</a>{% endif %} &nbsp; <a href="{{ url_for('.interest_report') }}">Interest report &rarr;</a>
   <form method="post" action="{{ url_for('.call_requests_check_now') }}" class="inline" style="margin-left:10px"><button class="btn secondary" type="submit">Check now</button></form>
 </div>

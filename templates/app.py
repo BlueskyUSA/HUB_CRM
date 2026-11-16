@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()  # loads DATABASE_URL from a local .env file, if present
 
-from flask import Flask, Blueprint, render_template, request, redirect, url_for, flash, session, send_from_directory, abort, make_response, g
+from flask import jsonify, Flask, Blueprint, render_template, request, redirect, url_for, flash, session, send_from_directory, abort, make_response, g
 from datetime import date, datetime, timedelta
 import secrets
 import os
@@ -15,7 +15,16 @@ from db import get_db, init_db
 from seed import seed
 import html as _html
 from config import PROGRAM_NAME
+import needs
 from email_utils import send_email, EmailSendError
+
+
+def _public_send_email(*args, **kwargs):
+    """Automatic replies to people who use the PUBLIC website forms. Held back unless PUBLIC_REPLIES_LIVE=1."""
+    if (os.environ.get("PUBLIC_REPLIES_LIVE") or "").strip() != "1":
+        raise EmailSendError("Public website replies are switched off (PUBLIC_REPLIES_LIVE is not 1).")
+    return send_email(*args, **kwargs)
+
 import call_flow
 from email_templates import (
     SESSION_LETTERS, SESSION_LETTER_ORDER, SESSION_TRAINEE_LETTERS, session_letter_content,
@@ -50,6 +59,44 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 # variable on Render and redeploy; with it unset, this check does nothing.
 SITE_PASSWORD = os.environ.get("SITE_PASSWORD")
 SITE_USERNAME = os.environ.get("SITE_USERNAME", "dallasdiscovery")
+
+
+@app.before_request
+def _ensure_contact_columns():
+    """Adds the newer contact columns (roles, partner first/last) the first time any page loads."""
+    if request.path.startswith("/static/"):
+        return
+    try:
+        if not needs._ready:
+            c = get_db()
+            needs.ensure(c)
+            c.close()
+    except Exception as e:
+        print(f"contact column check failed: {e}", flush=True)
+
+
+_art_of_us_named = False
+
+
+@app.before_request
+def _rename_d4_program_once():
+    """One time per start-up: the D4 program's saved name ('Relationship Training') becomes 'The Art of Us'.
+    Same row, same id, so every session, enrollment and payment stays linked. Safe to repeat."""
+    global _art_of_us_named
+    if _art_of_us_named or request.path.startswith("/static/"):
+        return
+    _art_of_us_named = True
+    try:
+        c = get_db()
+        rows = c.execute("SELECT id, name FROM programs WHERE code = ?", ("D4",)).fetchall()
+        for r in rows:
+            nm = (r["name"] or "")
+            if "relationship training" in nm.lower():
+                c.execute("UPDATE programs SET name = ? WHERE id = ?", ("The Art of Us", r["id"]))
+        c.commit()
+        c.close()
+    except Exception as e:
+        print(f"D4 program rename skipped: {e}", flush=True)
 
 
 @app.before_request
@@ -196,7 +243,7 @@ SESSION_IDLE_TIMEOUT_MINUTES = 30
 
 @crm.before_request
 def require_staff_login():
-    if request.endpoint in ("crm.login", "crm.team_login", "crm.leadership_login", "crm.accounting_login", "crm.owner_login"):
+    if request.endpoint in ("crm.login", "crm.team_login", "crm.leadership_login", "crm.accounting_login", "crm.administrator_login", "crm.owner_login"):
         return
     if not session.get("staff_id"):
         return redirect(url_for(".login", next=request.path))
@@ -216,7 +263,52 @@ def require_staff_login():
             session.clear()
             flash("You were logged out after 30 minutes of inactivity -- please log back in.")
             return redirect(url_for(".login", next=request.path))
+    # A login that was removed or deactivated, or whose access was changed, is logged out on its very next click
+    # (not left signed in until the 30-minute timer runs out).
+    try:
+        conn = get_db()
+        try:
+            me = conn.execute("SELECT * FROM staff WHERE id = ?", (session["staff_id"],)).fetchone()
+        finally:
+            conn.close()
+    except Exception:
+        me = False          # could not check (database hiccup): do not lock everyone out
+    if me is not False:
+        changed = False
+        if not me or not me["active"]:
+            msg = "Your login has been removed, so you were signed out."
+            changed = True
+        else:
+            msg = "Your access was changed, so please sign in again."
+            try:
+                flag = me["is_owner"]
+                if (me["role"] != session.get("staff_role") or bool(flag) != bool(session.get("is_owner"))
+                        or (flag == 2) != bool(session.get("is_admin"))):
+                    changed = True
+            except (KeyError, IndexError):
+                pass
+        if changed:
+            session.clear()
+            flash(msg)
+            return redirect(url_for(".login"))
     session["last_seen"] = now.isoformat()
+
+
+@crm.route("/keepalive", methods=["GET", "POST"])
+def keepalive():
+    """Quietly called by an open Hub page while someone is typing or clicking, so a long edit is not lost to the idle timeout."""
+    return ("", 204)
+
+
+def true_owner_required(view):
+    """Only the real Owner (not an Administrator): making or removing Owners and Administrators."""
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("is_owner") or session.get("is_admin"):
+            flash("That's restricted to the account Owner.")
+            return redirect(url_for(".dashboard"))
+        return view(*args, **kwargs)
+    return wrapped
 
 
 def leadership_required(view):
@@ -261,17 +353,23 @@ def leadership_required(view):
 # welcome letter), "Leadership", and "Accounting" (shown as "Accounting & Legal":
 # the accountant, bookkeeper and attorney). The Owner is a flag (is_owner) on a
 # Leadership account, not a separate role value.
-ROLE_LABELS = {"Team": "Team", "Leadership": "Leadership", "Accounting": "Accounting & Legal"}
+ROLE_LABELS = {"Team": "Volunteer Team", "Leadership": "Leadership", "Accounting": "Accounting & Legal"}
+ROLE_BLURBS = {
+    "Team": "You can view and update contacts and session information.",
+    "Leadership": "You can help run the Hub day to day: contacts, sessions, letters and the team.",
+    "Accounting": "You have view-only access to the accounting and legal areas you have been given.",
+    "Administrator": "You can run everything in the Hub when the Owner is away, including letters, logins and the go-live switches. Only ownership itself stays with the Owner.",
+}
 ACCOUNTING_ROLE = "Accounting"
 # The only areas an Accounting & Legal login can ever be given (the Owner picks
 # which of these each person gets). Program materials and marketing are never offered.
 ACCOUNTING_AREAS = ["accounting", "donations", "contracts", "contacts"]
 # Accounting & Legal logins are view-only: any form submission is refused except
 # signing in/out and changing their own password.
-ACCOUNTING_WRITE_ALLOWED = ("crm.login", "crm.team_login", "crm.leadership_login", "crm.accounting_login", "crm.owner_login",
+ACCOUNTING_WRITE_ALLOWED = ("crm.login", "crm.team_login", "crm.leadership_login", "crm.accounting_login", "crm.administrator_login", "crm.owner_login",
                             "crm.logout", "crm.change_password",
                             # money entry -- each of these also checks the Accounting / Donations area grant
-                            "crm.enrollment_payment", "crm.finance_record_payment", "crm.payment_void",
+                            "crm.enrollment_payment", "crm.finance_record_payment", "crm.payment_void", "crm.checkin_pay_confirm", "crm.checkin_pay_reject",
                             "crm.donations_list", "crm.donation_void")
 
 
@@ -287,6 +385,25 @@ def accounting_view_only():
         return
     flash("Your Accounting & Legal login is view-only. Nothing was changed.")
     return redirect(url_for(".dashboard"))
+
+
+@crm.before_request
+def administrator_cannot_touch_owner():
+    """An Administrator has Owner powers but can never edit, deactivate or reset the real Owner's login."""
+    if not session.get("is_admin") or request.method != "POST":
+        return
+    sid = (request.view_args or {}).get("staff_id")
+    if not sid:
+        return
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT is_owner FROM staff WHERE id = ?", (sid,)).fetchone()
+        conn.close()
+    except Exception:
+        return
+    if row and row["is_owner"] == 1:
+        flash("Only the Owner can change the Owner's login. Nothing was changed.")
+        return redirect(url_for(".staff_list"))
 
 
 def _accounting_target_blocked(staff_id):
@@ -318,18 +435,23 @@ FIXED_ACCESS_AREAS = [
     ("accounting", "Accounting"),
     ("marketing", "Marketing"),
     ("correspondence", "Correspondence"),
+    ("guides", "Guides (choose and change who the Guides are)"),
     ("contacts", "Contacts"),
     ("donations", "Donations"),
     ("contracts", "Contracts & business plan"),
     ("session_team", "Session Team (on each training session page)"),
     ("trainee_roster", "Trainee Roster (on each training session page)"),
+    ("budgets", "Budgets (view only; Admin menu)"),
+    ("alerts", "Dashboard alerts (the \"Needs attention\" list and email bounces)"),
+    ("assign_logins", "Assign logins (give a contact a Volunteer Team login, or remove one)"),
+    ("checkin", "Check-in table (greeters: see a session's couples, take couple photos, and see the team phone list)"),
 ]
 # Ticking either session box also gives Contacts automatically, since the session pages
 # live under Contacts. These two (and the Contacts that comes with them) have no 4-person limit.
 SESSION_VIEW_AREAS = ("session_team", "trainee_roster")
 # "Grant full access" does not include these; only the Owner switches them on, person by person.
-FULL_ACCESS_EXCLUDED_AREAS = ("accounting", "donations", "contracts", "marketing", "correspondence")
-UNCAPPED_AREAS = set(SESSION_VIEW_AREAS) | {"correspondence"}
+FULL_ACCESS_EXCLUDED_AREAS = ("accounting", "donations", "contracts", "marketing", "correspondence", "guides", "budgets")
+UNCAPPED_AREAS = set(SESSION_VIEW_AREAS) | {"correspondence", "guides", "budgets", "alerts", "assign_logins", "checkin"}
 
 
 def _can_see_session_part(part):
@@ -387,11 +509,30 @@ def _area_labels_map(conn):
     return labels
 
 
+def _seed_alerts_access(conn):
+    """One time: everyone with a Leadership account keeps seeing the alerts they saw before the
+    'Dashboard alerts' box existed. After that, access is exactly what the Owner ticks."""
+    try:
+        conn.execute("CREATE TABLE IF NOT EXISTS app_flags (key TEXT PRIMARY KEY)")
+        if conn.execute("SELECT 1 FROM app_flags WHERE key = 'alerts_seeded'").fetchone():
+            return
+        conn.execute("""INSERT INTO access_grants (area_key, staff_id)
+                        SELECT 'alerts', s.id FROM staff s WHERE s.role = 'Leadership' AND s.active = 1
+                        AND NOT EXISTS (SELECT 1 FROM access_grants g WHERE g.area_key = 'alerts' AND g.staff_id = s.id)""")
+        conn.execute("INSERT INTO app_flags (key) VALUES ('alerts_seeded')")
+        conn.commit()
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        print(f"alerts access seed skipped: {e}", flush=True)
+
+
 def _all_areas(conn):
     """(area_key, label) for every fixed area plus all 6 program slots
     (B1-B6) -- the full set of things access can be granted for. A slot
     shows the program's real name once it exists, or just its code as a
     placeholder before then, so access can be set up ahead of time."""
+    _seed_alerts_access(conn)
     area_labels = _area_labels_map(conn)
     return list(FIXED_ACCESS_AREAS) + [
         (key, area_labels.get(key, key)) for key in PROGRAM_HEADING_AREA_KEYS
@@ -519,7 +660,7 @@ def _headings_needed(conn, program_id, kwargs):
 def program_area_required(view):
     """Gates a program's confidential training materials. The Owner sees
     everything; anyone else needs a grant for each heading involved
-    (e.g. "D1:Syllabus"), set by the Owner from Site Access. Every wrapped
+    (e.g. "D1:Syllabus"), set by the Owner from HUB Access. Every wrapped
     route must take program_id as a URL argument. Sets g.allowed_headings."""
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -539,8 +680,8 @@ def program_area_required(view):
                 return redirect(request.referrer or url_for(".programs_list"))
             g.allowed_headings = allowed
             return view(*args, **kwargs)
-        flash("You don't have access to that part of this program's training materials. Ask the Owner to grant it from Site Access.")
-        return redirect(url_for(".programs_list"))
+        flash("You don't have access to that part of this program's training materials. Ask the Owner to grant it from HUB Access.")
+        return redirect(_sched_home())
     return wrapped
 
 
@@ -553,6 +694,11 @@ def _door_allows(door, staff, is_owner):
     Accounting & Legal door: Accounting & Legal logins, plus a Leadership account only
     if the Owner has granted it."""
     if is_owner:
+        try:
+            if door == "owner" and staff["is_owner"] == 2:
+                return False   # Administrators use their own door
+        except (KeyError, IndexError):
+            pass
         return True
     role = staff["role"]
     if door == "team":
@@ -575,6 +721,11 @@ def _door_allows(door, staff, is_owner):
 
 
 def _home_door_title(staff):
+    try:
+        if staff["is_owner"] == 2:
+            return "Administrator Login"
+    except (KeyError, IndexError):
+        pass
     return {"Team": "Volunteer Team Login", "Leadership": "Leadership Login", ACCOUNTING_ROLE: "Accounting & Legal Login"}.get(
         staff["role"], "Volunteer Team Login")
 
@@ -627,7 +778,7 @@ def _attempt_login(next_url, door="team"):
         if not _door_allows(door, staff, owner_flag):
             title = next(t for k, _, t in LOGIN_PAGES if k == door)
             if door == "owner":
-                flash("The Owner Login is for the account Owner only.")
+                flash("The Owner Login is for the account Owner only. Administrators: please use the Administrator Login.")
             elif door == "accounting" and staff["role"] == "Leadership":
                 flash("The Owner has not given your account access to the Accounting & Legal Login. Ask the Owner.")
             else:
@@ -642,11 +793,13 @@ def _attempt_login(next_url, door="team"):
             session["must_change"] = False
         try:
             session["is_owner"] = bool(staff["is_owner"])
+            session["is_admin"] = (staff["is_owner"] == 2)   # 2 = Administrator: Owner powers, but not ownership itself
         except (KeyError, IndexError):
             # is_owner column doesn't exist yet -- migrate_add_owner.py hasn't
             # been run against this database yet. Fail safe (no owner access)
             # rather than crash the login.
             session["is_owner"] = False
+            session["is_admin"] = False
         resp = redirect(next_url)
         # Remember the email on this device only, so the login page fills it in next time (never the password).
         resp.set_cookie("last_login_email", staff["email"], max_age=60 * 60 * 24 * 365, httponly=True,
@@ -660,6 +813,7 @@ LOGIN_PAGES = [
     ("team", "team_login", "Volunteer Team Login"),
     ("leadership", "leadership_login", "Leadership Login"),
     ("accounting", "accounting_login", "Accounting & Legal Login"),
+    ("administrator", "administrator_login", "Administrator Login"),
     ("owner", "owner_login", "Owner Login"),
 ]
 
@@ -695,6 +849,7 @@ LOGIN_BUTTON_TEXT = {
     "team": "Volunteer Team Members Login Here",
     "leadership": "Leadership Login Here",
     "accounting": "Accounting & Legal Login Here",
+    "administrator": "Administrator Login Here",
     "owner": "Owner Login Here",
 }
 
@@ -729,6 +884,11 @@ def leadership_login():
 @crm.route("/accounting-login", methods=["GET", "POST"])
 def accounting_login():
     return _login_page("accounting")
+
+
+@crm.route("/administrator-login", methods=["GET", "POST"])
+def administrator_login():
+    return _login_page("administrator")
 
 
 @crm.route("/owner-login", methods=["GET", "POST"])
@@ -789,13 +949,33 @@ def staff_list():
     for g in grants:
         access_by_staff.setdefault(g["staff_id"], []).append(area_labels.get(g["area_key"], g["area_key"]))
         granted_keys_by_staff.setdefault(g["staff_id"], set()).add(g["area_key"])
+    # Group each person's access into readable headings for the dropdown list.
+    own_keys = {"accounting", "donations", "contracts", "marketing", "correspondence", "guides"}
+    access_groups_by_staff = {}
+    for g in grants:
+        key = g["area_key"]
+        label = area_labels.get(key, key)
+        m = re.match(r"^(D\d+) \u2014 (.+?): (.+)$", label)
+        if key in own_keys:
+            head, item = "Ownership access", label
+        elif m:
+            head, item = (m.group(2) if m.group(2) != m.group(1) else m.group(1)), m.group(3)
+        else:
+            head, item = "General access", label
+        access_groups_by_staff.setdefault(g["staff_id"], {}).setdefault(head, []).append(item)
+    _order = {"Ownership access": 0, "General access": 1}
+    access_groups_by_staff = {
+        sid: sorted(((h, sorted(v)) for h, v in d.items()), key=lambda t: (_order.get(t[0], 2), t[0]))
+        for sid, d in access_groups_by_staff.items()}
     return render_template(
-        "staff_list.html", staff=rows, access_by_staff=access_by_staff,
+        "staff_list.html", staff=rows, can_assign_logins=_has_area_access("assign_logins"), access_by_staff=access_by_staff,
+        access_groups_by_staff=access_groups_by_staff,
         all_areas=all_areas, granted_keys_by_staff=granted_keys_by_staff,
         accounting_areas=[a for a in all_areas if a[0] in ACCOUNTING_AREAS],
         ownership_areas=[("accounting", "Accounting"), ("donations", "Donations"),
                          ("contracts", "Legal (Contracts & business plan)"), ("marketing", "Marketing"),
-                         ("correspondence", "Correspondence")],
+                         ("correspondence", "Correspondence"),
+                         ("guides", "Guides (choose and change who the Guides are)")],
         general_areas=[a for a in all_areas if a[0] not in FULL_ACCESS_EXCLUDED_AREAS],
         fixed_areas=FIXED_ACCESS_AREAS, program_groups=program_groups,
         door_staff_ids={g["staff_id"] for g in grants if g["area_key"] == ACCOUNTING_LOGIN_GRANT},
@@ -969,13 +1149,8 @@ def staff_access(staff_id):
             currently_has = area_key in current_grants
             wants = area_key in selected
             if wants and not currently_has:
-                count = conn.execute(
-                    "SELECT COUNT(*) c FROM access_grants WHERE area_key = ?", (area_key,)
-                ).fetchone()["c"]
-                if count >= ACCESS_AREA_MAX_GRANTS and area_key not in UNCAPPED_AREAS \
-                        and not (area_key == "contacts" and auto_contacts):
-                    skipped_full.append(label)
-                    continue
+                # Only the Owner reaches this page, and the Owner decides who gets what: the old
+                # "4 people per area" limit no longer stops a tick from being saved.
                 conn.execute("INSERT INTO access_grants (area_key, staff_id) VALUES (?, ?)", (area_key, staff_id))
                 added.append(label + (" (added automatically)" if area_key == "contacts" and auto_contacts else ""))
             elif not wants and currently_has:
@@ -1013,6 +1188,7 @@ def staff_access(staff_id):
 
 @crm.route("/staff/new")
 @leadership_required
+@area_required("assign_logins")
 def staff_new_search():
     """Adding a team member starts here: find their Contact record first,
     so every team member's name/address/emergency contact/etc lives in one
@@ -1047,6 +1223,27 @@ def staff_new_search():
     return render_template("staff_new_search.html", q=q, contacts=contacts)
 
 
+@crm.route("/staff/new/lookup")
+@leadership_required
+@area_required("assign_logins")
+def staff_new_lookup():
+    """Live matches for the Add a team account search box (as you type)."""
+    q = request.args.get("q", "").strip()
+    out = []
+    if len(q) >= 2:
+        conn = get_db()
+        try:
+            _search_sql, _search_params = _contact_search_clause(q)
+            rows = conn.execute(
+                f"""SELECT id, email, {FULL_NAME_SQL} AS full_name FROM contacts
+                    WHERE {_search_sql} ORDER BY last_name, first_name LIMIT 15""", _search_params).fetchall()
+            out = [dict(id=r["id"], name=r["full_name"], email=r["email"] or "",
+                        url=url_for(".staff_new_for_contact", contact_id=r["id"])) for r in rows]
+        finally:
+            conn.close()
+    return jsonify(results=out, q=q)
+
+
 def _email_team_login(first, full_name, email, role, temp_password, intro):
     """Emails a team member their login link + temporary password. Returns
     (email_sent, error_text, sms_body); the sms_body is the same message in short form for the
@@ -1055,14 +1252,14 @@ def _email_team_login(first, full_name, email, role, temp_password, intro):
     first = (first or full_name or "").strip() or "there"
     subject = f"Your {PROGRAM_NAME} team login"
     text_content = (
-        f"Hi {first},\n\n{intro} {PROGRAM_NAME} team site as {role_label(role)}.\n\n"
+        f"Hi {first},\n\n{intro} {PROGRAM_NAME} team site as {role_label(role)}. {ROLE_BLURBS.get(role, '')}\n\n"
         f"Log in here: {login_url}\nEmail: {email}\nTemporary password: {temp_password}\n\n"
         "You'll be asked to choose your own password the first time you log in. "
         "Please delete this message once you have.\n"
     )
     html_content = (
         f"<p>Hi {_html.escape(first)},</p><p>{_html.escape(intro)} {_html.escape(PROGRAM_NAME)} team site as "
-        f"<strong>{_html.escape(role_label(role))}</strong>.</p>"
+        f"<strong>{_html.escape(role_label(role))}</strong>. {_html.escape(ROLE_BLURBS.get(role, ''))}</p>"
         f"<p><a href=\"{login_url}\">Log in here</a><br>Email: <strong>{_html.escape(email)}</strong><br>"
         f"Temporary password: <strong>{_html.escape(temp_password)}</strong></p>"
         "<p>You'll be asked to choose your own password the first time you log in. "
@@ -1078,8 +1275,110 @@ def _email_team_login(first, full_name, email, role, temp_password, intro):
         return False, str(e), sms_body
 
 
+@crm.route("/contacts/<int:contact_id>/login-role", methods=["POST"])
+@leadership_required
+@area_required("assign_logins")
+def contact_login_role(contact_id):
+    """The Login dropdown on a contact page: blank = no login; otherwise Volunteer Team, Leadership or Accounting & Legal."""
+    choice = (request.form.get("login_role") or "").strip()
+    if choice and choice not in ROLE_LABELS and choice != "Administrator":
+        flash("Unknown login type. Nothing was changed.")
+        return redirect(url_for(".contact_detail", contact_id=contact_id))
+    conn = get_db()
+    contact = conn.execute(f"SELECT *, {FULL_NAME_SQL} AS full_name FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+    if not contact:
+        conn.close()
+        flash("Couldn't find that contact.")
+        return redirect(url_for(".contacts_list"))
+    owner = bool(session.get("is_owner"))
+    staff = conn.execute("SELECT * FROM staff WHERE contact_id = ? ORDER BY active DESC LIMIT 1", (contact_id,)).fetchone()
+    back = redirect(url_for(".contact_detail", contact_id=contact_id))
+    if request.form.get("return_to") == "list":
+        from urllib.parse import parse_qsl
+        keep = {k: v for k, v in parse_qsl(request.form.get("return_qs") or "") if k in ("q", "list", "sort", "dir", "profile")}
+        back = redirect(url_for(".contacts_list", **keep))
+    true_owner = owner and not session.get("is_admin")
+    if staff and staff["is_owner"] == 1:
+        conn.close()
+        flash("This person is an Owner. Owner logins are managed under HUB Access.")
+        return back
+    is_admin_login = bool(staff and staff["active"] and staff["is_owner"] == 2)
+    if (choice == "Administrator" or is_admin_login) and not true_owner:
+        conn.close()
+        flash("Only the Owner can set or change an Administrator login.")
+        return back
+    # Only the Owner (or an Administrator) may create, change or remove anything other than a plain Volunteer Team login.
+    if not owner and ((choice and choice != "Team") or (staff and staff["active"] and staff["role"] != "Team")):
+        conn.close()
+        flash("Only the Owner can set a Leadership or Accounting & Legal login. Ask the Owner to change it.")
+        return back
+    current = ("Administrator" if is_admin_login else staff["role"]) if (staff and staff["active"]) else ""
+    if choice == current:
+        conn.close()
+        flash("No change.")
+        return back
+    if not choice:  # remove login
+        if staff and staff["id"] == session.get("staff_id"):
+            conn.close()
+            flash("You can't remove your own login.")
+            return back
+        if staff and staff["active"]:
+            conn.execute("UPDATE staff SET active = 0 WHERE id = ?", (staff["id"],))
+            conn.execute("DELETE FROM access_grants WHERE staff_id = ?", (staff["id"],))
+            conn.commit()
+        conn.close()
+        flash("Login removed. They no longer appear in HUB Access, their access was cleared, and they can no longer log in. They are still a contact.")
+        return back
+    new_role = "Leadership" if choice == "Administrator" else choice
+    new_flag = 2 if choice == "Administrator" else 0
+    if staff and staff["active"]:  # change category only
+        conn.execute("UPDATE staff SET role = ?, is_owner = ? WHERE id = ?", (new_role, new_flag, staff["id"]))
+        conn.commit()
+        conn.close()
+        flash(f"Login changed to {role_label(choice)}. No new email was sent. They will see the change the next time they log in.")
+        return back
+    email = (contact["email"] or "").strip().lower()
+    if not email:
+        conn.close()
+        flash("Add an email address to this contact first. The login link is sent there.")
+        return back
+    other = conn.execute("SELECT id FROM staff WHERE LOWER(email) = ? AND (contact_id IS NULL OR contact_id <> ?)", (email, contact_id)).fetchone()
+    if other:
+        conn.close()
+        flash("Another account already uses that email, so no login was created.")
+        return back
+    temp_password = secrets.token_urlsafe(9)
+    _ensure_must_change()
+    try:
+        if staff:  # earlier login turned off: switch it back on
+            conn.execute("UPDATE staff SET active = 1, name = ?, email = ?, role = ?, is_owner = ?, password_hash = ?, must_change_password = 1 WHERE id = ?",
+                         (contact["full_name"], email, new_role, new_flag, generate_password_hash(temp_password), staff["id"]))
+        else:
+            conn.execute("INSERT INTO staff (name, email, password_hash, role, is_owner, contact_id, must_change_password) VALUES (?, ?, ?, ?, ?, ?, 1)",
+                         (contact["full_name"], email, generate_password_hash(temp_password), new_role, new_flag, contact_id))
+        conn.commit()
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        conn.close()
+        print(f"login-role failed: {e!r}", flush=True)
+        flash("Couldn't create that login. Nothing was changed.")
+        return back
+    conn.close()
+    if request.form.get("personal") == "1":      # no email: the Owner sends a personal note with a one-time welcome link
+        conn2 = get_db()
+        sid = conn2.execute("SELECT id FROM staff WHERE contact_id = ? ORDER BY active DESC, id DESC LIMIT 1", (contact_id,)).fetchone()["id"]
+        conn2.close()
+        return app.config["PERSONAL_INVITE_AFTER_CREATE"](contact, sid)
+    email_sent, email_error, sms_body = _email_team_login(contact["first_name"], contact["full_name"], email, choice, temp_password, "You've been added to the")
+    return render_template("staff_new_done.html", heading=f"{contact['full_name']} was given a {role_label(choice)} login",
+                           person=contact, email=email, temp_password=temp_password,
+                           email_sent=email_sent, email_error=email_error, sms_body=sms_body)
+
+
 @crm.route("/staff/new/contact/<int:contact_id>", methods=["GET", "POST"])
 @leadership_required
+@area_required("assign_logins")
 def staff_new_for_contact(contact_id):
     conn = get_db()
     contact = conn.execute(
@@ -1101,7 +1400,8 @@ def staff_new_for_contact(contact_id):
             flash("Only the Owner can create Accounting & Legal logins. Nothing was added.")
             conn.close()
             return render_template("staff_new_confirm.html", contact=contact)
-        temp_password = request.form["password"]
+        personal = request.form.get("personal") == "1"      # no email: the Owner sends a personal note with a welcome link
+        temp_password = secrets.token_urlsafe(12) if personal else request.form["password"]
         if not email:
             flash("Enter an email to use for their ERP login.")
             conn.close()
@@ -1138,6 +1438,8 @@ def staff_new_for_contact(contact_id):
                 conn.close()
                 return render_template("staff_new_confirm.html", contact=contact)
             conn.close()
+            if personal:
+                return app.config["PERSONAL_INVITE_AFTER_CREATE"](contact, existing["id"])
             email_sent, email_error, sms_body = _email_team_login(
                 contact["first_name"], contact["full_name"], email, role, temp_password,
                 "You've been added to the")
@@ -1162,6 +1464,11 @@ def staff_new_for_contact(contact_id):
             conn.close()
             return render_template("staff_new_confirm.html", contact=contact)
         conn.close()
+        if personal:
+            conn2 = get_db()
+            new_id = conn2.execute("SELECT id FROM staff WHERE contact_id = ? ORDER BY id DESC LIMIT 1", (contact_id,)).fetchone()["id"]
+            conn2.close()
+            return app.config["PERSONAL_INVITE_AFTER_CREATE"](contact, new_id)
         # Account created. Email the new team member their login details automatically.
         email_sent, email_error, sms_body = _email_team_login(
             contact["first_name"], contact["full_name"], email, role, temp_password,
@@ -1280,7 +1587,7 @@ def staff_deactivate(staff_id):
     if _team_manage_blocked(target):
         conn.close()
         return redirect(url_for(".staff_list"))
-    if target and target["is_owner"]:
+    if target and target["is_owner"] == 1:
         remaining_active_owners = conn.execute(
             "SELECT COUNT(*) c FROM staff WHERE is_owner = 1 AND active = 1"
         ).fetchone()["c"]
@@ -1376,7 +1683,8 @@ def staff_grant_full_access(staff_id):
 
     # "Full access" leaves out the four money/legal/marketing areas. The Owner turns those on, one at a
     # time, from the Access box (existing grants are never removed here).
-    all_area_keys = [key for key, _ in FIXED_ACCESS_AREAS if key not in FULL_ACCESS_EXCLUDED_AREAS] + [
+    everything = request.form.get("everything") == "1"
+    all_area_keys = [key for key, _ in FIXED_ACCESS_AREAS if everything or key not in FULL_ACCESS_EXCLUDED_AREAS] + [
         program_heading_key(row["code"], h)
         for row in conn.execute("SELECT code FROM programs").fetchall()
         for h in MATERIAL_CATEGORIES
@@ -1395,8 +1703,12 @@ def staff_grant_full_access(staff_id):
     conn.commit()
     conn.close()
 
-    msg = (f"{staff['name']} is now Leadership with access to everything except Accounting, Donations, "
-           "Contracts & business plan, and Marketing. Those are under Ownership access if they need them.")
+    if everything:
+        msg = (f"{staff['name']} is now Leadership with access to everything, including Accounting, Donations, "
+               "Contracts & business plan, Marketing, Correspondence and Guides.")
+    else:
+        msg = (f"{staff['name']} is now Leadership with access to everything except Accounting, Donations, "
+               "Contracts & business plan, and Marketing. Those are under Ownership access if they need them.")
     if skipped_full:
         msg += f" ({', '.join(skipped_full)} already had 4 authorized users -- remove one there if they need it too.)"
     flash(msg)
@@ -1459,7 +1771,7 @@ def staff_remove_full_access(staff_id):
 
 
 @crm.route("/staff/<int:staff_id>/make-owner", methods=["POST"])
-@owner_required
+@true_owner_required
 def staff_make_owner(staff_id):
     conn = get_db()
     staff = conn.execute("SELECT * FROM staff WHERE id = ?", (staff_id,)).fetchone()
@@ -1468,11 +1780,11 @@ def staff_make_owner(staff_id):
         conn.commit()
         flash(f"{staff['name']} is now an Owner -- unrestricted access, same as you.")
     conn.close()
-    return redirect(url_for(".staff_list"))
+    return redirect(url_for(".owners_corner"))
 
 
 @crm.route("/staff/change-ownership", methods=["POST"])
-@owner_required
+@true_owner_required
 def change_ownership():
     """Owner-only, password-gated: makes another active staff account an
     Owner too, without touching the current Owner's own status. Requires
@@ -1484,37 +1796,45 @@ def change_ownership():
     if not me or not check_password_hash(me["password_hash"], request.form.get("password", "")):
         flash("Incorrect password -- ownership not changed.")
         conn.close()
-        return redirect(url_for(".staff_list"))
+        return redirect(url_for(".owners_corner"))
     target = conn.execute(
         "SELECT * FROM staff WHERE id = ? AND active = 1", (request.form.get("new_owner_id"),)
     ).fetchone()
     if not target:
         flash("Choose an active staff account to make an Owner.")
         conn.close()
-        return redirect(url_for(".staff_list"))
+        return redirect(url_for(".owners_corner"))
     conn.execute("UPDATE staff SET is_owner = 1, role = 'Leadership' WHERE id = ?", (target["id"],))
     conn.commit()
     conn.close()
     flash(f"{target['name']} is now an Owner too -- full, unrestricted access, same as you. They'll see it the next time they log in.")
-    return redirect(url_for(".staff_list"))
+    return redirect(url_for(".owners_corner"))
 
 
 @crm.route("/staff/<int:staff_id>/remove-owner", methods=["POST"])
-@owner_required
+@true_owner_required
 def staff_remove_owner(staff_id):
     conn = get_db()
     remaining_owners = conn.execute("SELECT COUNT(*) c FROM staff WHERE is_owner = 1").fetchone()["c"]
-    if remaining_owners <= 1:
+    _t = conn.execute("SELECT is_owner FROM staff WHERE id = ?", (staff_id,)).fetchone()
+    if remaining_owners <= 1 and _t and _t["is_owner"] == 1:
         flash("Can't remove the last remaining Owner.")
         conn.close()
-        return redirect(url_for(".staff_list"))
+        return redirect(url_for(".owners_corner"))
     staff = conn.execute("SELECT * FROM staff WHERE id = ?", (staff_id,)).fetchone()
-    if staff:
+    if staff and staff["is_owner"] == 2:
+        conn.execute("UPDATE staff SET is_owner = 0 WHERE id = ?", (staff_id,))
+        conn.commit()
+        flash(f"{staff['name']} is no longer an Administrator. They are now a Leadership login.")
+        if request.form.get("redirect_to") == "staff_list":
+            conn.close()
+            return redirect(url_for(".staff_list"))
+    elif staff:
         conn.execute("UPDATE staff SET is_owner = 0 WHERE id = ?", (staff_id,))
         conn.commit()
         flash(f"{staff['name']} is no longer an Owner.")
     conn.close()
-    return redirect(url_for(".staff_list"))
+    return redirect(url_for(".owners_corner"))
 
 
 def _contact_search_clause(q):
@@ -1563,7 +1883,7 @@ US_STATES = [
 # separate free-text entry -- shown on the contact page only for contacts
 # who attended Discovery, since these are Discovery training artifacts.
 CONTRACT_KINDS = {
-    "D1B": "The Name of your Buddy in D1",
+    "D1B": "The Name of your Buddy in The Beginning",
     "D1P": "Your Pseudo Name",
     "D1": "Your Contract",
     "D1S": "Your Stretch Song",
@@ -1576,8 +1896,9 @@ CONTRACT_KINDS = {
 }
 
 # The numbers people see in headings. Saved contracts keep their original internal keys (so no stored data
-# had to change); the training order is D1, D2, D3, 4 = Relationship Training, 5 = Refocus, 6 = Spiritual.
-CONTRACT_DISPLAY_CODES = {"D1B": "D1", "D1P": "D1", "D2G": "D2", "D6": "D4", "D6S": "D4S", "D5": "D6"}
+# had to change); the training order is D1, D2, D3, 4 = The Art of Us, 5 = Refocus, 6 = Spiritual.
+CONTRACT_DISPLAY_CODES = {"D1B": "The Beginning", "D1P": "The Beginning", "D1": "The Beginning", "D1S": "The Beginning",
+                          "D2": "Awakening", "D2G": "Awakening", "D3": "Vision", "D6": "The Art of Us", "D6S": "The Art of Us", "D5": ""}
 
 # Kinds that get a single-line input instead of a multi-row textarea.
 CONTRACT_SINGLE_LINE_KINDS = {"D1B", "D1P", "D1", "D1S", "D6S"}
@@ -1641,6 +1962,32 @@ def day_list(start, last=None):
     return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " & " + parts[-1] if len(parts) > 2 else " & ".join(parts)
 
 
+@app.template_filter("nice_prog")
+def nice_prog(name, code=None):
+    """A program's name without its code in front: 'D1' -> 'The Beginning, Awakening & Vision', 'D4-Relationship Training' -> 'The Art of Us'."""
+    n = (name or "").strip()
+    c = (code or "").strip()
+    if c and n.upper().startswith(c.upper()):
+        rest = n[len(c):].lstrip(" -\u2013\u2014:")
+        n = rest or PROGRAM_LABELS.get(c, n)
+    # the old saved name for the D4 program shows as its new name
+    n = re.sub(r"(?:The Art of Us\s*[-\u2013\u2014:]\s*)?Relationship Training", "The Art of Us", n, flags=re.I)
+    return n
+
+
+SESSION_LABELS = {"D1": "The Beginning", "D2": "Awakening", "D3": "Vision", "D4": "The Art of Us", "D5": "Renew", "D6": "Spiritual"}
+
+
+def sess_name(code):
+    """Short name used in 'Awakening #3' style labels (never the bare D-code)."""
+    return SESSION_LABELS.get(code, code)
+
+
+@app.template_filter("sess_label")
+def sess_label(code):
+    return sess_name(code)
+
+
 @app.template_filter("prog_label")
 def prog_label(code):
     """Calendar labels: show the program's name instead of its code (D4 -> The Art of Us)."""
@@ -1650,7 +1997,7 @@ def prog_label(code):
 @app.context_processor
 def inject_program_name():
     """Makes {{ program_name }} available in every template (see config.py)."""
-    return {"program_name": PROGRAM_NAME, "public_brand": "Discovery!"}
+    return {"program_name": PROGRAM_NAME, "public_brand": "Sojourn"}
 
 
 @app.context_processor
@@ -1713,7 +2060,7 @@ def clean_age(value):
 # public form.
 CONTACT_PROFILE_FIELDS = [
     "first_name", "last_name", "email", "email_2", "email_3", "cell_phone", "home_phone", "work_phone",
-    "partner_name", "partner_cell", "partner_email",
+    "partner_name", "partner_first_name", "partner_last_name", "no_partner", "previous_roles", "partner_cell", "partner_email",
     "emergency_contact_name", "emergency_contact_cell", "emergency_contact_home",
     "sponsor_name", "sponsor_phone", "sponsor_email",
     "sponsor_street_address", "sponsor_street_address_2", "sponsor_city", "sponsor_state", "sponsor_zip",
@@ -1749,8 +2096,19 @@ def _clean_contact_field(name, form):
         return form["first_name"].strip()
     if name == "last_name":
         return form.get("last_name", "").strip() or None
-    if name == "partner_name":
+    if name == "partner_first_name" or name == "partner_last_name":
         value = form.get(name, "").strip()
+        return _title_case_name(value) if value else None
+    if name == "no_partner":
+        return "1" if form.get("no_partner") else None
+    if name == "previous_roles":
+        roles = form.getlist("previous_roles") if hasattr(form, "getlist") else []
+        return ", ".join(roles) or None
+    if name == "partner_name":
+        if "partner_first_name" in form or "partner_last_name" in form:
+            value = (form.get("partner_first_name", "").strip() + " " + form.get("partner_last_name", "").strip()).strip()
+        else:
+            value = form.get(name, "").strip()
         return _title_case_name(value) if value else None
     if name == "dob":
         return clean_dob(form.get(name))
@@ -1766,7 +2124,11 @@ PUBLIC_FORM_SKIPPED_FIELDS = {
 def contact_profile_values_from_form(form):
     """Returns {column: cleaned_value} for every CONTACT_PROFILE_FIELDS
     column, built from a submitted form (internal or public)."""
-    return {name: _clean_contact_field(name, form) for name in CONTACT_PROFILE_FIELDS}
+    values = {name: _clean_contact_field(name, form) for name in CONTACT_PROFILE_FIELDS}
+    if values.get("no_partner"):
+        for k in ("partner_name", "partner_first_name", "partner_last_name", "partner_cell", "partner_email"):
+            values[k] = None
+    return values
 
 
 def _create_past_sponsor(conn, name, phone, email, note):
@@ -1912,6 +2274,32 @@ def mission_page():
 
 
 # ---------- dashboard ----------
+NAV_PROGRAM_LABEL = {"D1": "The Beginning", "D4": "The Art of Us", "D5": "Renew", "D6": "Spiritual"}
+
+
+def _upcoming_sessions(conn, limit):
+    """The next sessions that have not finished, soonest first (Awakening and Vision ride along with The Beginning,
+    so they are not listed on their own). Each: id, label, span, days_away, enrolled."""
+    rows = conn.execute(
+        """SELECT c.id, c.session_date, c.end_date, p.code, p.name,
+                  (SELECT COUNT(*) FROM enrollments e WHERE e.cohort_id = c.id) AS enrolled
+           FROM cohorts c JOIN programs p ON p.id = c.program_id
+           WHERE COALESCE(c.end_date, c.session_date) >= ? AND COALESCE(c.status, '') <> 'Cancelled'
+             AND p.code NOT IN ('D2','D3')
+           ORDER BY c.session_date ASC, p.id ASC LIMIT ?""", (date.today().isoformat(), limit)).fetchall()
+    out = []
+    for r in rows:
+        try:
+            start = date.fromisoformat(r["session_date"])
+            last = date.fromisoformat(r["end_date"]) if r["end_date"] else start
+        except ValueError:
+            continue
+        out.append({"id": r["id"], "label": NAV_PROGRAM_LABEL.get(r["code"], r["name"]), "code": r["code"],
+                    "span": f"{_short_span(start, last)}, {last.year}", "days_away": (start - date.today()).days,
+                    "enrolled": r["enrolled"]})
+    return out
+
+
 
 @crm.route("/")
 def dashboard():
@@ -1924,18 +2312,246 @@ def dashboard():
            ORDER BY c.session_date ASC LIMIT 10"""
     ).fetchall()
     programs = conn.execute("SELECT * FROM programs ORDER BY id").fetchall()
+    try:
+        next_sessions = _upcoming_sessions(conn, 3)
+    except Exception as e:
+        conn.rollback()
+        print(f"dashboard next sessions skipped: {e}", flush=True)
+        next_sessions = []
+    alerts = []
+    try:
+        import alerts as _alerts
+        _seed_alerts_access(conn)
+        is_lead = bool(_has_area_access("alerts"))
+        alerts = _alerts.collect(conn, bool(session.get("is_owner")), is_lead,
+                                 bool(_can_handle_money()), lambda code, name: NAV_PROGRAM_LABEL.get(code, name), url_for)
+    except Exception as e:
+        conn.rollback()
+        print(f"dashboard alerts skipped: {e}", flush=True)
+    chat_ok = bool(session.get("staff_id")) and not (session.get("staff_role") == ACCOUNTING_ROLE and not session.get("is_owner"))
+    if chat_ok:
+        try:
+            _ensure_chat_tables(conn)
+            sid = session["staff_id"]
+            seen = conn.execute("SELECT * FROM chat_seen WHERE staff_id = ?", (sid,)).fetchone()
+            if seen:
+                old_cut = conn.execute("SELECT to_char((now() AT TIME ZONE 'America/Chicago') - interval '1 day', 'YYYY-MM-DD HH24:MI:SS') AS c").fetchone()["c"]
+                b = conn.execute(
+                    "SELECT (SELECT COUNT(*) FROM chat_topics WHERE created_at > ? AND author_id <> ?) + "
+                    "(SELECT COUNT(*) FROM chat_replies WHERE created_at > ? AND author_id <> ?) AS n",
+                    (seen["board_seen"], sid, seen["board_seen"], sid)).fetchone()["n"]
+                b_old = conn.execute(
+                    "SELECT (SELECT COUNT(*) FROM chat_topics WHERE created_at > ? AND created_at < ? AND author_id <> ?) + "
+                    "(SELECT COUNT(*) FROM chat_replies WHERE created_at > ? AND created_at < ? AND author_id <> ?) AS n",
+                    (seen["board_seen"], old_cut, sid, seen["board_seen"], old_cut, sid)).fetchone()["n"]
+                r = conn.execute("SELECT COUNT(*) AS n FROM chat_messages WHERE id > ? AND author_id <> ?",
+                                 (seen["room_seen_id"], sid)).fetchone()["n"]
+                r_old = conn.execute("SELECT COUNT(*) AS n FROM chat_messages WHERE id > ? AND created_at < ? AND author_id <> ?",
+                                     (seen["room_seen_id"], old_cut, sid)).fetchone()["n"]
+                if b:
+                    alerts.append(dict(level="urgent" if b_old else "note", cat="Chat", url=url_for(".chat_home"), cta="Open the board",
+                                       text=f"{b} new {'post' if b == 1 else 'posts'} on the discussion board."))
+                if r:
+                    alerts.append(dict(level="urgent" if r_old else "note", cat="Chat", url=url_for(".chat_room"), cta="Open the chat room",
+                                       text=f"{r} new {'message' if r == 1 else 'messages'} in the live chat room."))
+        except Exception as e:
+            conn.rollback()
+            print(f"dashboard chat alert skipped: {e}", flush=True)
     conn.close()
-    return render_template("dashboard.html", contact_count=contact_count, upcoming=upcoming, programs=programs)
+    full_alerts = bool(_has_area_access("alerts") or _can_handle_money())
+    return render_template("dashboard.html", contact_count=contact_count, upcoming=upcoming, programs=programs,
+                           next_sessions=next_sessions, alerts=alerts, full_alerts=full_alerts, chat_alerts_ok=chat_ok,
+                           show_alerts=bool(full_alerts or chat_ok))
 
 
 # ---------- contacts ----------
+
+app.jinja_env.globals["profile_request"] = lambda first, link="": __import__("email_templates").profile_request_parts(first, link)
+
+PROFILE_REQUIRED = [
+    ("first_name", "first name"), ("last_name", "last name"), ("email", "email"), ("cell_phone", "cell number"),
+    ("street_address", "street address"), ("city", "city"), ("state", "state"), ("zip", "zip"),
+    ("emergency_contact_name", "emergency contact name"), ("emergency_contact_cell", "emergency contact number"),
+    ("photo_filename", "photo"),
+]
+
+
+def profile_missing(contact):
+    """What is still blank for a complete profile: name, email + cell, address, emergency contact, photo."""
+    missing = [label for f, label in PROFILE_REQUIRED if not str(contact[f] or "").strip()]
+    try:
+        no_partner = bool(contact["no_partner"])
+    except Exception:
+        no_partner = False
+    if not no_partner:
+        try:
+            pf, pl = contact["partner_first_name"], contact["partner_last_name"]
+        except Exception:
+            pf = pl = None
+        parts = str(contact["partner_name"] or "").split()
+        pf = pf or (parts[0] if parts else "")
+        pl = pl or (" ".join(parts[1:]) if len(parts) > 1 else "")
+        if not str(pf or "").strip():
+            missing.append("partner first name (or tick No partner)")
+        if not str(pl or "").strip() and str(pf or "").strip():
+            missing.append("partner last name")
+    return missing
+
+
+app.jinja_env.globals["profile_missing"] = profile_missing
+app.jinja_env.globals["profile_all_missing"] = lambda c: profile_all_missing(c)
+
+PERSONAL_REQUIRED = [("gender", "gender"), ("ethnicity", "ethnicity"), ("marital_status", "marital status"),
+                     ("employment_status", "employment status"), ("occupation", "occupation"),
+                     ("spiritual_orientation", "spiritual orientation"), ("education", "education"),
+                     ("marketing_source", "how they heard about us")]
+
+
+def personal_missing(contact):
+    """Personal background items still blank (age or date of birth counts as one item)."""
+    out = [label for f, label in PERSONAL_REQUIRED if not str(contact[f] or "").strip()]
+    if not str(contact["age"] or "").strip() and not str(contact["dob"] or "").strip():
+        out.append("age or date of birth")
+    return out
+
+
+app.jinja_env.globals["personal_missing"] = personal_missing
+
+
+def history_state(contact):
+    """(complete?, note) for the Discovery history section."""
+    att = str(contact["discovery_attendance"] or "").strip()
+    if att == "No":
+        return True, "No previous trainings"
+    if att == "Yes":
+        dates = [contact[k] for k in ("d1_month_year", "d2_month_year", "d3_month_year", "refocus_month_year", "relationship_training_month_year")]
+        if any(str(d or "").strip() for d in dates):
+            return True, "Dates listed"
+        return False, "attended, but no dates listed yet"
+    return False, "not answered yet"
+
+
+def longform_sent_info(conn, contact):
+    """Date the long form / profile link last went out (from the HUB's record, a Guide's send, or the website), or None."""
+    best = None
+    try:
+        r = conn.execute("SELECT MAX(sent_at) AS d FROM contact_messages WHERE contact_id = ? AND kind IN ('Profile update request', 'Long-form follow-up')",
+                         (contact["id"],)).fetchone()
+        best = r["d"] if r and r["d"] else None
+    except Exception:
+        conn.rollback()
+    try:
+        r = conn.execute("SELECT MAX(longform_sent_at) AS d FROM call_requests WHERE contact_id = ?", (contact["id"],)).fetchone()
+        d = r["d"] if r and r["d"] else None
+        if d and (not best or str(d) > str(best)):
+            best = d
+    except Exception:
+        conn.rollback()
+    return best
+
+
+def profile_all_missing(contact):
+    """Everything still needed for a complete Profile: Basic info + Personal info (Discovery history is not required)."""
+    return profile_missing(contact) + personal_missing(contact)
+
+
+def profile_stages(conn, contact):
+    sent = longform_sent_info(conn, contact)
+    bm = profile_missing(contact)
+    pm = personal_missing(contact)
+    hd, hn = history_state(contact)
+    return dict(
+        sent=(str(sent)[:10] if sent else ""),
+        lines=[
+            dict(done=not bm, label="Basic info complete", note="" if not bm else "missing: " + ", ".join(bm)),
+            dict(done=not pm, label="Personal info complete", note="" if not pm else "missing: " + ", ".join(pm)),
+            dict(done=(not bm and not pm), label="Profile complete", note="Basic + Personal info" if (not bm and not pm) else "needs Basic and Personal info", strong=True),
+            dict(done=hd, label="Discovery history", note=hn + " (not required for the Profile)"),
+        ])
+
+
+_CONTACT_SORTS = {"last": "LOWER(last_name)", "first": "LOWER(first_name)", "email": "LOWER(COALESCE(email,''))",
+                  "cell": "COALESCE(cell_phone,'')", "status": "LOWER(COALESCE(status,''))",
+                  "login": "COALESCE((SELECT CASE WHEN s.is_owner = 1 THEN 'Owner' WHEN s.is_owner = 2 THEN 'Administrator' ELSE s.role END FROM staff s WHERE s.contact_id = contacts.id AND s.active = 1 ORDER BY s.id LIMIT 1), 'zzz')"}
+
+
+TEAM_LISTS = [  # (list name, session roles that put someone on it)
+    ("Facilitators", ("Lead Facilitator", "Support Facilitator")),
+    ("TAs", ("TA", "Back-up TA")),
+    ("Audio/Visual Team", ("Audio/Visual",)),
+    ("Check-in and Greeters", ("Check-in / Greeter",)),
+    ("Security Team", ("Security",)),
+    ("Office Support Team", ("Office Support",)),
+]
+LEADERSHIP_LIST = "Leadership Team"
+LEADERSHIP_SOURCES = ["Facilitators", "TAs", "Guides", "Guide Team Captain", "Audio/Visual Team",
+                      "Check-in and Greeters", "Security Team", "Office Support Team"]
+
+
+def _sync_team_lists(conn):
+    """Fills contact lists from the session Team Rosters (only adds; someone who has served stays on the list).
+    Office Support Team can also be filled by hand. Never raises."""
+    try:
+        for name, roles in TEAM_LISTS:
+            lid = call_flow.list_id_for(conn, name)
+            conn.execute(
+                """INSERT INTO contact_list_members (contact_id, list_id, added_at)
+                   SELECT DISTINCT cs.contact_id, ?, to_char(now(), 'YYYY-MM-DD') FROM cohort_staffing cs
+                   WHERE cs.role IN ({}) AND cs.contact_id IS NOT NULL
+                   AND NOT EXISTS (SELECT 1 FROM contact_list_members m WHERE m.contact_id = cs.contact_id AND m.list_id = ?)""".format(
+                       ",".join("?" for _ in roles)),
+                (lid, *roles, lid))
+        conn.commit()
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        print(f"team lists skipped: {e}", flush=True)
+
+
+def _sync_leadership_list(conn):
+    """'Leadership Team' = everyone on any of the lists in LEADERSHIP_SOURCES. Rebuilt each time. Never raises."""
+    try:
+        lid = call_flow.list_id_for(conn, LEADERSHIP_LIST)
+        src = [r["id"] for r in conn.execute(
+            "SELECT id FROM contact_lists WHERE name IN ({})".format(",".join("?" for _ in LEADERSHIP_SOURCES)), tuple(LEADERSHIP_SOURCES)).fetchall()]
+        if not src:
+            return
+        ph = ",".join("?" for _ in src)
+        conn.execute(
+            f"""INSERT INTO contact_list_members (contact_id, list_id, added_at)
+                SELECT DISTINCT m.contact_id, ?, to_char(now(), 'YYYY-MM-DD') FROM contact_list_members m
+                WHERE m.list_id IN ({ph}) AND NOT EXISTS (SELECT 1 FROM contact_list_members x WHERE x.contact_id = m.contact_id AND x.list_id = ?)""",
+            (lid, *src, lid))
+        conn.execute(
+            f"""DELETE FROM contact_list_members WHERE list_id = ? AND contact_id NOT IN
+                (SELECT contact_id FROM contact_list_members WHERE list_id IN ({ph}))""", (lid, *src))
+        conn.commit()
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        print(f"leadership list skipped: {e}", flush=True)
+
+
+CONTACTS_PAGE_SIZE = 100
+
 
 @crm.route("/contacts")
 @area_required("contacts")
 def contacts_list():
     q = request.args.get("q", "").strip()
     list_id = request.args.get("list", type=int)
+    sort = request.args.get("sort", "last")
+    if sort not in ("last", "first", "email", "cell", "status", "login"):
+        sort = "last"
+    desc = request.args.get("dir") == "desc"
     conn = get_db()
+    _sync_team_lists(conn)
+    try:
+        call_flow.ensure_tables(get_db)
+        call_flow.sync_guide_lists(conn)
+    except Exception:
+        pass
+    _sync_leadership_list(conn)
     where, params = [], []
     if q:
         _search_sql, _search_params = _contact_search_clause(q)
@@ -1945,15 +2561,75 @@ def contacts_list():
         where.append("id IN (SELECT contact_id FROM contact_list_members WHERE list_id = ?)")
         params.append(list_id)
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
-    limit_sql = "" if (q or list_id) else "LIMIT 200"
-    rows = conn.execute(
-        f"SELECT *, {FULL_NAME_SQL} AS full_name FROM contacts {where_sql} "
-        f"ORDER BY last_name, first_name {limit_sql}",
-        params,
-    ).fetchall()
+    prof = request.args.get("profile", "")
+    if prof not in ("complete", "incomplete", "basic", "personal"):
+        prof = ""
+    # A to Z jump: filters on the first letter of the Last name (or First name when sorted by First).
+    letter = (request.args.get("letter") or "").strip().upper()[:1]
+    letter = letter if letter == "#" or ("A" <= letter <= "Z") else ""
+    if letter and sort in ("last", "first"):
+        col = "first_name" if sort == "first" else "last_name"
+        if letter == "#":
+            where.append(f"UPPER(SUBSTR(COALESCE({col}, ''), 1, 1)) NOT BETWEEN 'A' AND 'Z'")
+        else:
+            where.append(f"UPPER({col}) LIKE ?")
+            params.append(letter + "%")
+        where_sql = "WHERE " + " AND ".join(where)
+    else:
+        letter = ""
+    page = max(1, request.args.get("page", 1, type=int) or 1)
+    order_sql = f"ORDER BY {_CONTACT_SORTS[sort]}{' DESC' if desc else ''}, last_name, first_name"
+    if prof:
+        # The profile filter is worked out per person, so it runs on all matches and then pages.
+        rows = conn.execute(f"SELECT *, {FULL_NAME_SQL} AS full_name FROM contacts {where_sql} {order_sql}", params).fetchall()
+        if prof == "basic":
+            rows = [r for r in rows if profile_missing(r)]
+        elif prof == "personal":
+            rows = [r for r in rows if personal_missing(r)]
+        else:
+            rows = [r for r in rows if bool(profile_all_missing(r)) == (prof == "incomplete")]
+        total = len(rows)
+        pages = max(1, -(-total // CONTACTS_PAGE_SIZE))
+        page = min(page, pages)
+        rows = rows[(page - 1) * CONTACTS_PAGE_SIZE: page * CONTACTS_PAGE_SIZE]
+    else:
+        total = conn.execute(f"SELECT COUNT(*) AS n FROM contacts {where_sql}", params).fetchone()["n"]
+        pages = max(1, -(-total // CONTACTS_PAGE_SIZE))
+        page = min(page, pages)
+        rows = conn.execute(
+            f"SELECT *, {FULL_NAME_SQL} AS full_name FROM contacts {where_sql} {order_sql} LIMIT ? OFFSET ?",
+            params + [CONTACTS_PAGE_SIZE, (page - 1) * CONTACTS_PAGE_SIZE],
+        ).fetchall()
     all_lists = conn.execute("SELECT id, name FROM contact_lists ORDER BY name").fetchall()
+    quick = [dict(id=l["id"], name=l["name"]) for l in all_lists if l["name"] in (call_flow.GUIDE_LIST, call_flow.LEAD_GUIDE_LIST)]
+    group_buttons, group_options, list_name, list_count = [], [], None, 0
+    try:
+        counts = {r["list_id"]: r["n"] for r in conn.execute("SELECT list_id, COUNT(*) AS n FROM contact_list_members GROUP BY list_id").fetchall()}
+        by_name = {l["name"]: l["id"] for l in all_lists}
+        for nm in [LEADERSHIP_LIST] + LEADERSHIP_SOURCES:
+            if nm in by_name:
+                group_buttons.append(dict(id=by_name[nm], name=nm, n=counts.get(by_name[nm], 0)))
+        team_names = {LEADERSHIP_LIST, *LEADERSHIP_SOURCES, *[t for t, _ in TEAM_LISTS], call_flow.GUIDE_LIST, call_flow.LEAD_GUIDE_LIST}
+        for l in all_lists:
+            group_options.append(dict(id=l["id"], name=l["name"], n=counts.get(l["id"], 0), team=(l["name"] in team_names)))
+        group_options.sort(key=lambda g: (0 if g["team"] else 1, (g["name"] or "").lower()))
+        if list_id:
+            list_name = next((l["name"] for l in all_lists if l["id"] == list_id), None)
+            list_count = counts.get(list_id, 0)
+    except Exception:
+        try: conn.rollback()
+        except Exception: pass
+    logins = {}
+    try:
+        for r in conn.execute("SELECT contact_id, role, is_owner FROM staff WHERE active = 1 AND contact_id IS NOT NULL").fetchall():
+            logins[r["contact_id"]] = "Owner" if r["is_owner"] == 1 else ("Administrator" if r["is_owner"] == 2 else role_label(r["role"]))
+    except Exception:
+        try: conn.rollback()
+        except Exception: pass
     conn.close()
-    return render_template("contacts_list.html", contacts=rows, q=q, list_id=list_id, all_lists=all_lists)
+    return render_template("contacts_list.html", logins=logins, can_assign_logins=_has_area_access("assign_logins"), contacts=rows, q=q, list_id=list_id, sort=sort, desc=desc, prof=prof, all_lists=all_lists, quick_lists=quick,
+                           page=page, pages=pages, total=total, page_size=CONTACTS_PAGE_SIZE, letter=letter,
+                           group_buttons=group_buttons, group_options=group_options, list_name=list_name, list_count=list_count)
 
 
 @crm.route("/contacts/new", methods=["GET", "POST"])
@@ -2002,6 +2678,46 @@ def contact_new():
     )
 
 
+def _sync_login_email(conn, contact_id, old_email, new_email):
+    """If this contact has a team login that uses their old email, move the login to the corrected email,
+    give them a new temporary password and email it. The old address can no longer be used to log in.
+    Never breaks the contact save."""
+    try:
+        old = (old_email or "").strip().lower()
+        new = (new_email or "").strip().lower()
+        if not old or not new or old == new:
+            return
+        st = conn.execute("SELECT * FROM staff WHERE contact_id = ? AND active = 1 AND LOWER(email) = ?", (contact_id, old)).fetchone()
+        if not st:
+            return
+        if st["is_owner"] == 1 or st["role"] == ACCOUNTING_ROLE or (st["is_owner"] == 2 and session.get("is_admin")):
+            flash("Note: their team login still uses the old email. Only the Owner can change that one, under HUB Access.")
+            return
+        allowed = session.get("is_owner") or (session.get("staff_role") == "Leadership" and st["role"] == "Team")
+        if not allowed:
+            flash("Note: their team login still uses the old email. Ask the Owner (or Leadership, for a Team account) to update it under HUB Access.")
+            return
+        if conn.execute("SELECT 1 FROM staff WHERE LOWER(email) = ? AND id <> ?", (new, st["id"])).fetchone():
+            flash("Their team login was not changed because another account already uses that email.")
+            return
+        temp_password = secrets.token_urlsafe(9)
+        _ensure_must_change()
+        conn.execute("UPDATE staff SET email = ?, password_hash = ?, must_change_password = 1 WHERE id = ?",
+                     (new, generate_password_hash(temp_password), st["id"]))
+        conn.commit()
+        first = (conn.execute("SELECT first_name FROM contacts WHERE id = ?", (contact_id,)).fetchone() or {})["first_name"]
+        sent, err, sms = _email_team_login(first, st["name"], new, st["role"], temp_password,
+                                           "Your login email has been corrected for the")
+        if sent:
+            flash(f"Their team login moved to {new}, and a new login email with a temporary password was sent there. The old address no longer works for logging in.")
+        else:
+            flash(f"Their team login moved to {new}, but the email could not be sent ({err}). Temporary password: {temp_password}")
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        print(f"login email sync skipped: {e}", flush=True)
+
+
 @crm.route("/contacts/<int:contact_id>/edit", methods=["GET", "POST"])
 @area_required("contacts")
 def contact_edit(contact_id):
@@ -2010,6 +2726,7 @@ def contact_edit(contact_id):
     contact, sponsor info, personal info, all of it (unlike the piecemeal
     Sponsor/Personal/Photo forms further down this contact's page)."""
     conn = get_db()
+    needs.ensure(conn)
     contact = conn.execute(
         f"SELECT *, {FULL_NAME_SQL} AS full_name FROM contacts WHERE id = ?", (contact_id,)
     ).fetchone()
@@ -2044,10 +2761,12 @@ def contact_edit(contact_id):
             flash(f"Added {sp_name} as a new contact (on the Past sponsors list) and linked as the Sponsor.")
         conn.execute("UPDATE contacts SET sponsor_contact_id = ? WHERE id = ?", (link_id, contact_id))
         conn.commit()
+        needs.save_from_form(conn, contact_id, request.form)
         photo_result = process_contact_photo(request.files.get("photo"))
         if photo_result:
             upsert_contact_photo(conn, contact_id, *photo_result)
             conn.commit()
+        _sync_login_email(conn, contact_id, contact["email"], values.get("email"))
         conn.close()
         flash("Contact updated.")
         return redirect(url_for(".contact_detail", contact_id=contact_id))
@@ -2173,6 +2892,164 @@ def _set_setting(key, value):
     conn.close()
 
 
+_contact_messages_ready = False
+
+
+def _ensure_contact_messages(conn):
+    global _contact_messages_ready
+    if _contact_messages_ready:
+        return
+    conn.execute("""CREATE TABLE IF NOT EXISTS contact_messages (
+        id SERIAL PRIMARY KEY, contact_id INTEGER, kind TEXT, subject TEXT, body_html TEXT,
+        to_email TEXT, sent_by TEXT, sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    conn.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS brevo_id TEXT")
+    conn.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS status TEXT")
+    conn.execute("ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS bcc TEXT")
+    conn.commit()
+    _contact_messages_ready = True
+
+
+def _staff_name_or_none():
+    try:
+        return session.get("staff_name")
+    except Exception:
+        return None
+
+
+def _record_outbound(to_email, subject, html_content, message_id, bcc, status):
+    """Called after every email the app sends: keeps a record on the contact's page (matched by email address)."""
+    if not to_email:
+        return
+    conn = get_db()
+    try:
+        _ensure_contact_messages(conn)
+        row = conn.execute(
+            "SELECT id FROM contacts WHERE LOWER(email) = LOWER(?) OR LOWER(email_2) = LOWER(?) OR LOWER(email_3) = LOWER(?) ORDER BY id LIMIT 1",
+            (to_email, to_email, to_email)).fetchone()
+        if not row:
+            return
+        conn.execute(
+            "INSERT INTO contact_messages (contact_id, kind, subject, body_html, to_email, sent_by, brevo_id, status, bcc) VALUES (?,?,?,?,?,?,?,?,?)",
+            (row["id"], "Email", subject, (html_content or "")[:60000], to_email, _staff_name_or_none(), message_id, status, bcc))
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
+    finally:
+        conn.close()
+
+
+import email_utils as _email_utils
+_email_utils.set_send_logger(_record_outbound)
+
+
+def _log_contact_message(contact_id, kind, subject, html_content, to_email):
+    """Labels the record of an email the Hub just sent (made automatically) with what kind of message it was.
+    If no automatic record exists, adds one. Never blocks a send."""
+    try:
+        conn = get_db()
+        _ensure_contact_messages(conn)
+        row = conn.execute(
+            "SELECT id FROM contact_messages WHERE contact_id = ? AND subject = ? AND sent_at > CURRENT_TIMESTAMP - INTERVAL '3 minutes' ORDER BY id DESC LIMIT 1",
+            (contact_id, subject)).fetchone()
+        if row:
+            conn.execute("UPDATE contact_messages SET kind = ? WHERE id = ?", (kind, row["id"]))
+        else:
+            conn.execute("INSERT INTO contact_messages (contact_id, kind, subject, body_html, to_email, sent_by, status) VALUES (?,?,?,?,?,?,?)",
+                         (contact_id, kind, subject, html_content, to_email, _staff_name_or_none(), "Accepted by Brevo"))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Couldn't record message for contact {contact_id}: {e}", flush=True)
+
+
+@crm.route("/cohorts/<int:cohort_id>/send-needs-request", methods=["POST"])
+@area_required("contacts")
+@leadership_required
+def cohort_send_needs_request(cohort_id):
+    """Emails the session team members who have not yet answered the food / physical-needs questions."""
+    import email_templates as _T
+    conn = get_db()
+    people = needs.team_without_answers(conn, cohort_id)
+    sent, failed = 0, 0
+    for p in people:
+        token = p["profile_token"]
+        if not token:
+            token = secrets.token_urlsafe(24)
+            conn.execute("UPDATE contacts SET profile_token = ? WHERE id = ?", (token, p["id"]))
+            conn.commit()
+        link = url_for("public_complete_profile", token=token, _external=True)
+        subject, html_content, text_content = _T.guide_letter_content("needs_request", p["first_name"] or "there", "", "", "", link=link)
+        try:
+            send_email(to_email=p["email"], to_name=p["first_name"], subject=subject,
+                       html_content=html_content, text_content=text_content)
+            _log_contact_message(p["id"], "Food and physical needs request", subject, html_content, p["email"])
+            sent += 1
+        except EmailSendError as e:
+            failed += 1
+            print(f"needs request to {p['email']} failed: {e}", flush=True)
+    conn.close()
+    flash(f"Food and physical needs request emailed to {sent} team member{'' if sent == 1 else 's'}."
+          + (f" {failed} could not be sent." if failed else ""))
+    return redirect(url_for(".cohort_detail", cohort_id=cohort_id))
+
+
+@crm.route("/contacts/<int:contact_id>/preview-profile-request")
+@area_required("contacts")
+def contact_preview_profile_request(contact_id):
+    """Shows the profile update request exactly as it would be emailed, without sending anything."""
+    conn = get_db()
+    contact = conn.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+    conn.close()
+    if not contact:
+        abort(404)
+    link = (url_for("public_complete_profile", token=contact["profile_token"], _external=True)
+            if contact["profile_token"] else "[their private link]")
+    import email_templates as _T
+    edit = _T.saved_edit("profile_request")
+    subject, html_content, _t = _T.render_spec(
+        _T.spec_with_edit("profile_request", edit) if edit else _T.GUIDE_LETTERS["profile_request"],
+        {"first": contact["first_name"] or "Friend", "label": "", "vol_name": "", "vfirst": "", "vphone": "", "link": link,
+         "pw": "", "client": "", "page_link": "", "when_text": ""}, link)
+    return _render_letter_preview(contact_id, "Profile update request", subject, html_content,
+                                  ".contact_send_profile_request", "Send profile request")
+
+
+@crm.route("/contacts/<int:contact_id>/send-profile-request", methods=["POST"])
+@area_required("contacts")
+def contact_send_profile_request(contact_id):
+    conn = get_db()
+    contact = conn.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+    conn.close()
+    if not contact:
+        abort(404)
+    back = url_for(".contact_detail", contact_id=contact_id)
+    if not contact["email"]:
+        flash("Can't send -- this contact has no email address on file.")
+        return redirect(back)
+    if not contact["profile_token"]:
+        flash("Generate their private profile link first.")
+        return redirect(back)
+    link = url_for("public_complete_profile", token=contact["profile_token"], _external=True)
+    import email_templates as _T
+    subject, html_content, text_content = _T.render_spec(
+        _T.spec_with_edit("profile_request", _T.saved_edit("profile_request")) if _T.saved_edit("profile_request") else _T.GUIDE_LETTERS["profile_request"],
+        {"first": contact["first_name"] or "Friend", "label": "", "vol_name": "", "vfirst": "", "vphone": "", "link": link,
+         "pw": "", "client": "", "page_link": "", "when_text": ""}, link)
+    try:
+        send_email(to_email=contact["email"], to_name=contact["first_name"], subject=subject,
+                   html_content=html_content, text_content=text_content)
+    except Exception as e:
+        flash(f"Couldn't send the email: {e}")
+        return redirect(back)
+    _log_contact_message(contact_id, "Profile update request", subject, html_content, contact["email"])
+    flash(f"Profile update request emailed to {contact['first_name']} ({contact['email']}).")
+    return redirect(back)
+
+
 @crm.route("/video-call/link", methods=["POST"])
 @leadership_required
 def video_call_link_save():
@@ -2204,20 +3081,15 @@ def contact_send_video_link(contact_id):
         return redirect(back)
     when = (request.form.get("when") or "").strip()[:120]
     first = contact["first_name"] or "there"
-    when_text = f" on {when}" if when else ""
-    text = (f"Hi {first},\n\nHere is the link for our video call{when_text}:\n{link}\n\n"
-            "Just click the link a few minutes before we start. It works in your web browser on a computer, "
-            "phone or tablet -- nothing to install.\n\nLooking forward to seeing you,\nKent\n")
-    esc = _html.escape
-    html = (f"<p>Hi {esc(first)},</p><p>Here is the link for our video call{esc(when_text)}:</p>"
-            f'<p><a href="{esc(link)}">{esc(link)}</a></p>'
-            "<p>Just click the link a few minutes before we start. It works in your web browser on a computer, "
-            "phone or tablet &mdash; nothing to install.</p><p>Looking forward to seeing you,<br>Kent</p>")
+    import email_templates as _T
+    subject, html, text = _T.guide_letter_content("video_call", first, "", "", "", link=link,
+                                                  when_text=(f" on {when}" if when else ""))
     try:
         send_email(to_email=contact["email"], to_name=contact["first_name"],
-                   subject="Our video call", html_content=html, text_content=text)
+                   subject=subject, html_content=html, text_content=text)
+        _log_contact_message(contact_id, "Video call link", subject, html, contact["email"])
         flash(f"Video call link emailed to {contact['first_name']} ({contact['email']}).")
-    except EmailSendError as e:
+    except Exception as e:
         flash(f"Couldn't send the email: {e}")
     return redirect(back)
 
@@ -2271,7 +3143,7 @@ def contact_send_business_plan(contact_id):
             flush=True,
         )
         flash(f"Business plan sent to {contact['first_name']} ({contact['email']}).")
-    except EmailSendError as e:
+    except Exception as e:
         print(f"EmailSendError sending business plan to {contact['email']}: {e}", flush=True)
         flash(f"Couldn't send the business plan: {e}")
     return redirect(url_for(".contact_detail", contact_id=contact_id))
@@ -2422,6 +3294,7 @@ def public_complete_profile(token):
     (see the autosave script in the template) so leaving mid-form loses
     nothing; the visible Submit button is just their "I'm done" moment."""
     conn = get_db()
+    needs.ensure(conn)
     contact = conn.execute(
         f"SELECT *, {FULL_NAME_SQL} AS full_name FROM contacts WHERE profile_token = ?", (token,)
     ).fetchone()
@@ -2442,6 +3315,7 @@ def public_complete_profile(token):
         # Keep the Sponsor pipeline link in step with the typed sponsor name.
         link_id, _note = _resolve_sponsor_link(conn, contact["id"], values.get("sponsor_name") or "")
         conn.execute("UPDATE contacts SET sponsor_contact_id = ? WHERE id = ?", (link_id, contact["id"]))
+        needs.save_from_form(conn, contact["id"], request.form)
         if not request.form.get("autosave"):
             # They clicked Submit (not a background save): make sure their sponsor is a contact.
             _auto_link_or_add_sponsor(conn, contact["id"])
@@ -2466,11 +3340,18 @@ def public_complete_profile(token):
             if thankyou_email:
                 connect_url = url_for("public_connect_request", token=token, _external=True)
                 plan_url = url_for("request_preliminary_plan", token=token, _external=True)
+                share_url = None
+                attended = values.get("discovery_attendance") or contact["discovery_attendance"]
+                # Ask for a testimonial if they said they attended, or picked a real past role (Facilitator, TA,
+                # Trainee, etc., not Interested Party or Other) on the short /discovery form -- unless they said No.
+                if attended == "Yes" or (attended != "No" and testimonials.has_qualifying_role(contact["notes"])):
+                    share_url = testimonials.share_link_for_contact(
+                        get_db, contact["id"], lambda tk: url_for("public_share", token=tk, _external=True))
                 html_content, text_content = longform_thankyou_content(
-                    values["first_name"], connect_url, plan_url
+                    values["first_name"], connect_url, plan_url, share_url
                 )
                 try:
-                    send_email(
+                    _public_send_email(
                         to_email=thankyou_email,
                         to_name=values["first_name"],
                         subject=LONGFORM_THANKYOU_SUBJECT,
@@ -2490,9 +3371,18 @@ def public_complete_profile(token):
             "SELECT * FROM contracts WHERE contact_id = ? AND kind = ?", (contact["id"], kind)
         ).fetchone()
         contracts_by_kind[kind] = {"contract": row}
+    sponsor_mode = False
+    try:
+        em = [(contact[k] or "") for k in ("email", "email_2", "email_3")]
+        sponsor_mode = bool(conn.execute(
+            "SELECT 1 FROM call_volunteers WHERE program_code = 'SPONSOR' AND lower(email) IN (lower(?), lower(?), lower(?)) AND ? <> ''",
+            (em[0], em[1], em[2], (em[0] + em[1] + em[2]))).fetchone())
+    except Exception:
+        sponsor_mode = False
     conn.close()
     resp = make_response(render_template(
         "public_complete_profile.html",
+        sponsor_mode=sponsor_mode,
         contact=contact,
         contract_kinds=CONTRACT_KINDS,
         contract_examples=CONTRACT_EXAMPLES,
@@ -2583,7 +3473,7 @@ def public_connect_request(token):
         if contact["email"]:
             html_content, text_content = connect_request_confirmation_content(contact["first_name"], method)
             try:
-                send_email(
+                _public_send_email(
                     to_email=contact["email"],
                     to_name=contact["first_name"],
                     subject=CONNECT_REQUEST_SUBJECT,
@@ -2621,7 +3511,7 @@ def request_preliminary_plan(token):
         if contact["email"]:
             html_content, text_content = preliminary_plan_content(contact["first_name"])
             try:
-                send_email(
+                _public_send_email(
                     to_email=contact["email"],
                     to_name=contact["first_name"],
                     subject=PRELIMINARY_PLAN_SUBJECT,
@@ -2629,13 +3519,17 @@ def request_preliminary_plan(token):
                     text_content=text_content,
                 )
                 _mark_business_plan_sent(contact["id"])
+                plan_sent = True
             except EmailSendError as e:
+                plan_sent = False
                 print(f"EmailSendError sending preliminary plan to {contact['email']}: {e}", flush=True)
+        else:
+            plan_sent = False
         conn.close()
-        return redirect(url_for("request_preliminary_plan", token=token, sent="1"))
+        return redirect(url_for("request_preliminary_plan", token=token, sent="1" if plan_sent else "held"))
 
     conn.close()
-    sent = request.args.get("sent") == "1"
+    sent = request.args.get("sent") if request.args.get("sent") in ("1", "held") else False
     return render_template("request_plan.html", contact=contact, sent=sent)
 
 
@@ -2758,9 +3652,36 @@ def contact_detail(contact_id):
         ).fetchall()
     except Exception:
         letters_sent = []
+    try:
+        guide = call_flow.guide_for_email(conn, contact["email"]) if contact else None
+    except Exception:
+        guide = None
+    try:
+        sent_messages = conn.execute(
+            "SELECT kind, subject, body_html, to_email, sent_by, sent_at, brevo_id, status, bcc FROM contact_messages WHERE contact_id = ? ORDER BY sent_at DESC",
+            (contact_id,)).fetchall()
+    except Exception:
+        conn.rollback()
+        sent_messages = []
+    try:
+        stages = profile_stages(conn, contact) if contact else []
+    except Exception as e:
+        conn.rollback()
+        print(f"profile stages skipped: {e}", flush=True)
+        stages = []
+    try:
+        login_staff = conn.execute("SELECT id, role, active, is_owner FROM staff WHERE contact_id = ? ORDER BY active DESC LIMIT 1", (contact_id,)).fetchone()
+    except Exception:
+        try: conn.rollback()
+        except Exception: pass
+        login_staff = None
     conn.close()
     return render_template(
         "contact_detail.html",
+        login_staff=login_staff, can_assign_logins=_has_area_access("assign_logins"),
+        stages=stages,
+        sent_messages=sent_messages,
+        guide=guide,
         meet_link=_get_setting("meet_link"),
         letters_sent=letters_sent, auto_letters_on=bool(_auto_letters_start()),
         member_lists=member_lists, linked_sponsors=linked_sponsors, sponsor_choices=sponsor_choices, sponsor_link=sponsor_link,
@@ -2917,7 +3838,7 @@ def _contact_delete_blockers(conn, contact_id):
     reasons = []
     counts = [
         ("enrollments", "enrolled in a training session"),
-        ("contracts", "a saved contract (D1/D2/D6)"),
+        ("contracts", "a saved contract"),
         ("donations", "a recorded donation"),
         ("cohort_staffing", "listed as session staff"),
         ("small_group_staffing", "listed as small-group staff"),
@@ -2944,7 +3865,7 @@ def _contact_delete_blockers(conn, contact_id):
         reasons.append("is recorded as the Sponsor of other people")
     staff_row = conn.execute("SELECT 1 FROM staff WHERE contact_id = ?", (contact_id,)).fetchone()
     if staff_row:
-        reasons.append("is linked to an ERP login (unlink it from Site Access first)")
+        reasons.append("is linked to an ERP login (unlink it from HUB Access first)")
     return reasons
 
 
@@ -2956,7 +3877,7 @@ def _contact_history_counts(conn, contact_id):
     items = []
     for label, sql, params in [
         ("training enrollments", "SELECT COUNT(*) c FROM enrollments WHERE contact_id = ?", (contact_id,)),
-        ("saved contracts (D1/D2/D6)", "SELECT COUNT(*) c FROM contracts WHERE contact_id = ?", (contact_id,)),
+        ("saved contracts", "SELECT COUNT(*) c FROM contracts WHERE contact_id = ?", (contact_id,)),
         ("recorded donations", "SELECT COUNT(*) c FROM donations WHERE contact_id = ?", (contact_id,)),
         ("cohort staff assignments", "SELECT COUNT(*) c FROM cohort_staffing WHERE contact_id = ?", (contact_id,)),
         ("small-group staff assignments", "SELECT COUNT(*) c FROM small_group_staffing WHERE contact_id = ?", (contact_id,)),
@@ -3089,7 +4010,7 @@ def contact_delete(contact_id):
             return redirect(url_for(".contact_delete_confirm", contact_id=contact_id))
         if conn.execute("SELECT 1 FROM staff WHERE contact_id = ?", (contact_id,)).fetchone():
             conn.close()
-            flash("This contact is linked to an ERP login -- unlink it from Site Access first. Nothing was changed.")
+            flash("This contact is linked to an ERP login -- unlink it from HUB Access first. Nothing was changed.")
             return redirect(url_for(".contact_delete_confirm", contact_id=contact_id))
         history = _contact_history_counts(conn, contact_id)
         _clear_contact_history(conn, contact_id)
@@ -3301,9 +4222,8 @@ def donation_new(contact_id):
 
 # ---------- programs & cohorts ----------
 
-@crm.route("/programs")
-def programs_list():
-    """Front page of Programs: one line per program, click a name to open it."""
+def _schedule_context():
+    """Everything the Quick Schedule form and the Scheduled sessions list need (Programs and Calendar pages)."""
     conn = get_db()
     programs = conn.execute("SELECT * FROM programs ORDER BY id").fetchall()
     upcoming = {}
@@ -3315,11 +4235,29 @@ def programs_list():
     sessions = conn.execute(
         """SELECT c.*, p.code, p.name AS program_name FROM cohorts c
            JOIN programs p ON p.id = c.program_id
-           WHERE COALESCE(c.end_date, c.session_date) >= date('now') AND c.status != 'Cancelled' AND p.code NOT IN ('D2','D3')
+           WHERE c.session_date >= '2026-01-01' AND c.status != 'Cancelled' AND p.code NOT IN ('D2','D3')
            ORDER BY c.session_date ASC, p.id ASC"""
     ).fetchall()
     conn.close()
-    return render_template("programs_home.html", programs=programs, upcoming=upcoming, sessions=sessions)
+    this_year = date.today().year
+    years = sorted({2026, this_year} | {int(c["session_date"][:4]) for c in sessions})
+    with_sessions = {int(c["session_date"][:4]) for c in sessions}
+    upcoming_years = sorted(y for y in with_sessions if y >= this_year)
+    default_year = this_year if this_year in with_sessions else (upcoming_years[0] if upcoming_years else (max(with_sessions) if with_sessions else this_year))
+    last = session.get("last_quick_schedule")
+    try:
+        if last and (datetime.now() - datetime.fromisoformat(last["at"])).total_seconds() > 7200:
+            last = None
+    except Exception:
+        last = None
+    return dict(programs=programs, upcoming=upcoming, sessions=sessions, years=years, default_year=default_year,
+                today_iso=date.today().isoformat(), last_sched=last)
+
+
+@crm.route("/programs")
+def programs_list():
+    """Front page of Programs: one line per program, click a name to open it."""
+    return render_template("programs_home.html", sched_back="programs", **_schedule_context())
 
 
 @crm.route("/programs/quick-schedule", methods=["POST"])
@@ -3332,13 +4270,13 @@ def quick_schedule():
         start = date.fromisoformat((request.form.get("session_date") or "").strip())
     except ValueError:
         flash("Please pick a program and a start date. Nothing was saved.")
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
     conn = get_db()
     prog = conn.execute("SELECT id, code, name FROM programs WHERE id = ?", (pid,)).fetchone()
     if not prog:
         conn.close()
         flash("Please pick a program. Nothing was saved.")
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
     end = start + timedelta(days=DEFAULT_SESSION_DAYS.get(prog["code"], DEFAULT_SESSION_DAYS_OTHER) - 1)
     # D1, D2 and D3 are always the same weekend (plus Refocus on Saturday-Sunday), so scheduling D1 schedules them all.
     jobs = [(prog["id"], prog["code"], prog["name"], start, end)]
@@ -3360,14 +4298,53 @@ def quick_schedule():
         )
         made.append(jname)
     conn.commit()
+    new_ids = []
+    for jpid, jcode, jname, s_, e_ in jobs:
+        if jname in made:
+            r_ = conn.execute("SELECT id FROM cohorts WHERE program_id = ? AND session_date = ?", (jpid, s_.isoformat())).fetchone()
+            if r_:
+                new_ids.append(r_["id"])
     conn.close()
     if not made:
         flash(f"{prog['name']} already has a session starting {fdate_text(start.isoformat())}. Nothing was added.")
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
+    session["last_quick_schedule"] = {"ids": new_ids, "label": f"{', '.join(made)}, {_short_span(start, end)}, {end.year}",
+                                      "at": datetime.now().isoformat()}
     note = "" if start.weekday() == 4 else f" (Heads up: {start.strftime('%A')} is not a Friday.)"
     which = ", ".join(made)
     flash(f"Scheduled {_short_span(start, end)}, {end.year}: {which}. It now shows on the website.{note}")
-    return redirect(url_for(".programs_list"))
+    return redirect(_sched_home())
+
+
+@crm.route("/programs/quick-schedule/undo", methods=["POST"])
+@leadership_required
+def quick_schedule_undo():
+    """Backs out the session(s) just added with Quick Schedule, or dismisses the Undo notice (action=keep).
+    Anything with enrolled people or contracts is never removed."""
+    last = session.pop("last_quick_schedule", None)
+    if request.form.get("action") != "undo" or not last:
+        return redirect(_sched_home())
+    conn = get_db()
+    removed, kept = 0, 0
+    for cid in last.get("ids", []):
+        if not conn.execute("SELECT 1 FROM cohorts WHERE id = ?", (cid,)).fetchone():
+            continue
+        if conn.execute("SELECT COUNT(*) AS n FROM enrollments WHERE cohort_id = ?", (cid,)).fetchone()["n"] \
+           or conn.execute("SELECT COUNT(*) AS n FROM contracts WHERE originating_cohort_id = ?", (cid,)).fetchone()["n"]:
+            kept += 1
+            continue
+        conn.execute("DELETE FROM small_group_staffing WHERE small_group_id IN (SELECT id FROM small_groups WHERE cohort_id = ?)", (cid,))
+        conn.execute("DELETE FROM cohort_staffing WHERE cohort_id = ?", (cid,))
+        conn.execute("DELETE FROM small_groups WHERE cohort_id = ?", (cid,))
+        conn.execute("DELETE FROM cohorts WHERE id = ?", (cid,))
+        removed += 1
+    conn.commit()
+    conn.close()
+    msg = f"Undone. {removed} session{'' if removed == 1 else 's'} removed ({last.get('label', '')})."
+    if kept:
+        msg += f" {kept} could not be removed because people are already enrolled; use Change or delete on that session."
+    flash(msg)
+    return redirect(_sched_home())
 
 
 @crm.route("/programs/<int:program_id>")
@@ -3380,7 +4357,7 @@ def program_open(program_id):
     if not programs:
         conn.close()
         flash("That program no longer exists.")
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
     headings_by_program = {p["id"]: _allowed_headings(conn, p["code"]) for p in programs}
     cohorts_by_program = {}
     for p in programs:
@@ -3425,7 +4402,7 @@ def program_new():
     conn.commit()
     conn.close()
     flash(f"Program {code} added.")
-    return redirect(url_for(".programs_list"))
+    return redirect(_sched_home())
 
 
 @crm.route("/programs/<int:program_id>/edit", methods=["POST"])
@@ -3439,7 +4416,7 @@ def program_edit(program_id):
     if prereq and int(prereq) == program_id:
         flash("A program can't require itself as a prerequisite.")
         conn.close()
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
     conn.execute(
         "UPDATE programs SET code = ?, name = ?, description = ?, prerequisite_program_id = ? WHERE id = ?",
         (code, name, description, prereq, program_id),
@@ -3458,7 +4435,7 @@ def program_delete(program_id):
     if not prog:
         conn.close()
         flash("That program no longer exists.")
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
 
     cohort_count = conn.execute(
         "SELECT COUNT(*) AS n FROM cohorts WHERE program_id = ?", (program_id,)
@@ -3469,7 +4446,7 @@ def program_delete(program_id):
             f"Can't delete {prog['code']} — it still has {cohort_count} session(s) scheduled. "
             f"Delete or reassign those sessions first."
         )
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
 
     # Clear any other program that lists this one as a prerequisite, then delete.
     conn.execute(
@@ -3480,7 +4457,7 @@ def program_delete(program_id):
     conn.commit()
     conn.close()
     flash(f"Program {prog['code']} deleted.")
-    return redirect(url_for(".programs_list"))
+    return redirect(_sched_home())
 
 
 DAY_LABEL_ORDER = ["Friday Night", "Saturday", "Sunday", "General"]
@@ -3488,7 +4465,7 @@ DAY_LABEL_ORDER = ["Friday Night", "Saturday", "Sunday", "General"]
 
 def _music_day_labels(program):
     """Sections on a program's Music page: Friday Night / Saturday / Sunday for every program,
-    plus Saturday Evening Dance for Relationship Training. (General appears only when something is filed there.)"""
+    plus Saturday Evening Dance for The Art of Us. (General appears only when something is filed there.)"""
     labels = ["Friday Night", "Saturday", "Sunday"]
     if "relationship" in ((program["name"] if program else "") or "").lower():
         labels.insert(2, "Saturday Evening Dance")
@@ -3533,6 +4510,9 @@ def _ensure_material_categories(conn):
     if _material_category_ready:
         return
     conn.execute("ALTER TABLE program_materials ADD COLUMN IF NOT EXISTS category TEXT")
+    conn.execute("ALTER TABLE program_materials ADD COLUMN IF NOT EXISTS version_date TEXT")
+    conn.execute("ALTER TABLE program_materials ADD COLUMN IF NOT EXISTS change_note TEXT")
+    conn.execute("ALTER TABLE program_materials ADD COLUMN IF NOT EXISTS replaces_id INTEGER")
     for row in conn.execute(
         "SELECT id, title, original_filename FROM program_materials WHERE category IS NULL"
     ).fetchall():
@@ -3596,23 +4576,72 @@ def _materials_url(program_id, category):
     return url_for(".program_materials", program_id=program_id, category=category)
 
 
-def _load_materials(conn, program_id):
-    """Every material for a program (without the file bytes -- those are only
-    read when a file is actually opened), grouped by heading and then by day.
-    Returns (by_category, counts)."""
+def _material_date(m):
+    """The date a version counts from: the date the Owner/Leadership gave it, else the upload date."""
+    return (m["version_date"] or (m["uploaded_at"] or "")[:10] or "")
+
+
+def _material_versions(conn, program_id):
+    """Every file for a program as plain dicts, newest version first within each lineage.
+    Returns (current, all_rows): current = files nobody has replaced yet, each with
+    an 'earlier' list of the versions it replaced (newest first)."""
     _ensure_material_categories(conn)
     rows = conn.execute(
-        """SELECT id, program_id, day_label, title, original_filename, uploaded_at, category
+        """SELECT id, program_id, day_label, title, original_filename, uploaded_at, category,
+                  version_date, change_note, replaces_id
            FROM program_materials WHERE program_id = ? ORDER BY uploaded_at, id""",
         (program_id,),
     ).fetchall()
+    items = {}
+    for r in rows:
+        d = {k: r[k] for k in ("id", "program_id", "day_label", "title", "original_filename", "uploaded_at",
+                                "category", "version_date", "change_note", "replaces_id")}
+        d["category"] = _material_category(r)
+        d["date"] = _material_date(d)
+        items[d["id"]] = d
+    replaced = {d["replaces_id"] for d in items.values() if d["replaces_id"] in items}
+    current = []
+    for d in items.values():
+        if d["id"] in replaced:
+            continue
+        earlier, seen, nxt = [], {d["id"]}, d["replaces_id"]
+        while nxt in items and nxt not in seen:
+            earlier.append(items[nxt]); seen.add(nxt); nxt = items[nxt]["replaces_id"]
+        d["earlier"] = earlier
+        current.append(d)
+    return current, items
+
+
+def _load_materials(conn, program_id):
+    """Every current material for a program (without the file bytes -- those are only
+    read when a file is actually opened), grouped by heading and then by day, each
+    carrying its earlier versions. Returns (by_category, counts)."""
+    current, _items = _material_versions(conn, program_id)
     by_category = {c: {} for c in MATERIAL_CATEGORIES}
     counts = {c: 0 for c in MATERIAL_CATEGORIES}
-    for r in rows:
-        cat = _material_category(r)
-        by_category[cat].setdefault(r["day_label"] or "General", []).append(r)
-        counts[cat] += 1
+    for d in current:
+        by_category[d["category"]].setdefault(d["day_label"] or "General", []).append(d)
+        counts[d["category"]] += 1
     return by_category, counts
+
+
+def _materials_in_effect(conn, program_id, on_date):
+    """For each file, the version that was current on a given date (the latest version
+    dated on or before it). Used on a training's page to show what it was taught from."""
+    current, _items = _material_versions(conn, program_id)
+    out = []
+    for d in current:
+        chain = [d] + d["earlier"]
+        ok = [v for v in chain if v["date"] and v["date"] <= (on_date or "")]
+        if not ok:
+            continue
+        v = max(ok, key=lambda x: (x["date"], x["id"]))
+        if v["category"] == "Music":
+            continue
+        out.append(v)
+    order = {c: i for i, c in enumerate(MATERIAL_CATEGORIES)}
+    out.sort(key=lambda v: (order.get(v["category"], 9), v["title"].lower()))
+    return out
 
 
 def _ordered_days(by_day):
@@ -3634,12 +4663,12 @@ def program_materials(program_id):
         abort(404)
     by_category, counts = _load_materials(conn, program_id)
     conn.close()
-    by_day = by_category[category]
+    by_day = {"": [m for day_files in by_category[category].values() for m in day_files]}
     return render_template(
-        "program_materials.html", program=program, by_day=by_day, ordered_days=_ordered_days(by_day),
+        "program_materials.html", program=program, by_day=by_day, ordered_days=[""],
         day_label_choices=DAY_LABEL_ORDER, category=category, categories=allowed,
         category_counts=counts, category_blurb=MATERIAL_CATEGORY_BLURBS[category],
-        can_download=_can_download_materials(),
+        can_download=_can_download_materials(), today_iso=date.today().isoformat(),
     )
 
 
@@ -3729,6 +4758,11 @@ def program_material_new(program_id):
     category = request.form.get("category", "")
     if category not in MATERIAL_CATEGORIES:
         category = "Other"
+    version_date = (request.form.get("version_date") or "").strip()
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", version_date):
+        version_date = date.today().isoformat()
+    change_note = (request.form.get("change_note") or "").strip()[:500]
+    replaces = request.form.get("replaces_id", "").strip()
     material_result = process_program_material(request.files.get("file"))
     if material_result:
         data, content_type = material_result
@@ -3736,15 +4770,26 @@ def program_material_new(program_id):
         filename = f"program_{program_id}_{secrets.token_hex(6)}"
         conn = get_db()
         _ensure_material_categories(conn)
+        replaces_id = None
+        if replaces.isdigit():
+            old = conn.execute("SELECT id, category, title, day_label FROM program_materials WHERE id = ? AND program_id = ?",
+                               (int(replaces), program_id)).fetchone()
+            if old:
+                replaces_id = old["id"]
+                category = _material_category(old)
+                day_label = old["day_label"] or day_label
+                title = title or old["title"]
         conn.execute(
             """INSERT INTO program_materials
-               (program_id, day_label, title, filename, original_filename, data, content_type, category)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (program_id, day_label, title or original_filename, filename, original_filename, data, content_type, category),
+               (program_id, day_label, title, filename, original_filename, data, content_type, category,
+                version_date, change_note, replaces_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (program_id, day_label, title or original_filename, filename, original_filename, data, content_type, category,
+             version_date, change_note or None, replaces_id),
         )
         conn.commit()
         conn.close()
-        flash(f"Uploaded to {category}.")
+        flash(f"Uploaded to {category}" + (" as a new version; the earlier version is kept." if replaces_id else "."))
     return redirect(_materials_url(program_id, category))
 
 
@@ -3806,17 +4851,10 @@ def program_playlists(program_id):
         ).fetchall()
     by_category, counts = _load_materials(conn, program_id)
     conn.close()
-    by_day = {}
-    for pl in playlists:
-        label = pl["day_label"] or "General"
-        by_day.setdefault(label, []).append(pl)
-    files_by_day = by_category["Music"]
-    # Every section shows, even when empty, so it is clear where to add songs and music files.
-    labels = _music_day_labels(program)
-    extra_days = [d for d in list(by_day) + list(files_by_day) if d not in labels]
-    all_days = labels + [d for i, d in enumerate(extra_days) if d not in extra_days[:i]]
-    by_day = {d: by_day.get(d, []) for d in all_days}
-    files_by_day = {d: files_by_day.get(d, []) for d in all_days}
+    # One simple list: no Friday / Saturday / Sunday sections.
+    all_days = [""]
+    by_day = {"": list(playlists)}
+    files_by_day = {"": [m for day_files in by_category["Music"].values() for m in day_files]}
     return render_template(
         "program_playlists.html", program=program, by_day=by_day, ordered_days=all_days,
         day_label_choices=all_days, songs_by_playlist=songs_by_playlist,
@@ -4200,7 +5238,7 @@ def cohort_new(program_id):
             "INSERT INTO cohorts (program_id, session_number, session_date, end_date, location) VALUES (?, ?, ?, ?, ?)",
             (pid, num, start, end_date, location),
         )
-        return f"{pcode} #{num} ({_short_span(date.fromisoformat(start), date.fromisoformat(end_date or start))})"
+        return f"{sess_name(pcode)} #{num} ({_short_span(date.fromisoformat(start), date.fromisoformat(end_date or start))})"
 
     also_programs = []
     if also_ids:
@@ -4238,11 +5276,22 @@ def cohort_new(program_id):
 COHORT_STATUSES = ["Scheduled", "Completed", "Cancelled"]
 
 
+def _sched_home():
+    """Where scheduling changes return to: the Calendar page when they were made there, otherwise Programs."""
+    if request.form.get("back") == "calendar":
+        return redirect_url_calendar()
+    return url_for(".programs_list")
+
+
+def redirect_url_calendar():
+    return url_for(".calendar_view")
+
+
 def _after_cohort_change(cohort_id):
     """Back to the Programs page when the change was made there, otherwise to
     the session's own page."""
-    if request.form.get("back") == "programs":
-        return redirect(url_for(".programs_list"))
+    if request.form.get("back") in ("programs", "calendar"):
+        return redirect(_sched_home())
     return redirect(url_for(".cohort_detail", cohort_id=cohort_id))
 
 
@@ -4357,8 +5406,8 @@ def cohort_delete(cohort_id):
     if not cohort:
         conn.close()
         flash("That session no longer exists.")
-        return redirect(url_for(".programs_list"))
-    label = f"{cohort['code']} #{cohort['session_number']}"
+        return redirect(_sched_home())
+    label = f"{sess_name(cohort['code'])} #{cohort['session_number']}"
     checks = [
         ("SELECT COUNT(*) AS n FROM enrollments WHERE cohort_id = ?", "{n} enrolled trainee(s)"),
         ("SELECT COUNT(*) AS n FROM contracts WHERE originating_cohort_id = ?", "{n} contract(s) started in it"),
@@ -4374,7 +5423,7 @@ def cohort_delete(cohort_id):
             f"Can't delete {label} -- it has " + ", ".join(blockers) + ". "
             f"To take it off the calendar without losing that history, change its status to Cancelled instead."
         )
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
     if request.form.get("weekend"):
         for sid, scode, _s, _e in _weekend_sisters(conn, cohort_id):
             if conn.execute("SELECT COUNT(*) AS n FROM enrollments WHERE cohort_id = ?", (sid,)).fetchone()["n"] \
@@ -4395,7 +5444,7 @@ def cohort_delete(cohort_id):
     conn.close()
     print(f"DELETED session {label} (cohort {cohort_id}) by {session.get('staff_name')}", flush=True)
     flash(f"Deleted the session {label}. The {cohort['code']} program itself is unchanged.")
-    return redirect(url_for(".programs_list"))
+    return redirect(_sched_home())
 
 
 def _norm_name(s):
@@ -4446,6 +5495,7 @@ def _auto_link_couples(conn, cohort_id):
 def cohort_detail(cohort_id):
     _ensure_enrollment_extras()
     conn = get_db()
+    needs.ensure(conn)
     try:
         _auto_link_couples(conn, cohort_id)
     except Exception as e:
@@ -4460,6 +5510,8 @@ def cohort_detail(cohort_id):
         f"""SELECT e.*, {full_name_sql('ct')} AS full_name,
                    ct.id AS contact_id, sg.label AS group_label,
                    fr.id AS feedback_response_id,
+                   (SELECT 1 FROM training_profiles tp WHERE tp.enrollment_id = e.id LIMIT 1) AS has_profile,
+                   (SELECT 1 FROM contact_photos cph WHERE cph.contact_id = ct.id LIMIT 1) AS has_photo,
                    {full_name_sql('eb')} AS enrolled_by_name
            FROM enrollments e
            JOIN contacts ct ON ct.id = e.contact_id
@@ -4469,8 +5521,37 @@ def cohort_detail(cohort_id):
            WHERE e.cohort_id = ? ORDER BY ct.last_name, ct.first_name""",
         (cohort_id,),
     ).fetchall()
+    roster = [dict(r) for r in roster]
+    for _r in roster:
+        try:
+            _c = conn.execute("SELECT * FROM contacts WHERE id = ?", (_r["contact_id"],)).fetchone()
+            _r["basic_missing"] = [x for x in profile_missing(_c) if x != "photo"]
+            _r["personal_missing"] = personal_missing(_c)
+        except Exception:
+            _r["basic_missing"], _r["personal_missing"] = [], []
     partner_names = {e["id"]: e["full_name"] for e in roster}
+    needs_rows, needs_total = ([], 0)
+    if _is_leader():
+        try:
+            needs_rows, needs_total = needs.session_summary(conn, cohort_id, full_name_sql)
+        except Exception as e:
+            conn.rollback()
+            print(f"needs summary skipped: {e}", flush=True)
+    team_unanswered = []
+    if _is_leader():
+        try:
+            team_unanswered = needs.team_without_answers(conn, cohort_id)
+        except Exception as e:
+            conn.rollback()
+            print(f"needs team check skipped: {e}", flush=True)
     pay_info = _payment_info_for_cohort(conn, cohort_id, roster)
+    materials_in_effect = []
+    if _is_leader():
+        try:
+            materials_in_effect = _materials_in_effect(conn, cohort["program_id"], (cohort["session_date"] or "")[:10])
+        except Exception as e:
+            conn.rollback()
+            print(f"materials in effect skipped: {e}", flush=True)
     # Keep each couple together (alphabetical by the first of them) and shade every other group,
     # so a long list (80+ trainees) is easy to scan.
     by_id = {e["id"]: e for e in roster}
@@ -4550,15 +5631,31 @@ def cohort_detail(cohort_id):
                GROUP BY enrolled_by_contact_id"""
         ).fetchall()
     }
+    ta_status = {}
+    try:
+        import ta_invites
+        _ensure_session_letters_table(conn)
+        for r in conn.execute("SELECT contact_id, sent_at FROM session_letters_sent WHERE cohort_id = ? AND letter_key = 'ta_invitation'", (cohort_id,)).fetchall():
+            ta_status.setdefault(r["contact_id"], {})["sent"] = r["sent_at"]
+        for cid, r in ta_invites.responses(conn, cohort_id).items():
+            ta_status.setdefault(cid, {}).update(response=r["response"], note=r["response_note"])
+    except Exception as e:
+        print(f"ta status skipped: {e}", flush=True)
+        try: conn.rollback()
+        except Exception: pass
     conn.close()
     return render_template(
         "cohort_detail.html",
+        ta_status=ta_status, letters_live=_session_letters_live(),
         cohort=cohort,
         roster=roster, partner_names=partner_names, bands=bands, pay_info=pay_info,
+        needs_rows=needs_rows, needs_total=needs_total, needs_help=needs.HELP_TEXT,
         fee_default=TRAINING_FEES.get(cohort["code"]), payment_methods=PAYMENT_METHODS, today_iso=date.today().isoformat(),
         is_leader=_is_leader(), can_money=_can_handle_money(),
+        materials_in_effect=materials_in_effect,
         small_groups=small_groups,
         staffing=staffing,
+        team_unanswered=team_unanswered,
         show_session_team=_can_see_session_part("session_team"),
         show_trainee_roster=_can_see_session_part("trainee_roster"),
         session_roles=SESSION_ROLES,
@@ -4714,7 +5811,7 @@ def enrollment_remove(enrollment_id):
     if not enr:
         conn.close()
         flash("That person is no longer on the roster.")
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
     cohort_id = enr["cohort_id"]
     if conn.execute("SELECT 1 FROM feedback_responses WHERE enrollment_id = ?", (enrollment_id,)).fetchone():
         conn.close()
@@ -4768,8 +5865,8 @@ RELATIONSHIP_PROFILE_FIELDS = [
 
 
 RELATIONSHIP_PROFILE_QUESTIONS = [
-    ("first_time_attending", "Is this your first time attending the Relationship Training?"),
-    ("training_goals", "What do you want to get out of the Relationship Training?"),
+    ("first_time_attending", "Is this your first time attending The Art of Us?"),
+    ("training_goals", "What do you want to get out of The Art of Us?"),
     ("relationship_length", "How long have you been in your relationship?"),
     ("how_met", "How did you meet your partner and what attracted you to them?"),
     ("childhood_patterns", "Does this relationship have patterns similar to what you experienced with your parents in your childhood?"),
@@ -4784,7 +5881,7 @@ RELATIONSHIP_PROFILE_QUESTIONS = [
 
 
 def _relationship_profiles_for(conn, contact_id):
-    """One entry per Relationship Training (D4) enrollment of this contact, with the profile answers and a
+    """One entry per The Art of Us (D4) enrollment of this contact, with the profile answers and a
     status: Not started / In progress (n of 12) / Complete."""
     out = []
     rows = conn.execute(
@@ -4934,10 +6031,10 @@ def _order_team(members):
     return [m for g in ordered for m in g]
 
 
-SESSION_ROLES = ["Lead Facilitator", "Support Facilitator", "TA", "Support Team", "Back-up TA", "Trainee"]
+SESSION_ROLES = ["Lead Facilitator", "Support Facilitator", "TA", "Support Team", "Back-up TA", "Audio/Visual", "Check-in / Greeter", "Security", "Office Support", "Trainee"]
 SESSION_DUTIES = ["Sound Equipment", "Large Group Leader", "Team Captain", "Microphone 1", "Microphone 2",
                   "Lights", "Doors", "Signs / Security", "Mail & Name Tags", "Housekeeping", "Male Runner",
-                  "Female Runner", "Time Keeper", "Chairs", "Chair Counter", "Troubleshooter / Misc", "Not confirmed"]
+                  "Female Runner", "Time Keeper", "Chairs", "Chair Counter", "Troubleshooter / Misc", "Hub Coordinator", "Not confirmed"]
 
 
 # ---------- session letters (confirmations to trainees / facilitators / TAs / back-up TAs) ----------
@@ -4952,7 +6049,63 @@ def _ensure_session_letters_table(conn):
         sent_by TEXT,
         UNIQUE (cohort_id, contact_id, letter_key)
     )""")
+    conn.execute("ALTER TABLE session_letters_sent ADD COLUMN IF NOT EXISTS snapshot_subject TEXT")
+    conn.execute("ALTER TABLE session_letters_sent ADD COLUMN IF NOT EXISTS snapshot_html TEXT")
+    conn.execute("""CREATE TABLE IF NOT EXISTS letter_versions (
+        id SERIAL PRIMARY KEY,
+        letter_key TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        subject TEXT,
+        body TEXT,
+        signoff TEXT,
+        signer TEXT,
+        changed_by TEXT,
+        note TEXT,
+        changed_at TEXT NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS session_letter_text (
+        letter_key TEXT PRIMARY KEY,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        signoff TEXT,
+        signer TEXT,
+        updated_by TEXT,
+        updated_at TEXT NOT NULL DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+    )""")
     conn.commit()
+
+
+_letter_text_ready = False
+
+
+def _saved_letter_edit(key):
+    """The wording saved on the Correspondence page for a session letter, or None to use the original."""
+    global _letter_text_ready
+    conn = get_db()
+    try:
+        if not _letter_text_ready:
+            _ensure_session_letters_table(conn)
+            _letter_text_ready = True
+        row = conn.execute("SELECT subject, body, signoff, signer FROM session_letter_text WHERE letter_key = ?", (key,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+import email_templates as _et
+_et.set_override_loader(_saved_letter_edit)
+
+
+def _save_letter_snapshot(conn, cohort_id, contact_id, sent_key, subject, html_content):
+    """Keeps the letter exactly as it went out, so it can be shown later even if the wording is edited."""
+    try:
+        conn.execute("UPDATE session_letters_sent SET snapshot_subject = ?, snapshot_html = ? "
+                     "WHERE cohort_id = ? AND contact_id = ? AND letter_key = ?",
+                     (subject, html_content, cohort_id, contact_id, sent_key))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"letter snapshot not saved: {e}", flush=True)
 
 
 def _session_letters_live():
@@ -4987,7 +6140,7 @@ def _session_letter_recipients(conn, cohort_id):
                 continue
             if k == "payment_reminder" and r["p_at"]:
                 continue
-            if k == "questionnaire_reminder" and r["q_at"]:
+            if k in ("questionnaire_request", "questionnaire_reminder") and r["q_at"]:
                 continue
             out[k].append(person)
     people = {}
@@ -5007,6 +6160,7 @@ def _session_letter_recipients(conn, cohort_id):
             out["facilitator_confirm"].append(p)
         elif "TA" in p["roles"]:
             out["ta_confirm"].append(p)
+            out["ta_invitation"].append(p)
         elif "Back-up TA" in p["roles"]:
             out["backup_confirm"].append(p)
     return out
@@ -5043,24 +6197,41 @@ def _questionnaire_link(enrollment_id):
     return url_for("public_questionnaire", token=token, _external=True) if token else None
 
 
+def _ta_invite_link(cohort_id, person):
+    if not person.get("contact_id"):
+        return "[their private link]"
+    import ta_invites
+    return url_for("public_ta_invite", token=ta_invites.token_for(get_db, cohort_id, person["contact_id"]), _external=True)
+
+
 def _letter_link(person, key):
-    if key == "questionnaire_reminder":
+    if key in ("questionnaire_request", "questionnaire_reminder"):
         return _questionnaire_link(person.get("enrollment_id"))
     if key == "seminar_registration":
         return _personal_link(person["contact_id"])
     return None
 
 
+# Each training has its own Friday schedule. The "What to bring" letter adds the line for the program here;
+# a program not listed gets no Friday end-time line until one is added.
+FRIDAY_END = {"D4": "The Friday session ends by 11:00 pm at the latest."}
+
+
 def _session_letter_for(cohort, person, key):
     code, name = cohort["code"], cohort["name"]
     training = name if name.startswith(code) else f"{code}-{name}"
+    if code != "D4" or key == "ta_invitation":
+        training = NAV_PROGRAM_LABEL.get(code, name)   # "The Beginning" rather than "D1-The Beginning"
     role = "Lead Facilitator" if "Lead Facilitator" in person["roles"] else "Support Facilitator"
+    from email_templates import content_key as _content_key
+    key = _content_key(key, code)
     return session_letter_content(
         key, person["first_name"], training, date_span(cohort), cohort["location"] if "location" in cohort.keys() else None,
         role=role, duties=person["duties"],
-        link=_letter_link(person, key),
+        link=(_ta_invite_link(cohort["id"], person) if key == "ta_invitation" else _letter_link(person, key)),
         partner=person.get("partner_name"),
-        amount=("$1,200 per couple" if code == "D4" else None))
+        amount=("$1,299 per couple" if code == "D4" else None),
+        friday_end=FRIDAY_END.get(code))
 
 
 def _letter_cohort(conn, cohort_id):
@@ -5083,9 +6254,44 @@ def session_letters(cohort_id):
     recipients = _session_letter_recipients(conn, cohort_id)
     sent = {(r["contact_id"], r["letter_key"]): r["sent_at"] for r in conn.execute(
         "SELECT contact_id, letter_key, sent_at FROM session_letters_sent WHERE cohort_id = ?", (cohort_id,)).fetchall()}
+    edited = {r["letter_key"] for r in conn.execute("SELECT letter_key FROM session_letter_text").fetchall()}
+    import ta_invites
+    ta_resp = ta_invites.responses(conn, cohort_id)
     conn.close()
-    return render_template("session_letters.html", cohort=cohort, letters=SESSION_LETTERS, order=SESSION_LETTER_ORDER, trainee_keys=SESSION_TRAINEE_LETTERS,
-                           recipients=recipients, sent=sent, live=_session_letters_live())
+    previews = {}
+    sample = {"contact_id": 0, "name": "", "first_name": "[First name]", "email": "", "roles": ["Lead Facilitator"], "duties": []}
+    for k in SESSION_LETTER_ORDER:
+        try:
+            subj, html_c, _t = _session_letter_for(cohort, sample, k)
+            previews[k] = (subj, html_c)
+        except Exception as e:
+            print(f"letter preview {k} skipped: {e}", flush=True)
+    from email_templates import content_key as _content_key
+    vkey = {k: _content_key(k, cohort["code"]) for k in SESSION_LETTER_ORDER}
+    return render_template("session_letters.html", ta_resp=ta_resp, vkey=vkey, previews=previews, edited=edited, cohort=cohort, letters=SESSION_LETTERS, order=SESSION_LETTER_ORDER, trainee_keys=SESSION_TRAINEE_LETTERS,
+                           recipients=recipients, sent=sent, live=_session_letters_live(),
+                           only=(request.args.get("only") if request.args.get("only") in ("trainees", "team") else None))
+
+
+@crm.route("/cohorts/<int:cohort_id>/ta-invite/<int:contact_id>/mark", methods=["POST"])
+@area_required("contacts")
+@leadership_required
+def ta_invite_mark(cohort_id, contact_id):
+    """Record a TA's answer by hand (for example, they said yes on the phone)."""
+    import ta_invites
+    answer = request.form.get("answer")
+    if answer in ("Yes", "No"):
+        ta_invites.token_for(get_db, cohort_id, contact_id)       # makes sure the row exists
+        conn = get_db()
+        conn.execute("UPDATE ta_invitations SET response = ?, response_note = ?, "
+                     "responded_at = to_char(now(), 'YYYY-MM-DD HH24:MI:SS') WHERE cohort_id = ? AND contact_id = ?",
+                     (answer, f"Marked by {session.get('staff_name') or 'a leader'}", cohort_id, contact_id))
+        conn.commit()
+        conn.close()
+        flash("Recorded: " + ("confirmed." if answer == "Yes" else "can't make it."))
+    if request.form.get("back") == "session":
+        return redirect(url_for(".cohort_detail", cohort_id=cohort_id) + "#sec-team")
+    return redirect(url_for(".session_letters", cohort_id=cohort_id) + "#team")
 
 
 @crm.route("/cohorts/<int:cohort_id>/letters/<key>/preview/<int:contact_id>")
@@ -5119,6 +6325,26 @@ def session_letter_view(cohort_id, key):
     subject, html_content, _t = _session_letter_for(cohort, sample, key)
     return render_template("session_letter_view.html", cohort=cohort, spec=SESSION_LETTERS[key],
                            subject=subject, letter_html=html_content)
+
+
+@crm.route("/cohorts/<int:cohort_id>/letters/<key>/sent/<int:contact_id>")
+@area_required("contacts")
+@leadership_required
+def session_letter_sent_copy(cohort_id, key, contact_id):
+    """The letter exactly as it was sent to one person (the wording at the time, even if it has been edited since)."""
+    if key not in SESSION_LETTERS:
+        abort(404)
+    conn = get_db()
+    _ensure_session_letters_table(conn)
+    cohort = _letter_cohort(conn, cohort_id)
+    row = conn.execute(
+        f"""SELECT s.sent_at, s.sent_by, s.snapshot_subject, s.snapshot_html, ct.email, {full_name_sql('ct')} AS name
+            FROM session_letters_sent s JOIN contacts ct ON ct.id = s.contact_id
+            WHERE s.cohort_id = ? AND s.contact_id = ? AND s.letter_key = ?""", (cohort_id, contact_id, key)).fetchone()
+    conn.close()
+    if not row:
+        abort(404)
+    return render_template("session_letter_sent.html", cohort=cohort, key=key, spec=SESSION_LETTERS[key], row=row)
 
 
 def _staff_email():
@@ -5162,6 +6388,8 @@ def session_letter_send(cohort_id, key):
         abort(404)
     if not _session_letters_live():
         flash("Sending to people is switched off for now. You can preview any letter and send yourself a test copy.")
+        if request.form.get("back") == "session":
+            return redirect(url_for(".cohort_detail", cohort_id=cohort_id) + "#sec-team")
         return redirect(url_for(".session_letters", cohort_id=cohort_id))
     ids = {int(x) for x in request.form.getlist("contact_id") if x.isdigit()}
     conn = get_db()
@@ -5186,6 +6414,7 @@ def session_letter_send(cohort_id, key):
             send_email(to_email=p["email"], to_name=p["first_name"], subject=subject,
                        html_content=html_content, text_content=text_content)
             sent_n += 1
+            _save_letter_snapshot(conn, cohort_id, p["contact_id"], key, subject, html_content)
             print(f"SENT session letter {key} to contact {p['contact_id']} cohort {cohort_id} by {session.get('staff_name')}", flush=True)
         except EmailSendError as e:
             conn.execute("DELETE FROM session_letters_sent WHERE cohort_id = ? AND contact_id = ? AND letter_key = ?",
@@ -5197,6 +6426,8 @@ def session_letter_send(cohort_id, key):
     if skipped:
         msg += " Not sent: " + "; ".join(skipped) + "."
     flash(msg)
+    if request.form.get("back") == "session":
+        return redirect(url_for(".cohort_detail", cohort_id=cohort_id) + "#sec-team")
     return redirect(url_for(".session_letters", cohort_id=cohort_id))
 
 
@@ -5213,7 +6444,7 @@ def cohort_team_print(cohort_id):
     if not cohort:
         conn.close()
         flash("That session no longer exists.")
-        return redirect(url_for(".programs_list"))
+        return redirect(_sched_home())
     rows = conn.execute(
         f"""SELECT cs.role, cs.duty, ct.id AS contact_id, {full_name_sql('ct')} AS full_name,
                    ct.cell_phone, ct.email, ct.partner_name, ct.partner_email,
@@ -5384,8 +6615,7 @@ def leadership_pipeline():
 # ---------- contact lists ("where this contact came from") ----------
 
 @crm.route("/lists")
-@area_required("contacts")
-@leadership_required
+@owner_required
 def lists_manage():
     conn = get_db()
     lists = conn.execute(
@@ -5393,6 +6623,9 @@ def lists_manage():
            FROM contact_lists l LEFT JOIN contact_list_members m ON m.list_id = l.id
            GROUP BY l.id, l.name, l.created_at ORDER BY l.name"""
     ).fetchall()
+    # Team groups (Leadership Team, TAs, Guides...) are not data sources: they live in "Sort & Email a Group" on Contacts.
+    hidden = {n.lower() for n in [LEADERSHIP_LIST, *LEADERSHIP_SOURCES] + [n for n, _ in TEAM_LISTS]}
+    lists = [l for l in lists if (l["name"] or "").lower() not in hidden]
     total = conn.execute("SELECT COUNT(*) AS n FROM contacts").fetchone()["n"]
     emailable = conn.execute("SELECT COUNT(*) AS n FROM contacts WHERE email IS NOT NULL AND email <> ''").fetchone()["n"]
     conn.close()
@@ -5400,8 +6633,7 @@ def lists_manage():
 
 
 @crm.route("/lists/new", methods=["POST"])
-@area_required("contacts")
-@leadership_required
+@owner_required
 def list_new():
     name = " ".join((request.form.get("name") or "").split())
     if not name:
@@ -5419,8 +6651,7 @@ def list_new():
 
 
 @crm.route("/lists/<int:list_id>/rename", methods=["POST"])
-@area_required("contacts")
-@leadership_required
+@owner_required
 def list_rename(list_id):
     name = " ".join((request.form.get("name") or "").split())
     conn = get_db()
@@ -5439,8 +6670,7 @@ def list_rename(list_id):
 
 
 @crm.route("/lists/<int:list_id>/delete", methods=["POST"])
-@area_required("contacts")
-@leadership_required
+@owner_required
 def list_delete(list_id):
     conn = get_db()
     n = conn.execute("SELECT COUNT(*) AS n FROM contact_list_members WHERE list_id = ?", (list_id,)).fetchone()["n"]
@@ -5692,7 +6922,7 @@ def _calendar_data(year, public=False):
             "cancelled": all(r["status"] == "Cancelled" for r in sessions),
             "href": sessions[0]["href"],
             "title": "; ".join(
-                (f"{r['code']} #{r['session_number']} " if not public else f"{r['code']} ")
+                (f"{sess_name(r['code'])} #{r['session_number']} " if not public else f"{sess_name(r['code'])} ")
                 + r["span"] + ("" if public else f" ({r['status']})")
                 for r in sessions
             ) + (f"; {cell['holiday']}" if cell["holiday"] else ""),
@@ -5721,21 +6951,12 @@ def _calendar_data(year, public=False):
 
 
 @crm.route("/calendar")
-@area_required("contacts")
 def calendar_view():
     """Year-at-a-glance calendar of every scheduled training session, twelve
     small months with each session date marked in its program's color and
     linked to that session. Read-only -- sessions are still scheduled on the
     Programs page."""
-    year = request.args.get("year", type=int) or date.today().year
-    year = max(2000, min(2100, year))
-    cal = _calendar_data(year, public=False)
-    return render_template(
-        "calendar.html", cal=cal,
-        prev_url=url_for(".calendar_view", year=year - 1),
-        next_url=url_for(".calendar_view", year=year + 1),
-        today_url=url_for(".calendar_view"),
-    )
+    return render_template("calendar.html", sched_back="calendar", **_schedule_context())
 
 
 # ---------- bulk "brought in by" entry ----------
@@ -5919,7 +7140,7 @@ def money_required(view):
 
 
 # Training fee per the program code, and who it covers. Shown as the starting amount in "Record payment".
-TRAINING_FEES = {"D4": 1200.0}   # Relationship Training: $1,200 per couple (one payment covers both partners)
+TRAINING_FEES = {"D4": 1299.0}   # The Art of Us: $1,299 per couple (one payment covers both partners)
 PAYMENT_METHODS = ["Check", "Zelle", "Cash", "Card", "Other"]
 BOOKS_ENTITY = "Nonprofit"        # which set of books the CRM's money belongs to (the LLC is not run from the CRM)
 _finance_ready = False
@@ -6153,7 +7374,7 @@ def _finance_ledger(conn, start, end):
             LEFT JOIN enrollments pe ON pe.id = (SELECT partner_enrollment_id FROM enrollments WHERE id = p.enrollment_id)
             LEFT JOIN contacts pt ON pt.id = pe.contact_id
             WHERE p.voided_at IS NULL AND p.paid_on >= ? AND p.paid_on <= ?""", (start, end)).fetchall():
-        what = f"{p['code']} #{p['session_number']}" if p["code"] else "Training"
+        what = f"{sess_name(p['code'])} #{p['session_number']}" if p["code"] else "Training"
         rows.append({"date": p["paid_on"], "type": "Training payment" if p["completes_payment"] else "Training deposit",
                      "name": p["name"], "email": p["email"] or "", "what": what, "amount": p["amount"],
                      "method": p["method"] or "", "reference": p["reference"] or "", "note": p["note"] or "",
@@ -6197,7 +7418,7 @@ def finance():
             ORDER BY k.session_date, ct.last_name""", (date.today().isoformat(),)).fetchall():
         dep = conn.execute("SELECT COALESCE(SUM(amount),0) AS t FROM payments WHERE voided_at IS NULL AND enrollment_id IN (?, ?)",
                            (e["id"], e["pe"] or 0)).fetchone()["t"]
-        outstanding.append({"name": e["name"], "contact_id": e["contact_id"], "what": f"{e['code']} #{e['session_number']}",
+        outstanding.append({"name": e["name"], "contact_id": e["contact_id"], "what": f"{sess_name(e['code'])} #{e['session_number']}",
                             "date": e["session_date"], "deposit": dep, "couple": bool(e["pe"]), "eid": e["id"],
                             "fee": (TRAINING_FEES.get(e["code"]) if e["pe"] else None)})
     conn.close()
@@ -6324,7 +7545,7 @@ def public_relationship_training():
         if r:
             date_text = _public_date_text(r)
     except Exception as e:
-        print(f"Relationship Training date lookup failed: {e}", flush=True)
+        print(f"The Art of Us date lookup failed: {e}", flush=True)
     return render_template("public_relationship.html", date_text=date_text)
 
 
@@ -6496,7 +7717,7 @@ def public_whats_included(slug):
     names = {"the-art-of-us": "The Art of Us", "the-beginning": "The Beginning",
              "awakening": "Awakening", "vision": "Vision"}
     # Start/end times differ by program; update here once confirmed.
-    when = {"the-art-of-us": "Friday 10:00 am through Sunday 3:00 pm",
+    when = {"the-art-of-us": "Friday 7:00 pm through Sunday 1:30 pm",
             "the-beginning": "Friday 10:00 am through Sunday 3:00 pm"}.get(
         slug, "Three days (start and end times to be announced)")
     w = {"slug": slug, "name": names.get(slug, slug.title()), "when": when}
@@ -6509,6 +7730,7 @@ def public_questionnaire(token):
     nobody else (including their partner) can see the answers from here."""
     _ensure_enrollment_extras()
     conn = get_db()
+    needs.ensure(conn)
     enr = conn.execute(
         f"""SELECT e.*, ct.first_name, p.code, p.name AS program_name, c.session_number, c.session_date, c.end_date
             FROM enrollments e JOIN contacts ct ON ct.id = e.contact_id
@@ -6530,17 +7752,19 @@ def public_questionnaire(token):
         else:
             conn.execute(f"INSERT INTO training_profiles (enrollment_id, {', '.join(fields)}) "
                          f"VALUES (?, {', '.join('?' for _ in fields)})", (enr["id"], *values))
+        needs.save_from_form(conn, enr["contact_id"], request.form)
         if request.form.get("submit_done"):
             conn.execute("UPDATE enrollments SET questionnaire_completed_at = ? WHERE id = ?",
                          (date.today().isoformat(), enr["id"]))
             done = True
         conn.commit()
     profile = conn.execute("SELECT * FROM training_profiles WHERE enrollment_id = ?", (enr["id"],)).fetchone()
+    my_needs = needs.load(conn, enr["contact_id"])
     conn.close()
     if not done and enr["questionnaire_completed_at"]:
         done = True
     return render_template("public_questionnaire.html", enr=enr, profile=profile, is_couples=is_couples,
-                           done=done, saved=(request.method == "POST" and not done))
+                           done=done, saved=(request.method == "POST" and not done), my_needs=my_needs)
 
 
 PUBLIC_CALENDAR_START_YEAR = 2027  # first year the public Register calendar opens on
@@ -6588,6 +7812,7 @@ def public_register():
     return render_template(
         "public_register.html", programs=programs, upcoming=upcoming, cal=cal,
         preselect=(request.args.get("program") or "").upper(),
+        picked_date=(request.args.get("s") or "").strip()[:140],
         prev_url=url_for("public_register", year=year - 1) + "#calendar",
         next_url=url_for("public_register", year=year + 1) + "#calendar",
         today_url=url_for("public_register") + "#calendar",
@@ -6768,7 +7993,7 @@ def public_discovery():
             longform_url = url_for("public_complete_profile", token=token, _external=True)
             html_content, text_content = longform_followup_content(first_name, longform_url)
             try:
-                send_email(
+                _public_send_email(
                     to_email=email,
                     to_name=first_name,
                     subject=LONGFORM_FOLLOWUP_SUBJECT,
@@ -6776,6 +8001,7 @@ def public_discovery():
                     text_content=text_content,
                 )
                 emailed = True
+                _log_contact_message(new_id, "Long-form follow-up", LONGFORM_FOLLOWUP_SUBJECT, html_content, email)
             except EmailSendError as e:
                 print(f"EmailSendError sending long-form link to {email}: {e}", flush=True)
 
@@ -6794,7 +8020,7 @@ def public_discovery():
             connect_url = url_for("public_connect_request", token=ip_token, _external=True)
             html_content, text_content = interested_party_welcome_content(first_name, connect_url)
             try:
-                send_email(
+                _public_send_email(
                     to_email=email,
                     to_name=first_name,
                     subject=INTERESTED_PARTY_WELCOME_SUBJECT,
@@ -6915,12 +8141,255 @@ def public_feedback(token):
     return render_template("public_feedback.html", enr=enr, already_submitted=bool(already))
 
 
+
+# ---------- budgets ----------
+# One budget per training (not per date) plus one for fixed / one-time expenses. Everyone with the
+# "budgets" grant can VIEW; only the Owner can change numbers. Others use "Request a budget change"
+# (comments + estimate), which is saved and emailed to the Owner.
+import budget_model
+import budget_xlsx
+import budget_pdf
+import json as _json
+BUDGET_KEYS = [
+    ("prog_D1", "The Beginning / Awakening / Vision weekend", "training"),
+    ("prog_D4", "The Art of Us", "training"),
+    ("prog_D5", "Renew", "training"),
+    ("prog_D6", "Spiritual", "training"),
+    ("fixed", "Fixed and one-time expenses", "fixed"),
+    ("donations", "Donations", "donations"),
+]
+_budgets_ready = False
+
+
+def _budget_info(key):
+    for k, label, kind in BUDGET_KEYS:
+        if k == key:
+            return label, kind
+    abort(404)
+
+
+def _ensure_budget_tables():
+    global _budgets_ready
+    if _budgets_ready:
+        return
+    conn = get_db()
+    try:
+        conn.execute("""CREATE TABLE IF NOT EXISTS budgets (
+            budget_key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT, updated_by TEXT)""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS budget_requests (
+            id SERIAL PRIMARY KEY, budget_key TEXT NOT NULL, requested_by TEXT, comments TEXT,
+            estimate TEXT, status TEXT NOT NULL DEFAULT 'Open', created_at TEXT)""")
+        conn.commit()
+        _budgets_ready = True
+    except Exception as e:
+        conn.rollback()
+        print(f"Couldn't create budget tables: {e}", flush=True)
+    finally:
+        conn.close()
+
+
+def _load_budget(conn, key, label, kind):
+    row = conn.execute("SELECT data, updated_at, updated_by FROM budgets WHERE budget_key = ?", (key,)).fetchone()
+    if row:
+        return budget_model.loads(row["data"], kind), row["updated_at"], row["updated_by"]
+    return budget_model.default_budget(label, kind), None, None
+
+
+def _budget_totals(conn, key, label, kind):
+    data, _, _ = _load_budget(conn, key, label, kind)
+    return budget_model.compute(data)[1]
+
+
+@crm.route("/budgets")
+@area_required("budgets")
+def budgets_home():
+    _ensure_budget_tables()
+    conn = get_db()
+    cards = []
+    for key, label, kind in BUDGET_KEYS:
+        t = _budget_totals(conn, key, label, kind)
+        cards.append(dict(key=key, label=label, kind=kind, totals=t))
+    conn.close()
+    return render_template("budgets_home.html", cards=cards)
+
+
+@crm.route("/budgets/<key>")
+@area_required("budgets")
+def budget_view(key):
+    label, kind = _budget_info(key)
+    _ensure_budget_tables()
+    conn = get_db()
+    data, updated_at, updated_by = _load_budget(conn, key, label, kind)
+    requests_ = []
+    if session.get("is_owner"):
+        requests_ = conn.execute(
+            "SELECT * FROM budget_requests WHERE budget_key = ? ORDER BY id DESC LIMIT 20", (key,)).fetchall()
+    fixed_total = _budget_totals(conn, "fixed", "Fixed", "fixed")["onetime"] if kind == "training" else None
+    recipients = []
+    if session.get("is_owner"):
+        recipients = conn.execute(
+            """SELECT s.id, s.name, s.email, s.role, s.is_owner,
+                      EXISTS (SELECT 1 FROM access_grants g WHERE g.staff_id = s.id AND g.area_key = 'budgets') AS has_grant
+               FROM staff s WHERE s.active = 1
+                 AND (s.is_owner = 1 OR s.role = 'Leadership' OR EXISTS (SELECT 1 FROM access_grants g WHERE g.staff_id = s.id AND g.area_key = 'budgets'))
+               ORDER BY s.name""").fetchall()
+    conn.close()
+    rows, totals = budget_model.compute(data)
+    return render_template("budget_view.html", key=key, label=label, kind=kind, data=data, rows=rows, totals=totals,
+                           sections=budget_model.sections_for(kind), key_vars=budget_model.KEY_VARS,
+                           updated_at=updated_at, updated_by=updated_by, is_owner=bool(session.get("is_owner")),
+                           change_requests=requests_, fixed_total=fixed_total, recipients=recipients,
+                           editing=bool(session.get("is_owner") and request.args.get("edit")))
+
+
+def _budget_attachments(key, fmt):
+    """List of (filename, bytes) for fmt 'xlsx', 'pdf' or 'both'."""
+    label, kind = _budget_info(key)
+    conn = get_db()
+    data, updated_at, _ = _load_budget(conn, key, label, kind)
+    conn.close()
+    base = re.sub(r"[^A-Za-z0-9]+", "_", label).strip("_") + "_Budget"
+    out = []
+    if fmt in ("xlsx", "both"):
+        out.append((base + ".xlsx", budget_xlsx.build_xlsx(label, kind, data, updated_at)))
+    if fmt in ("pdf", "both"):
+        out.append((base + ".pdf", budget_pdf.build_pdf(label, kind, data, updated_at)))
+    return out
+
+
+@crm.route("/budgets/<key>/download")
+@area_required("budgets")
+def budget_download(key):
+    _budget_info(key)
+    _ensure_budget_tables()
+    fmt = "pdf" if request.args.get("fmt") == "pdf" else "xlsx"
+    name, blob = _budget_attachments(key, fmt)[0]
+    resp = make_response(blob)
+    resp.headers["Content-Type"] = ("application/pdf" if fmt == "pdf"
+                                    else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp.headers["Content-Disposition"] = f'attachment; filename="{name}"'
+    return resp
+
+
+@crm.route("/budgets/<key>/email", methods=["POST"])
+@owner_required
+def budget_email(key):
+    label, kind = _budget_info(key)
+    _ensure_budget_tables()
+    ids = [int(x) for x in request.form.getlist("staff_ids") if x.isdigit()]
+    note = (request.form.get("message") or "").strip()[:3000]
+    fmt = request.form.get("fmt") if request.form.get("fmt") in ("xlsx", "pdf", "both") else "xlsx"
+    if not ids:
+        flash("Tick at least one person to email the budget to.")
+        return redirect(url_for(".budget_view", key=key))
+    conn = get_db()
+    people = conn.execute(
+        "SELECT name, email FROM staff WHERE active = 1 AND id IN ({})".format(",".join("?" for _ in ids)), tuple(ids)).fetchall()
+    conn.close()
+    files = _budget_attachments(key, fmt)
+    kinds = {"xlsx": "an Excel file", "pdf": "a PDF", "both": "an Excel file and a PDF"}[fmt]
+    sent, failed = [], []
+    for pr in people:
+        body = (f"<p>Hello {_html.escape(pr['name'].split()[0])},</p>"
+                f"<p>Attached is the budget for <b>{_html.escape(label)}</b> as {kinds}.</p>"
+                + (f"<p>{_html.escape(note).replace(chr(10), '<br>')}</p>" if note else "")
+                + "<p>This budget is confidential; please do not forward it. If it needs changing, use "
+                  "\"Request a budget change\" on the Budgets page.</p>")
+        try:
+            send_email(to_email=pr["email"], to_name=pr["name"], subject=f"Budget: {label}", html_content=body,
+                       attachments=files)
+            sent.append(pr["name"])
+        except Exception as e:
+            print(f"budget email failed for {pr['email']}: {e}", flush=True)
+            failed.append(pr["name"])
+    if sent:
+        flash("Budget emailed to: " + ", ".join(sent) + ".")
+    if failed:
+        flash("Could not email: " + ", ".join(failed) + ".")
+    return redirect(url_for(".budget_view", key=key))
+
+
+@crm.route("/budgets/<key>/save", methods=["POST"])
+@area_required("budgets")
+def budget_save(key):
+    label, kind = _budget_info(key)
+    if not session.get("is_owner"):
+        flash("Only the Owner can change the budget. Use \"Request a budget change\" instead.")
+        return redirect(url_for(".budget_view", key=key))
+    _ensure_budget_tables()
+    conn = get_db()
+    data, _, _ = _load_budget(conn, key, label, kind)
+    budget_model.apply_form(data, request.form)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    conn.execute("DELETE FROM budgets WHERE budget_key = ?", (key,))
+    conn.execute("INSERT INTO budgets (budget_key, data, updated_at, updated_by) VALUES (?, ?, ?, ?)",
+                 (key, _json.dumps(data), now, session.get("staff_name") or "Owner"))
+    conn.commit()
+    conn.close()
+    flash("Budget saved.")
+    return redirect(url_for(".budget_view", key=key))
+
+
+@crm.route("/budgets/<key>/request", methods=["POST"])
+@area_required("budgets")
+def budget_request(key):
+    label, kind = _budget_info(key)
+    _ensure_budget_tables()
+    comments = (request.form.get("comments") or "").strip()[:3000]
+    estimate = (request.form.get("estimate") or "").strip()[:300]
+    if not comments:
+        flash("Please add your comments so the Owner knows what to change.")
+        return redirect(url_for(".budget_view", key=key))
+    conn = get_db()
+    who = session.get("staff_name") or "A team member"
+    conn.execute(
+        "INSERT INTO budget_requests (budget_key, requested_by, comments, estimate, created_at) VALUES (?, ?, ?, ?, ?)",
+        (key, who, comments, estimate, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    owners = conn.execute("SELECT email, name FROM staff WHERE is_owner = 1 AND active = 1").fetchall()
+    conn.commit()
+    conn.close()
+    link = url_for(".budget_view", key=key, _external=True)
+    body = (f"<p><b>{_html.escape(str(who))}</b> asks for a change to the budget: <b>{_html.escape(label)}</b>.</p>"
+            f"<p><b>Comments:</b><br>{_html.escape(comments).replace(chr(10), '<br>')}</p>"
+            f"<p><b>Estimate:</b> {_html.escape(estimate) or '(none given)'}</p>"
+            f"<p><a href=\"{link}\">Open the budget</a></p>")
+    sent = False
+    fmt = request.form.get("fmt") if request.form.get("fmt") in ("xlsx", "pdf", "both") else "xlsx"
+    try:
+        attach = _budget_attachments(key, fmt)
+    except Exception as e:
+        print(f"budget attachment build failed: {e}", flush=True)
+        attach = None
+    body += "<p>The current budget is attached.</p>" if attach else ""
+    for o in owners:
+        try:
+            send_email(to_email=o["email"], to_name=o["name"], subject=f"Budget change request: {label}", html_content=body,
+                       attachments=attach)
+            sent = True
+        except Exception as e:
+            print(f"budget request email failed: {e}", flush=True)
+    flash("Your request was sent to the Owner." if sent else "Your request was saved for the Owner (the email could not be sent).")
+    return redirect(url_for(".budget_view", key=key))
+
+
+@crm.route("/budget-requests/<int:req_id>/done", methods=["POST"])
+@owner_required
+def budget_request_done(req_id):
+    _ensure_budget_tables()
+    conn = get_db()
+    row = conn.execute("SELECT budget_key FROM budget_requests WHERE id = ?", (req_id,)).fetchone()
+    conn.execute("UPDATE budget_requests SET status = 'Done' WHERE id = ?", (req_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for(".budget_view", key=row["budget_key"]) if row else url_for(".budgets_home"))
+
+
 @crm.context_processor
 def inject_area_access():
     if not session.get("staff_id"):
         return {"has_contacts_access": False, "has_program_access": False, "has_donations_access": False,
                 "has_contracts_access": False, "has_accounting_access": False,
-                "has_correspondence_access": False}
+                "has_correspondence_access": False, "has_budgets_access": False, "has_checkin_access": False, "nav_sessions": [], "nav_programs": []}
     return {
         "has_contacts_access": _has_area_access("contacts"),
         "has_program_access": _has_any_program_access(),
@@ -6928,11 +8397,100 @@ def inject_area_access():
         "has_contracts_access": _has_area_access("contracts"),
         "has_accounting_access": _has_area_access("accounting"),
         "has_correspondence_access": _has_area_access("correspondence"),
+        "has_budgets_access": _has_area_access("budgets"),
+        "has_checkin_access": _has_area_access("checkin") or _has_area_access("trainee_roster") or _has_area_access("session_team"),
+        "nav_sessions": _nav_sessions(),
+        "nav_programs": _nav_programs(),
     }
 
 
+def _nav_programs():
+    """Every program, for the Training Materials drop-down (one group per program)."""
+    try:
+        if not (session.get("is_owner") or session.get("staff_role") == "Leadership" or _has_any_program_access()):
+            return []
+        conn = get_db()
+        try:
+            rows = conn.execute("SELECT id, code, name FROM programs ORDER BY id").fetchall()
+            have = {r["code"] for r in rows}
+            missing = [(c, n) for c, n in (("D5", "Refocus"), ("D6", "Spiritual")) if c not in have]
+            if missing:
+                try:
+                    for c, n in missing:
+                        conn.execute("INSERT INTO programs (code, name) VALUES (?, ?)", (c, n))
+                    conn.commit()
+                    rows = conn.execute("SELECT id, code, name FROM programs ORDER BY id").fetchall()
+                except Exception:
+                    conn.rollback()
+        finally:
+            conn.close()
+        from public_programs_data import PROGRAM_PAGES
+        titles = {pg["code"]: pg["title"] for pg in PROGRAM_PAGES.values()}
+        titles.update({"D5": "Refocus", "D6": "Spiritual"})
+        out = []
+        for r in rows:
+            nm = (r["name"] or "").strip()
+            code = r["code"] or ""
+            if nm.startswith(code + "-"):
+                nm = nm[len(code) + 1:].strip()
+            out.append({"id": r["id"], "label": titles.get(code) or nm or code})
+        return out
+    except Exception:
+        return []
+
+
+def _nav_sessions():
+    """The next few sessions for the Programs drop-down (only for logins that can open a session)."""
+    try:
+        if not (session.get("is_owner") or session.get("staff_role") == "Leadership" or _has_area_access("contacts")):
+            return []
+        if session.get("staff_role") == ACCOUNTING_ROLE and not session.get("is_owner"):
+            return []
+        conn = get_db()
+        try:
+            return _upcoming_sessions(conn, 6)
+        finally:
+            conn.close()
+    except Exception:
+        return []
+
+
 app.jinja_env.globals["role_label"] = role_label
-call_flow.register(app, crm, leadership_required, get_db)
+def _has_guides_access():
+    """Choosing and changing the Guides: the Owner always; a Leadership account only when the Owner has
+    ticked Guides for them under HUB Access."""
+    if session.get("is_owner"):
+        return True
+    if session.get("staff_role") != "Leadership" or not session.get("staff_id"):
+        return False
+    return _has_area_access("guides")
+
+
+def guides_access(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if _has_guides_access():
+            return view(*args, **kwargs)
+        flash("Choosing and changing Guides is limited to the Owner and the Leadership accounts the Owner has chosen.")
+        return redirect(url_for(".dashboard"))
+    return wrapped
+
+
+@app.context_processor
+def _inject_guides_access():
+    try:
+        return {"has_guides_access": _has_guides_access() if session.get("staff_id") else False}
+    except Exception:
+        return {"has_guides_access": False}
+
+
+call_flow.register(app, crm, leadership_required, get_db, guides_access)
+import sponsors
+sponsors.register(app, get_db)
+import botguard
+app.context_processor(lambda: {"bot_field": botguard.field_html})
+import testimonials
+testimonials.register(app, crm, leadership_required, get_db, send_email, full_name_sql, PROGRAM_NAME)
 
 # ---------- volunteer chat: discussion board + live chat room ----------
 # Internal only. Open to every Team / Leadership / Owner login; Accounting & Legal
@@ -7271,7 +8829,7 @@ def website_team_remove(wid):
 import blasts
 def correspondence_access(view):
     """Correspondence is an Ownership-access area: the Owner always, anyone else only when the
-    Owner has ticked Correspondence for them under Site Access."""
+    Owner has ticked Correspondence for them under HUB Access."""
     @wraps(view)
     def wrapped(*args, **kwargs):
         if _has_area_access("correspondence"):
@@ -7282,8 +8840,56 @@ def correspondence_access(view):
 
 
 blasts.register(app, crm, correspondence_access, get_db)
+import contact_dupes
+contact_dupes.register(app, crm, area_required, leadership_required, get_db)
+import contact_health
+contact_health.register(app, crm, owner_required, get_db)
+import ta_invites
+import owner_guide, correspondence as _corr_sw
+owner_guide.register(app, crm, owner_required, get_db, _corr_sw.switches)
+import owners_corner
+owners_corner.register(app, crm, true_owner_required, get_db)
+import hub_ownership
+hub_ownership.register(app, crm, owner_required, get_db)
+import contact_import
+contact_import.register(app, crm, owner_required, get_db)
+import error_alerts
+error_alerts.register(app, crm, owner_required, get_db)
+import annual_report
+annual_report.register(app, crm, owner_required, get_db)
+import change_history
+change_history.register(app, crm, owner_required, get_db)
+import do_not_contact
+do_not_contact.register(app, crm, area_required("contacts"), owner_required, get_db)
+import hub_backup
+hub_backup.register(app, crm, owner_required, get_db)
+import personal_invite
+personal_invite.register(app, crm, get_db, leadership_required, area_required("assign_logins"), role_label, ROLE_BLURBS, PROGRAM_NAME, _ensure_must_change)
+import couple_photos
+couple_photos.register(app, crm, area_required("contacts"), get_db, process_contact_photo)
+import checkin
+checkin.register(app, crm, get_db, _has_area_access, _auto_link_couples, full_name_sql, process_contact_photo, couple_photos, upsert_contact_photo,
+                 hooks=dict(money_required=money_required, record=_record_payment, can_money=_can_handle_money,
+                            ensure=lambda: (_ensure_enrollment_extras(), _ensure_finance_tables()), fees=TRAINING_FEES, methods=PAYMENT_METHODS,
+                            letter_for=_session_letter_for, q_link=_questionnaire_link, p_link=_personal_link, live=_session_letters_live,
+                            send_email=send_email, email_err=EmailSendError))
+import glance
+glance.register(app, crm, leadership_required, get_db, _payment_info_for_cohort, _can_handle_money,
+                hidden_lists=lambda: [LEADERSHIP_LIST, *LEADERSHIP_SOURCES] + [n for n, _ in TEAM_LISTS])
+import bounces
+bounces.register(app, crm, area_required("alerts"), get_db)
+ta_invites.register(app, get_db, lambda code, name: NAV_PROGRAM_LABEL.get(code, name), lambda c: date_span(c))
+import correspondence
+correspondence.register(app, crm, get_db, {
+    "leadership_required": leadership_required, "correspondence_access": correspondence_access,
+    "has_correspondence_access": lambda: _has_area_access("correspondence"),
+    "has_guides_access": lambda: _has_guides_access(),
+    "staff_email": _staff_email, "ensure_letters_table": _ensure_session_letters_table,
+    "program_labels": PROGRAM_LABELS})
 import dbmap
 dbmap.register(app, crm, owner_required, get_db)
+import feature_guide
+feature_guide.register(app, crm, owner_required, PROGRAM_NAME)
 app.register_blueprint(crm)
 
 
@@ -7414,6 +9020,7 @@ def _auto_letter_send(conn, cohort, person, sent_key, content_key):
     try:
         send_email(to_email=person["email"], to_name=person["first_name"], subject=subject,
                    html_content=html_content, text_content=text_content)
+        _save_letter_snapshot(conn, cohort["id"], person["contact_id"], sent_key, subject, html_content)
         print(f"SENT automatic letter {sent_key} to contact {person['contact_id']} cohort {cohort['id']}", flush=True)
         return True
     except EmailSendError as e:
@@ -7427,8 +9034,8 @@ def _auto_letter_send(conn, cohort, person, sent_key, content_key):
 def _auto_letters_sweep():
     """For people who reserved through a volunteer's personal link:
        - the Trainee Registration Confirmation goes to both partners right after they reserve;
-       - a payment reminder goes to the person who reserved 3 days after enrolling, and again within
-         2 weeks of the session, but only while payment has not been made.
+       - once payment is recorded, "Thank you - We're so excited" goes out, and "What to bring" one week before the training.
+         (Payment reminders are no longer automatic: the Guide is nudged every 7 days and decides.)
        OFF unless BOTH SESSION_LETTERS_LIVE=1 and AUTO_LETTERS_LIVE=1 are set. Only sends 8 am - 8 pm Central."""
     if not (_session_letters_live() and (os.environ.get("AUTO_LETTERS_LIVE") or "").strip() == "1"):
         return
@@ -7460,26 +9067,16 @@ def _auto_letters_sweep():
                 if person["contact_id"] in wanted:
                     _auto_letter_send(conn, cohort, person, "trainee_confirm", "trainee_confirm")
             if enr["p_at"]:
-                continue
-            person = next((x for x in rec["payment_reminder"] if x["contact_id"] == rq["contact_id"]), None)
-            if not person:
-                continue
-            try:
-                age = now - datetime.strptime(str(enr["created_at"])[:19], "%Y-%m-%d %H:%M:%S")
-            except ValueError:
-                continue
-            if age >= timedelta(days=3):
-                _auto_letter_send(conn, cohort, person, "payment_reminder", "payment_reminder")
-                first = conn.execute("SELECT sent_at FROM session_letters_sent WHERE cohort_id = ? AND contact_id = ? "
-                                     "AND letter_key = 'payment_reminder'", (cohort["id"], person["contact_id"])).fetchone()
+                # paid: "Thank you - We're so excited" right away, and "What to bring" one week before the training
                 days_to = (datetime.strptime(str(cohort["session_date"])[:10], "%Y-%m-%d").date() - today).days
-                if first and days_to <= 14:
-                    try:
-                        gap = now - datetime.strptime(str(first["sent_at"])[:19], "%Y-%m-%d %H:%M:%S")
-                    except ValueError:
-                        continue
-                    if gap >= timedelta(days=3):
-                        _auto_letter_send(conn, cohort, person, "payment_reminder_2", "payment_reminder")
+                for person in rec["payment_received"]:
+                    if person["contact_id"] in wanted:
+                        _auto_letter_send(conn, cohort, person, "payment_received", "payment_received")
+                if days_to <= 7:
+                    for person in rec["what_to_bring"]:
+                        if person["contact_id"] in wanted:
+                            _auto_letter_send(conn, cohort, person, "what_to_bring", "what_to_bring")
+            # Not paid: the Guide is nudged every 7 days (see call_flow), and sends any payment reminder personally.
     finally:
         conn.close()
 

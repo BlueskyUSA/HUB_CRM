@@ -5,7 +5,7 @@
 {% block content %}
 <section class="pub-section">
   <div class="pub-container" style="max-width:600px">
-    <h2>Thank you for being a Discovery! volunteer</h2>
+    <h2>Thank you for being a Sojourn volunteer</h2>
     <p class="lead">Tell us who you are, and we will email you a personal volunteer page. It takes about a minute.</p>
     {% if error %}<p class="flash">{{ error }}</p>{% endif %}
     <form class="pub-form" method="post">
@@ -17,7 +17,7 @@
       <div class="field"><label>Cell phone</label><input name="phone" type="tel" maxlength="40" autocomplete="tel" value="{{ form.get('phone','') }}"></div>
       <button class="pub-btn dark" type="submit">Send me my page</button>
     </form>
-    <p class="muted" style="margin-top:16px">We will only use your information to be in touch about volunteering with Discovery!</p>
+    <p class="muted" style="margin-top:16px">We will only use your information to be in touch about volunteering with Sojourn</p>
   </div>
 </section>
 {% endblock %}
