@@ -2,7 +2,7 @@
 {% block title %}HUB Dashboard — {{ program_name }}{% endblock %}
 {% block content %}
 <h1>HUB Dashboard</h1>
-<p class="muted">{{ program_name }} — registration &amp; training management</p>
+<p class="muted">{{ program_name|bang }} — registration &amp; training management</p>
 
 {% if show_alerts %}
 <div class="card" style="max-width:860px; border-left:5px solid {{ '#b3412f' if alerts and alerts|selectattr('level','equalto','urgent')|list else ('#a8892f' if alerts else '#6b8f71') }}">
@@ -88,7 +88,7 @@
   {% if session.staff_role == 'Accounting' %}
   <p>Your login is <strong>view-only</strong>. You can read everything you have been given, but nothing you do here changes the records.</p>
   {% endif %}
-  <p style="margin-bottom:0">Trainee and leadership information here is confidential. Please use it only for Sojourn. Questions or something not working? Tell the Owner.</p>
+  <p style="margin-bottom:0">Trainee and leadership information here is confidential. Please use it only for Sojourn<span style="color:#FF0000">!</span> Questions or something not working? Tell the Owner.</p>
 </div>
 
 {% endblock %}

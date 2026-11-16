@@ -38,7 +38,7 @@
 {% set personal = (enr is not none and enr.code == 'D1') %}
 <div class="qn-wrap">
 <div class="qn-hero">
-  <p class="kicker">Sojourn</p>
+  <p class="kicker">Sojourn<span style="color:#FF0000">!</span></p>
   <h1>Your questionnaire</h1>
   <p class="meta">{{ enr.program_name }}{% if enr.session_date %} &middot; {{ enr.session_date|fdate }}{% endif %}</p>
 </div>
@@ -97,7 +97,7 @@
   </form>
   <div class="qn-thanks">
     <p style="margin:0 0 10px"><strong>Thank you for your responses.</strong> We look forward to meeting you{% if not personal %} and your partner{% endif %}.</p>
-    {% if enr.code == 'D4' %}<div class="qn-note">If possible, please come rested. It is best to arrive around <strong>5:30 pm</strong> to register at the hotel, find your room, get settled, relax, grab a bite to eat, and register at the Sojourn check-in table in front of the training room. The training begins promptly at <strong>7:00 pm</strong>.</div>{% endif %}
+    {% if enr.code == 'D4' %}<div class="qn-note">If possible, please come rested. It is best to arrive around <strong>5:30 pm</strong> to register at the hotel, find your room, get settled, relax, grab a bite to eat, and register at the Sojourn<span style="color:#FF0000">!</span> check-in table in front of the training room. The training begins promptly at <strong>7:00 pm</strong>.</div>{% endif %}
   </div>
 </div>
 </div>

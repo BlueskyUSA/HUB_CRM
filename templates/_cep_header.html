@@ -1,5 +1,5 @@
 <header class="topbar">
-  <a class="brand" href="{{ url_for('public_cep_training') }}">{{ program_name }} &middot; Guides</a>
+  <a class="brand" href="{{ url_for('public_cep_training') }}">{{ program_name|bang }} &middot; Guides</a>
   <nav style="flex:1 1 auto; text-align:center">
     {% if session.staff_id %}<a href="{{ url_for('crm.dashboard') }}">Dashboard</a>{% if has_guides_access %}<a href="{{ url_for('crm.call_volunteers_page') }}">Guides</a>{% endif %}{% endif %}
     <a href="{{ url_for('public_cep_training') }}">Guide Training</a>

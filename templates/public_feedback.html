@@ -3,22 +3,22 @@
 {% block content %}
 <section class="pub-section">
   <div class="pub-container" style="max-width:720px">
-    <h2>{{ program_name }} Feedback Form</h2>
+    <h2>{{ program_name|bang }} Feedback Form</h2>
 
     {% if enr is none %}
     <p class="lead">We couldn't find that feedback link. Please double-check the link you were sent, or reach out to us if you think this is a mistake.</p>
 
     {% elif already_submitted %}
-    <p class="lead">Thanks again -- we already have your feedback for {{ enr.code }} #{{ enr.session_number }} on {{ enr.session_date|fdate }}. We appreciate you taking the time.</p>
+    <p class="lead">Thanks again -- we already have your feedback for {{ enr.code|sess_label }} #{{ enr.session_number }} on {{ enr.session_date|fdate }}. We appreciate you taking the time.</p>
 
     {% else %}
     <p class="lead">
       Thank you for participating and trusting us during the training. Your honest feedback
       helps us support future programs and improve how our small groups and facilitation
-      work. This form is read only by {{ program_name }} leadership &mdash; your responses
+      work. This form is read only by {{ program_name|bang }} leadership &mdash; your responses
       are confidential and will not be shared with your TA, or other trainees.
     </p>
-    <p class="muted" style="margin-bottom:28px">{{ enr.code }} &mdash; {{ enr.program_name }} &middot; Session #{{ enr.session_number }} &middot; {{ enr.session_date|fdate }}</p>
+    <p class="muted" style="margin-bottom:28px">{{ enr.program_name|nice_prog(enr.code) }} &middot; Session #{{ enr.session_number }} &middot; {{ enr.session_date|fdate }}</p>
 
     <form class="pub-form" method="post" style="max-width:none">
       <h3 style="font-family:var(--pub-font-display); color:var(--pub-text); margin:28px 0 12px">Your Facilitator</h3>
@@ -109,7 +109,7 @@
         </select>
       </div>
       <div class="field">
-        <label>How likely are you to attend a future {{ program_name }} training? <span class="muted">(1&ndash;5 scale)</span></label>
+        <label>How likely are you to attend a future {{ program_name|bang }} training? <span class="muted">(1&ndash;5 scale)</span></label>
         <select name="future_training_likelihood" required>
           <option value="">Choose a rating</option>
           {% for i in range(1, 6) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}

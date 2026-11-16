@@ -17,7 +17,7 @@
 <section class="pub-section alt" id="talk">
   <div class="pub-container" style="max-width:820px">
     <h2>{{ cf_heading or 'I’m curious to learn more.' }}</h2>
-    <p class="lead">Please complete the form below. An experienced Sojourn volunteer will reach out to you by text or by phone (your choice), usually within a few hours during our regular contact hours. For complete security, we will send you the name and phone number of the volunteer.</p>
+    <p class="lead">Please complete the form below. An experienced Sojourn<span style="color:#FF0000">!</span> volunteer will reach out to you by text or by phone (your choice), usually within a few hours during our regular contact hours. For complete security, we will send you the name and phone number of the volunteer.</p>
     <p class="lead">No pressure&hellip;just a conversation with a volunteer who has been through this training and is excited to share how it changed their lives.</p>
     {% for m in get_flashed_messages() %}<p class="flash" style="padding:10px 14px">{{ m }}</p>{% endfor %}
     <form class="pub-form" method="post" action="{{ url_for('public_talk_to_us') }}">
@@ -47,7 +47,7 @@
         <small class="muted" style="display:block; margin-top:6px">{{ call_consent_fine }}</small>
       </div>
       <div class="field full"><label>Anything you'd like us to know?</label><textarea name="message" rows="3"></textarea></div>
-      <button class="pub-btn dark" type="submit">Have a Sojourn Team Member reach out to me</button>
+      <button class="pub-btn dark" type="submit">Have a Sojourn<span style="color:#FF0000">!</span> Team Member reach out to me</button>
     </form>
   </div>
 </section>

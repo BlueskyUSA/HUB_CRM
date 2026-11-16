@@ -20,7 +20,7 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="{{ url_for('.dashboard') }}">{% if session.staff_id %}HUB{% else %}HUB; a Sojourn Admin Portal{% endif %}</a>
+    <a class="brand" href="{{ url_for('.dashboard') }}">{% if session.staff_id %}HUB{% else %}HUB; a Sojourn<span style="color:#FF0000">!</span> Admin Portal{% endif %}</a>
     <nav>
       {% if session.staff_id %}
       <a href="{{ url_for('.dashboard') }}">HUB Dashboard</a>
