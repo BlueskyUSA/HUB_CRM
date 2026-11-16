@@ -1962,6 +1962,15 @@ def day_list(start, last=None):
     return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " & " + parts[-1] if len(parts) > 2 else " & ".join(parts)
 
 
+@app.template_filter("bang")
+def bang_filter(text):
+    """Escape text, then put the red exclamation point after the word Sojourn."""
+    from markupsafe import Markup, escape
+    t = str(escape(text or ""))
+    t = re.sub(r"Sojourn(?![\w!]|&#39;s|\u2019s)", 'Sojourn<span style="color:#FF0000">!</span>', t)
+    return Markup(t)
+
+
 @app.template_filter("nice_prog")
 def nice_prog(name, code=None):
     """A program's name without its code in front: 'D1' -> 'The Beginning, Awakening & Vision', 'D4-Relationship Training' -> 'The Art of Us'."""
