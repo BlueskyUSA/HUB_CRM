@@ -119,9 +119,55 @@ def _note_send(to_email, subject, html_content, message_id, bcc, status):
         print(f"Couldn't record outgoing email to {to_email}: {e}", flush=True)
 
 
+def _logo_token():
+    """The picture-address token the Hub gives the logo when it is uploaded inside a Word letter."""
+    try:
+        import hashlib
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "sojourn-logo-email.png")
+        with open(p, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()[:32]
+    except Exception:
+        return None
+
+
+def add_logo(html_content):
+    """Puts the Sojourn! logo at the top of an email's HTML. Safe to call twice: does nothing if the
+    logo is already in the letter (for example, placed there on purpose), or if EMAIL_LOGO=off."""
+    if not html_content or os.environ.get("EMAIL_LOGO", "").strip().lower() in ("off", "0", "no", "false"):
+        return html_content
+    if "sojourn-logo-email" in html_content:
+        return html_content
+    tok = _logo_token()
+    if tok and tok in html_content:
+        return html_content
+    try:
+        from config import PUBLIC_BASE_URL
+    except Exception:
+        PUBLIC_BASE_URL = ""
+    if not PUBLIC_BASE_URL:
+        return html_content
+    block = ('<div style="text-align:center;margin:0 0 20px">'
+             f'<img src="{PUBLIC_BASE_URL}/static/sojourn-logo-email.png" width="260" '
+             'alt="Sojourn! A Journey of Curiosity and Possibility" style="max-width:100%;height:auto;border:0"></div>')
+    import re as _re
+    m = _re.search(r"<body[^>]*>", html_content, flags=_re.I)
+    if m:
+        return html_content[:m.end()] + block + html_content[m.end():]
+    return block + html_content
+
+
 def send_email(to_email, subject, html_content, to_name=None, text_content=None,
                from_email=None, from_name=None, reply_to=None, attachments=None, bcc=None, headers=None):
     """Sends one email through Brevo (see _send_email_raw) and keeps a record of the attempt."""
+    html_content = add_logo(html_content)
+    try:
+        import brand
+        if brand.active():
+            subject, html_content = brand.swap(subject), brand.swap(html_content)
+            if text_content:
+                text_content = brand.swap(text_content)
+    except Exception as ex:
+        print(f"brand swap skipped for email: {ex!r}", flush=True)
     try:
         message_id = _send_email_raw(to_email, subject, html_content, to_name=to_name, text_content=text_content,
                                      from_email=from_email, from_name=from_name, reply_to=reply_to,

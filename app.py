@@ -1962,6 +1962,20 @@ def day_list(start, last=None):
     return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " & " + parts[-1] if len(parts) > 2 else " & ".join(parts)
 
 
+import brand as _brand
+
+
+@app.after_request
+def _swap_program_name(resp):
+    """BRAND_NAME=Discovery shows the Discovery name on every page (see brand.py). No effect by default."""
+    try:
+        if _brand.active() and resp.mimetype == "text/html" and not resp.direct_passthrough and resp.status_code != 304:
+            resp.set_data(_brand.swap(resp.get_data(as_text=True)))
+    except Exception as e:
+        print(f"brand swap skipped: {e!r}", flush=True)
+    return resp
+
+
 @app.template_filter("bang")
 def bang_filter(text):
     """Escape text, then put the red exclamation point after the word Sojourn."""
