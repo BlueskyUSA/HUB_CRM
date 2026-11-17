@@ -937,6 +937,10 @@ def change_password():
 @crm.route("/staff")
 @leadership_required
 def staff_list():
+    # Only the real Owner sees who has Hub access and in what role. Leadership and
+    # Administrators get a short note instead of the list.
+    if not session.get("is_owner") or session.get("is_admin"):
+        return render_template("staff_owner_only.html")
     conn = get_db()
     rows = conn.execute("SELECT * FROM staff ORDER BY name").fetchall()
     area_labels = _area_labels_map(conn)
