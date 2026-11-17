@@ -24,7 +24,7 @@
     <nav>
       {% if session.staff_id %}
       <a href="{{ url_for('.dashboard') }}">HUB Dashboard</a>
-      {% if session.is_owner or session.staff_role == 'Leadership' %}
+      {% if session.is_owner or session.staff_role == 'Leadership' or has_hub_access_view %}
       <a href="{{ url_for('.staff_list') }}">HUB Access</a>
       {% endif %}
       <a href="{{ url_for('.mission_page') }}">Mission</a>
