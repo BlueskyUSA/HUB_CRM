@@ -139,7 +139,7 @@ function hubLoginChange(sel){
           <button class="btn secondary" type="submit" style="padding:2px 8px; font-size:.8rem">Set</button>
         </form>
         <div class="notsaved" style="display:none; color:#b3412f; font-size:.8rem; font-weight:600; max-width:260px; white-space:normal"></div>
-        {% elif cur_login %}<span class="badge good">{{ cur_login }}</span>{% else %}<span class="muted">&mdash;</span>{% endif %}
+        {% elif cur_login %}<span class="badge good">{{ 'Hub login' if cur_login == 'Administrator' else cur_login }}</span>{% else %}<span class="muted">&mdash;</span>{% endif %}
       </td>{% endif %}
     </tr>
     {% else %}

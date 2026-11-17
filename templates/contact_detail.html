@@ -117,8 +117,8 @@
 <div class="card" id="hub-login">
   <h3 style="margin-top:0">Hub Login <span class="muted" style="font-weight:400; font-size:.85rem">(can this person log in to the Hub?)</span></h3>
   {% set cur = (('Administrator' if login_staff.is_owner == 2 else login_staff.role) if (login_staff and login_staff.active) else '') %}
-  {% if login_staff and (login_staff.is_owner == 1 or (login_staff.is_owner == 2 and session.is_admin)) %}
-  <p>{{ 'Owner' if login_staff.is_owner == 1 else 'Administrator' }}. Managed by the Owner under HUB Access.</p>
+  {% if login_staff and (login_staff.is_owner == 1 or (login_staff.is_owner == 2 and (session.is_admin or not session.is_owner))) %}
+  <p>{{ 'Owner' if login_staff.is_owner == 1 else 'Hub login' }}. Managed by the Owner.</p>
   {% else %}
   <form method="post" action="{{ url_for('.contact_login_role', contact_id=contact.id) }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
     <select name="login_role" id="hubLoginSel" data-cur="{{ cur }}" data-name="{{ contact.full_name|e }}">
