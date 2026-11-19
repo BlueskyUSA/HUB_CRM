@@ -50,9 +50,6 @@
       <td data-label="Role">{{ role_label(s.role) }}</td>
       <td data-label="Status">{% if s.active %}<span class="badge good">Active</span>{% else %}<span class="badge">Deactivated</span>{% endif %}
         <div class="muted" style="font-size:.8rem; margin-top:4px">Last signed in: {{ (last_in.get(s.id) or '')[:10] or 'not recorded' }}<br>Last activity: {{ (last_active.get(s.id) or '')[:10] or 'not recorded' }}</div>
-        {% if s.is_owner == 1 %}
-        <div class="muted" style="font-size:.8rem; margin-top:4px">Owner activity is not listed here.</div>
-        {% else %}
         <details class="acc-view" style="margin-top:6px">
           <summary style="cursor:pointer; font-size:0.9rem;">Activity ({{ activity_n.get(s.id, 0) }}) &#9662;</summary>
           <div style="margin-top:6px; font-size:0.84rem; max-width:340px">
@@ -63,8 +60,7 @@
             {% endfor %}
             {% if activity_n.get(s.id, 0) > 25 %}<a href="{{ url_for('.change_history', who=s.id) }}">See all {{ activity_n.get(s.id) }} &rarr;</a>{% endif %}
           </div>
-        </details>
-        {% endif %}</td>
+        </details></td>
       <td data-label="Access">
         {% if s.is_owner %}
         <span class="muted">Everything ({{ 'Owner' if s.is_owner == 1 else 'Administrator' }})</span>
