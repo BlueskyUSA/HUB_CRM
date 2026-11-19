@@ -5,7 +5,7 @@
 <h1>Budgets</h1>
 <p class="muted">One budget for each training, plus one for fixed and one-time expenses. {% if session.is_owner %}You can edit them.{% else %}These are view only; each one has a button to request a change from the Owner.{% endif %}</p>
 <div class="card"><table>
-  <tr><th>Budget</th><th style="text-align:right">Income</th><th style="text-align:right">Expenses</th><th style="text-align:right">Net</th><th></th></tr>
+  <tr><th>Budget</th><th style="text-align:right">Income</th><th style="text-align:right">Expenses</th><th style="text-align:right">Net (before one-time)</th><th></th></tr>
   {% for c in cards %}
   <tr>
     <td><b>{{ c.label }}</b></td>
@@ -18,5 +18,5 @@
   </tr>
   {% endfor %}
 </table></div>
-<p class="muted">Training budgets do not include the fixed and one-time expenses; those are counted once, in the last budget.</p>
+<p class="muted">Net is before the one-time expenses. Those are kept in the last budget and counted once; each training page shows the net after them.</p>
 {% endblock %}

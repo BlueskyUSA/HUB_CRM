@@ -26,14 +26,20 @@
 {% else %}
   <table style="width:auto"><tr>
     <td style="padding-right:30px"><div class="muted">Total income</div><b style="font-size:1.3rem">{{ money(totals.income) }}</b></td>
-    <td style="padding-right:30px"><div class="muted">Expenses</div><b style="font-size:1.3rem">{{ money(totals.expenses) }}</b></td>
-    <td style="padding-right:30px"><div class="muted">Net</div><b style="font-size:1.3rem;color:{{ '#1b7a3d' if totals.net >= 0 else '#b3261e' }}">{{ money(totals.net) }}</b></td>
+    <td style="padding-right:30px"><div class="muted">Expenses{% if kind == 'training' %} (with contingency){% endif %}</div><b style="font-size:1.3rem">{{ money(totals.expenses) }}</b></td>
+    <td style="padding-right:30px"><div class="muted">{% if kind == 'training' %}NOI (before one-time expenses){% else %}Net{% endif %}</div><b style="font-size:1.3rem;color:{{ '#1b7a3d' if totals.net >= 0 else '#b3261e' }}">{{ money(totals.net) }}</b></td>
     {% if kind == 'training' %}
     <td style="padding-right:30px"><div class="muted">Break-even</div><b style="font-size:1.3rem">{{ totals.breakeven if totals.breakeven else '—' }} couples</b></td>
     <td><div class="muted">Expense per couple</div><b style="font-size:1.3rem">{{ money(totals.per_couple_expense) }}</b></td>
     {% endif %}
   </tr></table>
-  {% if kind == 'training' %}<p class="muted" style="margin-bottom:0">Fixed and one-time expenses ({{ money(fixed_total) }}) are kept in their own budget and are not counted here. <a href="{{ url_for('.budget_view', key='fixed') }}">See fixed expenses</a></p>{% endif %}
+  {% if kind == 'training' %}
+  <table style="width:auto;margin-top:10px"><tr>
+    <td style="padding-right:30px"><div class="muted">One-time expenses (shared by all trainings)</div><b>{{ money(totals.onetime_total) }}</b> <a href="{{ url_for('.budget_view', key='fixed') }}">see them</a></td>
+    <td style="padding-right:30px"><div class="muted">Net after one-time expenses</div><b style="color:{{ '#1b7a3d' if totals.net_after_onetime >= 0 else '#b3261e' }}">{{ money(totals.net_after_onetime) }}</b></td>
+    <td><div class="muted">Break-even counting everything</div><b>{{ totals.breakeven_all if totals.breakeven_all else '—' }} couples</b></td>
+  </tr></table>
+  {% endif %}
 {% endif %}
 </div>
 
@@ -53,7 +59,25 @@
       <td class="muted">{{ note }}</td>
     </tr>
     {% endfor %}
+    <tr><td><b>Room Rate (After Discount)</b></td><td><b>${{ '%.2f'|format(derived.after_discount) }}</b></td><td class="muted">Calculated</td></tr>
+    <tr><td><b>Rate with Room Tax</b></td><td><b>${{ '%.2f'|format(derived.with_tax) }}</b></td><td class="muted">Calculated</td></tr>
+    <tr><td><b>Total Rm Rate with Credit Card Processing Fee</b></td><td><b>${{ '%.2f'|format(derived.roomrate) }}</b></td><td class="muted">Calculated; this is the room rate used below</td></tr>
+    <tr><td><b>Total team (people)</b></td><td><b>{{ '%g'|format(derived.team) }}</b></td><td class="muted">Calculated; used for team meals</td></tr>
+    <tr><td><b>Lunch / Dinner / d'oeuvres / Dinner-Dance with service</b></td><td colspan="2"><b>${{ '%.2f'|format(derived.lunch) }} / ${{ '%.2f'|format(derived.dinner) }} / ${{ '%.2f'|format(derived.hors) }} / ${{ '%.2f'|format(derived.dance) }}</b> <span class="muted">Calculated (rate plus banquet service charge)</span></td></tr>
   </table>
+</div>
+
+<h2>Dates and venue schedule</h2>
+<div class="card">
+  {% if editing %}
+  <label>Dates</label><input type="text" name="dates" value="{{ data.dates }}" style="width:100%">
+  <label>Hotel / venue</label><input type="text" name="hotel" value="{{ data.hotel }}" style="width:100%">
+  <label>Venue schedule (one line each)</label><textarea name="schedule" rows="10" style="width:100%">{{ data.schedule|join('\n') }}</textarea>
+  {% else %}
+  {% if data.dates %}<p><b>{{ data.dates }}</b>{% if data.hotel %}<br>{{ data.hotel }}{% endif %}</p>{% endif %}
+  {% if data.schedule %}<ul style="margin:0">{% for line in data.schedule %}<li>{{ line }}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">No schedule entered yet. Click Edit budget to add the dates, hotel and schedule.</p>{% endif %}
+  {% endif %}
 </div>
 {% endif %}
 
@@ -61,10 +85,12 @@
 <h2>{{ sec_label }}</h2>
 <div class="card">
   <table>
-    <tr><th>Item</th><th style="text-align:right">Quantity</th><th style="text-align:right">Unit cost</th><th style="text-align:right">Times</th><th style="text-align:right">Budget</th><th>Notes</th>{% if editing %}<th>Delete</th>{% endif %}</tr>
+    {% set cols = section_cols.get(sec) %}{% set has_h = cols and cols[0] %}
+    <tr><th>Item</th>{% if has_h %}<th style="text-align:right">{{ cols[0] }}</th>{% endif %}<th style="text-align:right">{{ cols[1] if cols else 'Quantity' }}</th><th style="text-align:right">{{ cols[2] if cols else 'Unit cost' }}</th><th style="text-align:right">{{ cols[3] if cols else 'Times' }}</th><th style="text-align:right">Budget</th><th>Notes</th>{% if editing %}<th>Delete</th>{% endif %}</tr>
     {% for r in rows if r.section == sec %}
     <tr>
       <td>{{ r.label }}</td>
+      {% if has_h %}<td style="text-align:right">{% if r.hv is not none %}{{ '{:,.0f}'.format(r.hv) }}{% endif %}</td>{% endif %}
       {% for f, val, raw in (('q', r.qv, r.q), ('u', r.uv, r.u), ('t', r.tv, r.t)) %}
       <td style="text-align:right">
         {% if editing and not (raw is string and raw.startswith('=')) %}<input type="number" step="any" name="{{ f }}_{{ r.id }}" value="{{ raw }}" style="width:90px;color:#0000ff;text-align:right">
@@ -77,18 +103,24 @@
     </tr>
     {% endfor %}
     {% if editing %}
-    <tr style="background:#eef6f6"><td colspan="7"><b>Add a line to this section</b> (leave the name empty to add nothing)</td></tr>
+    <tr style="background:#eef6f6"><td colspan="8"><b>Add a line to this section</b> (leave the name empty to add nothing)</td></tr>
     <tr style="background:#eef6f6">
       <td><input type="text" name="new_label_{{ sec }}" placeholder="Item name" style="width:100%"></td>
+      {% if has_h %}<td></td>{% endif %}
       <td><input type="number" step="any" name="new_q_{{ sec }}" value="1" style="width:90px;text-align:right"></td>
       <td><input type="number" step="any" name="new_u_{{ sec }}" value="0" style="width:90px;text-align:right"></td>
       <td><input type="number" step="any" name="new_t_{{ sec }}" value="1" style="width:90px;text-align:right"></td>
       <td colspan="3"><input type="text" name="new_note_{{ sec }}" placeholder="Note (optional)" style="width:60%">
-        <select name="new_mode_{{ sec }}"><option value="plain">Plain amount</option>{% if kind == 'training' %}<option value="room">Hotel room (adds hotel tax, discount)</option><option value="food">Food (adds service charge, discount)</option>{% endif %}</select></td>
+        <select name="new_mode_{{ sec }}"><option value="plain">Plain amount</option>{% if kind == 'training' %}<option value="room">Hotel room (enter the rack rate; adds discount, hotel tax and card fee)</option>{% endif %}</select></td>
     </tr>
     {% endif %}
-    <tr><td colspan="4"><b>Total</b></td><td style="text-align:right"><b>{{ money(totals[sec]) }}</b></td><td></td></tr>
-    {% if sec == 'other' and kind == 'training' %}<tr><td colspan="4">Contingency ({{ '%g'|format(data.vars.contingency * 100) }}% of operating expenses)</td><td style="text-align:right">{{ money(totals.contingency) }}</td><td></td></tr>{% endif %}
+    {% if has_h %}<tr><td><b>Total</b></td><td style="text-align:right"><b>{{ '{:,.0f}'.format(totals.head_count) }}</b></td><td style="text-align:right"><b>{{ '{:,.0f}'.format(totals.room_count) }}</b></td><td></td><td></td><td style="text-align:right"><b>{{ money(totals[sec]) }}</b></td><td></td></tr>
+    {% else %}<tr><td colspan="4"><b>Total</b></td><td style="text-align:right"><b>{{ money(totals[sec]) }}</b></td><td></td></tr>{% endif %}
+    {% if sec == 'other' and kind == 'training' %}<tr><td colspan="4">Subtotal &mdash; expenses</td><td style="text-align:right">{{ money(totals.operating) }}</td><td></td></tr>
+    <tr><td colspan="4">Contingency ({{ '%g'|format(data.vars.contingency * 100) }}% of operating expenses)</td><td style="text-align:right">{{ money(totals.contingency) }}</td><td></td></tr>
+    <tr><td colspan="4"><b>Total expenses</b></td><td style="text-align:right"><b>{{ money(totals.expenses) }}</b></td><td></td></tr>
+    <tr><td colspan="4"><b>NOI (before one-time expenses)</b></td><td style="text-align:right"><b>{{ money(totals.net) }}</b></td><td></td></tr>
+    <tr style="background:#ffff99"><td colspan="4"><b>Break even (couples)</b></td><td style="text-align:right"><b>{{ totals.breakeven if totals.breakeven else '—' }}</b></td><td></td></tr>{% endif %}
   </table>
 </div>
 {% endfor %}
