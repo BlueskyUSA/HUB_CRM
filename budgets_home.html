@@ -1,0 +1,22 @@
+{% extends "crm_base.html" %}
+{% block title %}Budgets{% endblock %}
+{% block content %}
+{% macro money(x) %}{% if x < 0 %}(${{ '{:,.0f}'.format(-x) }}){% else %}${{ '{:,.0f}'.format(x) }}{% endif %}{% endmacro %}
+<h1>Budgets</h1>
+<p class="muted">One budget for each training, plus one for fixed and one-time expenses. {% if session.is_owner %}You can edit them.{% else %}These are view only; each one has a button to request a change from the Owner.{% endif %}</p>
+<div class="card"><table>
+  <tr><th>Budget</th><th style="text-align:right">Income</th><th style="text-align:right">Expenses</th><th style="text-align:right">Net (before one-time)</th><th></th></tr>
+  {% for c in cards %}
+  <tr>
+    <td><b>{{ c.label }}</b></td>
+    {% if c.kind == 'fixed' %}
+    <td style="text-align:right">&mdash;</td><td style="text-align:right">{{ money(c.totals.onetime) }}</td><td style="text-align:right">&mdash;</td>
+    {% else %}
+    <td style="text-align:right">{{ money(c.totals.income) }}</td><td style="text-align:right">{{ money(c.totals.expenses) }}</td><td style="text-align:right">{{ money(c.totals.net) }}</td>
+    {% endif %}
+    <td><a class="btn secondary" href="{{ url_for('.budget_view', key=c.key) }}">Open</a></td>
+  </tr>
+  {% endfor %}
+</table></div>
+<p class="muted">Net is before the one-time expenses. Those are kept in the last budget and counted once; each training page shows the net after them.</p>
+{% endblock %}
