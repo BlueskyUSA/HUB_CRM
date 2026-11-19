@@ -59,10 +59,14 @@ def register(app, crm, owner_required, get_db):
             page = max(1, int(request.args.get("page") or 1))
         except ValueError:
             page = 1
-        where, args = "", []
+        show_owner = request.args.get("owner") == "1"
+        conds, args = [], []
+        if not show_owner:
+            conds.append("COALESCE(staff_role, '') <> 'Owner'")      # the Owner's own activity is hidden unless asked for
         if q:
-            where = "WHERE staff_name ILIKE ? OR action ILIKE ? OR path ILIKE ? OR result ILIKE ?"
+            conds.append("(staff_name ILIKE ? OR action ILIKE ? OR path ILIKE ? OR result ILIKE ?)")
             args = [f"%{q}%"] * 4
+        where = ("WHERE " + " AND ".join(conds)) if conds else ""
         conn = get_db()
         try:
             _ensure(conn)
@@ -72,4 +76,4 @@ def register(app, crm, owner_required, get_db):
         finally:
             conn.close()
         pages = max(1, (total + PAGE - 1) // PAGE)
-        return render_template("change_history.html", rows=rows, q=q, page=page, pages=pages, total=total)
+        return render_template("change_history.html", rows=rows, q=q, page=page, pages=pages, total=total, show_owner=show_owner)

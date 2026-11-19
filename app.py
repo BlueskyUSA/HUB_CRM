@@ -960,6 +960,15 @@ def staff_list():
     all_areas = _all_areas(conn)
     grants = conn.execute("SELECT staff_id, area_key FROM access_grants").fetchall()
     program_groups = _program_area_groups(conn)
+    last_in, last_active = {}, {}
+    try:
+        for r in conn.execute("""SELECT staff_id, MAX(CASE WHEN action = 'Signed in' THEN at END) AS last_in, MAX(at) AS last_any
+                                 FROM change_log WHERE staff_id IS NOT NULL GROUP BY staff_id""").fetchall():
+            last_in[r["staff_id"]] = r["last_in"]
+            last_active[r["staff_id"]] = r["last_any"]
+    except Exception:
+        try: conn.rollback()
+        except Exception: pass
     conn.close()
     access_by_staff = {}
     granted_keys_by_staff = {}
@@ -985,7 +994,7 @@ def staff_list():
         sid: sorted(((h, sorted(v)) for h, v in d.items()), key=lambda t: (_order.get(t[0], 2), t[0]))
         for sid, d in access_groups_by_staff.items()}
     return render_template(
-        "staff_list.html", staff=rows, can_assign_logins=_has_area_access("assign_logins"), access_by_staff=access_by_staff,
+        "staff_list.html", staff=rows, last_in=last_in, last_active=last_active, can_assign_logins=_has_area_access("assign_logins"), access_by_staff=access_by_staff,
         access_groups_by_staff=access_groups_by_staff,
         all_areas=all_areas, granted_keys_by_staff=granted_keys_by_staff,
         accounting_areas=[a for a in all_areas if a[0] in ACCOUNTING_AREAS],
