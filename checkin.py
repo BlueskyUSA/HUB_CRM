@@ -71,7 +71,7 @@ def register(app, crm, get_db, has_area_access, auto_link, full_name_sql, proces
     def _need(areas):
         if _allowed(areas):
             return None
-        flash("This area is restricted. Ask the Owner to give you Check-in access under Change/Access.")
+        flash("This area is restricted. Ask the Owner to give you Check-in access under HUB Access.")
         return redirect(url_for(".dashboard"))
 
     def _couples(conn, cohort_id):
