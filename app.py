@@ -8271,6 +8271,8 @@ def _ensure_budget_tables():
     try:
         conn.execute("""CREATE TABLE IF NOT EXISTS budgets (
             budget_key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT, updated_by TEXT)""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS budgets_archive (
+            id SERIAL PRIMARY KEY, budget_key TEXT NOT NULL, data TEXT NOT NULL, updated_at TEXT, updated_by TEXT, archived_at TEXT)""")
         conn.execute("""CREATE TABLE IF NOT EXISTS budget_requests (
             id SERIAL PRIMARY KEY, budget_key TEXT NOT NULL, requested_by TEXT, comments TEXT,
             estimate TEXT, status TEXT NOT NULL DEFAULT 'Open', created_at TEXT)""")
@@ -8286,8 +8288,19 @@ def _ensure_budget_tables():
 def _load_budget(conn, key, label, kind):
     row = conn.execute("SELECT data, updated_at, updated_by FROM budgets WHERE budget_key = ?", (key,)).fetchone()
     if row:
-        return budget_model.loads(row["data"], kind), row["updated_at"], row["updated_by"]
-    return budget_model.default_budget(label, kind), None, None
+        data, current = budget_model.parse(row["data"], kind)
+        if data is not None and current:
+            return data, row["updated_at"], row["updated_by"]
+        # saved before the Nov 2026 layout: keep a copy in budgets_archive, then start from the new template
+        try:
+            conn.execute("INSERT INTO budgets_archive (budget_key, data, updated_at, updated_by, archived_at) VALUES (?, ?, ?, ?, ?)",
+                         (key, row["data"], row["updated_at"], row["updated_by"], datetime.now().strftime("%Y-%m-%d %H:%M")))
+            conn.execute("DELETE FROM budgets WHERE budget_key = ?", (key,))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Couldn't archive old budget {key}: {e}", flush=True)
+    return budget_model.default_budget(label, kind, key), None, None
 
 
 def _budget_totals(conn, key, label, kind):
@@ -8330,7 +8343,10 @@ def budget_view(key):
                ORDER BY s.name""").fetchall()
     conn.close()
     rows, totals = budget_model.compute(data)
+    if kind == "training":
+        totals = budget_model.with_onetime(totals, fixed_total)
     return render_template("budget_view.html", key=key, label=label, kind=kind, data=data, rows=rows, totals=totals,
+                           derived=budget_model.derived(data), section_cols=budget_model.SECTION_COLS,
                            sections=budget_model.sections_for(kind), key_vars=budget_model.KEY_VARS,
                            updated_at=updated_at, updated_by=updated_by, is_owner=bool(session.get("is_owner")),
                            change_requests=requests_, fixed_total=fixed_total, recipients=recipients,
@@ -8342,13 +8358,14 @@ def _budget_attachments(key, fmt):
     label, kind = _budget_info(key)
     conn = get_db()
     data, updated_at, _ = _load_budget(conn, key, label, kind)
+    fixed_data = _load_budget(conn, "fixed", "Fixed and one-time expenses", "fixed")[0] if kind == "training" else None
     conn.close()
     base = re.sub(r"[^A-Za-z0-9]+", "_", label).strip("_") + "_Budget"
     out = []
     if fmt in ("xlsx", "both"):
-        out.append((base + ".xlsx", budget_xlsx.build_xlsx(label, kind, data, updated_at)))
+        out.append((base + ".xlsx", budget_xlsx.build_xlsx(label, kind, data, updated_at, fixed_data)))
     if fmt in ("pdf", "both"):
-        out.append((base + ".pdf", budget_pdf.build_pdf(label, kind, data, updated_at)))
+        out.append((base + ".pdf", budget_pdf.build_pdf(label, kind, data, updated_at, fixed_data)))
     return out
 
 

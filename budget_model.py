@@ -1,78 +1,126 @@
 """Training budgets: the structure, defaults and arithmetic.
 
-One budget belongs to one training session (cohort). It is stored as JSON: a few
-"key variables" plus a list of lines, each with a quantity, a unit cost and a number
-of times (nights or days). Quantity / unit cost can also be a link to a shared value:
-"=couples" (number of couples), "=people" (couples x 2 + team members), "=rack" (hotel
-rack rate per room per night). Everything else is arithmetic, so the page and the
-Excel template always agree.
+FORMAT 2 (Nov 2026) follows Kent's reworked Art of Us workbook: key variables (hotel rate with discount, tax and
+card fee; room counts; food rates with banquet service), then Income, Hotel rooms (head count, rooms, room rate,
+nights), Meals (count x rate), Other operating expenses, contingency, NOI and break-even, then the one-time
+expenses and the "after one-time expenses" lines.
+
+One budget belongs to one training. It is stored as JSON: key variables plus a list of lines, each with a quantity,
+a unit cost and a number of times (nights or days). Quantity / unit cost / head count can also be a link to a shared
+value, written "=couples" (number of couples), "=trainees" (couples x 2), "=roomrate" (the room rate after
+discount, tax and card fee), "=team" (all team people), "=team_dance" (team people at the dinner dance),
+"=ta_rooms", "=lunch" "=dinner" "=hors" "=dance" (food rates with banquet service) and so on. Everything else is
+arithmetic, so the page, the Excel file and the PDF always agree.
 """
 import copy
 import json
 import math
 
+FORMAT = 2
+
+# (key, label, default, kind, note)  kind: money2 | pct | int
 KEY_VARS = [
-    ("rack", "Hotel room rate per room per night", 80, "money2",
-     "Kent's expected negotiated rate ($80). Confirm with the hotel's written quote."),
-    ("room_discount", "Negotiated discount off room rate", 0, "pct", "Percent off the rack rate (0% = none)."),
+    ("rack", "Hotel rack rate per room per night", 109, "money2",
+     "PLACEHOLDER: one guest's average Fri-Sun rate here in Oct. 2025 (hotelplanner.com), not the rack rate. Replace with the hotel's quote."),
+    ("room_discount", "Negotiated discount off room rate", 0.20, "pct", "Percent off the rack rate (0% = none)."),
     ("room_tax", "Hotel tax on rooms", 0.13, "pct", "Total taxes of 13% listed for this hotel. Confirm."),
-    ("food_discount", "Negotiated discount off food and beverage", 0, "pct", "Percent off hotel food prices (0% = none)."),
-    ("food_service", "Banquet service charge and tax", 0.25, "pct", "ESTIMATE: hotels commonly add service charge plus tax to food. Confirm."),
-    ("coffee_on", "Include hotel coffee service (1 = yes, 0 = no)", 1, "int", "Set to 0 to drop the coffee and snack service."),
-    ("team_people", "Team members attending (people)", 16, "int", "ESTIMATE: 2 per paid room. Used for meals."),
-    ("card_rate", "Credit card processing rate", 0.029, "pct", "ESTIMATE. Plus the fixed fee per payment on the Processing Fees line."),
-    ("contingency", "Contingency", 0.05, "pct", "Percent of operating expenses held in reserve."),
+    ("room_cc", "Credit card processing fee on the hotel bill", 0.035, "pct", "ESTIMATE. Added to the room rate."),
+    ("fac_people", "Room count: Facilitators (people)", 3, "int", ""),
+    ("ta_people", "Room count: TA's (people, 2 per room)", 10, "int", ""),
+    ("av_people", "Room count: Audio/Visual (people)", 1, "int", ""),
+    ("staff_people", "Room count: Staff (people)", 2, "int", ""),
+    ("lunch_rate", "Lunch rate (per person)", 35, "money2", "Hotel food price before the banquet service charge."),
+    ("lunch_svc", "Lunch banquet service charge", 0.25, "pct", "ESTIMATE: hotels commonly add service charge plus tax to food. Confirm."),
+    ("dinner_rate", "Dinner rate (per person)", 60, "money2", ""),
+    ("dinner_svc", "Dinner banquet service charge", 0.25, "pct", ""),
+    ("hors_rate", "d'oeuvres service (flat)", 200, "money2", ""),
+    ("hors_svc", "d'oeuvres banquet service charge", 0.25, "pct", ""),
+    ("dance_rate", "Dinner/Dance rate (per person)", 75, "money2", ""),
+    ("dance_svc", "Dinner/Dance banquet service charge", 0.25, "pct", ""),
+    ("contingency", "Budget contingency", 0.05, "pct", "Percent of operating expenses held in reserve."),
+]
+
+ART_OF_US_SCHEDULE = [
+    "Friday: 3pm Room Set Up - Chairs, Video/Audio, Training Begins 7pm. (Get permission to hang 3 15' banners on the wall)",
+    "Saturday: 7:00am - TA Breakfast, Training Begins 8:30 am",
+    "Saturday: 12 Noon, 1 Hour Break for Lunch",
+    "Saturday: 5pm, Training Concludes, Set up Dance Floor",
+    "Saturday: 6:00pm, d'oeuvres delivered",
+    "Saturday: 6:30pm, Photos taken",
+    "Saturday: 7pm, Doors open, Dinner begins. Dinner Dance Concludes 10 pm",
+    "Sunday: TA Breakfast 7am",
+    "Sunday: Training Concludes between 1 to 1:30 pm.",
+    "Sunday: Breakdown, Room Leave by 3pm",
 ]
 
 
-def _L(id, section, label, q, u, t, mode, note=""):
-    return {"id": id, "section": section, "label": label, "q": q, "u": u, "t": t, "mode": mode, "note": note}
+def _L(id, section, label, q, u, t, mode, note="", h=None):
+    ln = {"id": id, "section": section, "label": label, "q": q, "u": u, "t": t, "mode": mode, "note": note}
+    if h is not None:
+        ln["h"] = h
+    return ln
 
 
-# modes: plain (q*u*t) | room (rooms: discount + tax) | food (discount + service) | coffee (food x on/off)
-#        fee (processing: q*u*t + card rate x program fees)
+# modes: plain (q*u*t) | room (a line added by hand: q*u*t with discount, tax and card fee on the room rate)
 DEFAULT_LINES = [
-    _L("fee_income", "income", "Program Fee Income", 40, 1299, 1, "plain", "Couples x price per couple ($1,299; one payment covers both partners)"),
+    _L("fee_income", "income", "Total Trainee Couples - Program Fee Income", 40, 1299, 1, "plain",
+       "Couples x price per couple ($1,299; one payment covers both partners)"),
     _L("merch", "income", "Merchandise Sales Income", 0, 0, 1, "plain", "None planned"),
-    _L("donations", "income", "Unrestricted Financial Partnerships / donations", 0, 0, 1, "plain", "None assumed"),
-    _L("rooms", "venue", "Participant hotel rooms", "=couples", "=rack", 2, "room", "One room per couple x 2 nights x rack rate, less discount, plus tax"),
-    _L("meeting", "venue", "Meeting room / convention center", 1, 0, 1, "plain", "Assumed free with the room block; enter a fee if the hotel charges"),
-    _L("dj", "venue", "DJ / music for the dance", 1, 0, 1, "plain", "Removed"),
-    _L("fac_rooms", "team", "Facilitator rooms", 2, "=rack", 2, "room", "2 rooms for facilitators"),
-    _L("ta_rooms", "team", "TA rooms", 5, "=rack", 2, "room", "5 rooms for TAs"),
-    _L("md_room", "team", "Music director room", 1, "=rack", 2, "room", "1 room"),
-    _L("sat_dinner", "meals", "Saturday dinner", "=people", 45, 1, "food", ""),
-    _L("coffee", "meals", "Coffee, tea, water and snacks", "=people", 14, 3, "coffee", "Per person per day x 3 days; switch off in Key variables"),
-    _L("supplies", "other", "Training Supplies & Support", 1, 1500, 1, "plain", "ESTIMATE (name tags, workbooks, printing)"),
+    _L("donations", "income", "Financial Partnerships / donations", 0, 0, 1, "plain", "None assumed"),
+    _L("r_trainees", "rooms", "Trainees", "=couples", "=roomrate", 2, "plain", "One room per couple", h="=trainees"),
+    _L("r_fac", "rooms", "Facilitators", 2, "=roomrate", 2, "plain", "", h="=fac"),
+    _L("r_ta", "rooms", "TA's", "=ta_rooms", "=roomrate", 2, "plain", "", h="=ta"),
+    _L("r_av", "rooms", "Audio/Visual Coordinator", 1, "=roomrate", 2, "plain", "", h="=av"),
+    _L("r_staff", "rooms", "Staff", 1, "=roomrate", 2, "plain", "", h="=staff"),
+    _L("meeting", "rooms", "Meeting rooms / convention center", 0, 0, 1, "plain", "Included with room block"),
+    _L("m_fri", "meals", "5pm Friday TA Dinner 5pm", "=team", "=dinner", 1, "plain",
+       "Two per room - Hotel included...Trainees are assigned rooms - Double Beds required."),
+    _L("m_satb", "meals", "Saturday Breakfast (On your own)", 0, 0, 1, "plain", ""),
+    _L("m_lunch", "meals", "Saturday Team Lunch", "=team", "=lunch", 1, "plain",
+       "Need private meeting room to have lunch & discuss the training"),
+    _L("m_hors", "meals", "Saturday: 6:00pm, d'oeuvres", 1, "=hors", 1, "plain", ""),
+    _L("m_dance", "meals", "Saturday Dinner Dance", "=team_dance", "=dance", 1, "plain",
+       "All three trainings - Need private meeting room to have lunch & discuss the training"),
+    _L("m_sunb", "meals", "Sunday Breakfast (On your own)", 0, 0, 1, "plain", ""),
+    _L("m_water", "meals", "Weekend Water and Snacks", 1, 400, 1, "plain", "Water and Snack Basket provided by Discovery"),
+    _L("photo", "other", "Photographer", 1, 500, 1, "plain", ""),
+    _L("supplies", "other", "Training Supplies & Support", 1, 500, 1, "plain", "ESTIMATE (name tags, workbooks, printing)"),
     _L("marketing", "other", "Marketing & Awareness", 1, 500, 1, "plain", "ESTIMATE"),
-    _L("office", "other", "General Office Support", 1, 400, 1, "plain", "Office supplies, software, postage; ESTIMATE"),
-    _L("uniforms", "other", "Uniforms", 1, 0, 1, "plain", "Not budgeted for the first training"),
-    _L("gifts", "other", "Welcome gifts left in the room for trainees", "=trainees", 5, 1, "plain", "One small gift per trainee, set out before they arrive; $5 each is an ESTIMATE"),
-    _L("processing", "other", "Processing Fees", "=couples", 0.30, 1, "fee", "Fixed fee per payment (one per couple) + card rate x program fees"),
-    _L("file_cabinet", "onetime", "Rolling plastic file cabinet", 1, 60, 1, "plain", "Holds extra handouts, mints, gum, pens and other training supplies; ESTIMATE"),
-    _L("speakers", "onetime", "Speakers (powered)", 2, 400, 1, "plain", "2 speakers; ESTIMATE"),
+    _L("office", "other", "General Office Material", 1, 400, 1, "plain", "Office supplies, software, postage; ESTIMATE"),
+    _L("polos", "other", "Polo Shirts with Logo (TA's Security/Greeters/Registration)", 20, 25, 1, "plain", ""),
+    _L("hub", "onetime", "HUB Operating Expenses", 1, 300, 1, "plain", ""),
+    _L("speakers", "onetime", "Speakers (powered)", 2, 400, 1, "plain", "2 speakers; ESTIMATE, Costco or similar"),
     _L("stands", "onetime", "Speaker stands", 2, 50, 1, "plain", "ESTIMATE"),
     _L("tv", "onetime", "64-inch TV", 1, 500, 1, "plain", "ESTIMATE"),
     _L("tv_stand", "onetime", "Rolling TV stand / platform", 1, 150, 1, "plain", "ESTIMATE"),
-    _L("mics", "onetime", "Trainee microphones", 2, 120, 1, "plain", "2 microphones for trainees; ESTIMATE"),
-    _L("lavs", "onetime", "Lavalier microphones", 3, 150, 1, "plain", "3 lavaliers; ESTIMATE (wireless sets cost more)"),
-    _L("mixer", "onetime", "Audio mixer", 1, 250, 1, "plain", "Connects laptop/iPhone music, microphones and speakers; ESTIMATE"),
-    _L("cables", "onetime", "Cables and adapters (laptop and iPhone)", 1, 100, 1, "plain", "ESTIMATE, include spares"),
+    _L("mics", "onetime", "Trainee microphones", 2, 120, 1, "plain", "Kent: 2 microphones for trainees; ESTIMATE"),
+    _L("lavs", "onetime", "Lavalier microphones", 3, 150, 1, "plain", "Kent: 3 lavaliers; ESTIMATE (wireless sets cost more)"),
+    _L("mixer", "onetime", "Audio mixer", 1, 259, 1, "plain", "https://phenyxpro.com/products/ptl-800"),
+    _L("uhf", "onetime", "UHF Wireless Microphone System", 1, 597.99, 1, "plain", "https://phenyxpro.com/products/ptu-6000-8b?variant=45963282743533"),
+    _L("mixer_cabinet", "onetime", "Audio mixer rolling cabinet", 1, 319.99, 1, "plain", "https://www.amazon.com/dp/B00BQ91THC"),
+    _L("amp", "onetime", "Amplifier", 1, 300, 1, "plain", "https://www.amazon.com/dp/B0099XRF0W/ref=emc_bcc_2_i"),
+    _L("cables", "onetime", "Cables and adapters, Misc", 1, 600, 1, "plain", "ESTIMATE, include spares"),
     _L("banners", "onetime", "Printed banners (about 20 ft each)", 3, 250, 1, "plain",
-       "Banner 1: \"You can't change or heal what you don't acknowledge.\" Banner 2: \"Take Care of Yourself So That You Can Take Care of Others.\" Banner 3: text to be decided"),
-    _L("insurance", "onetime", "General Liability Insurance (annual premium)", 1, 1825, 1, "plain",
-       "PLACEHOLDER: Austin paid $1,825 for 2025. Replace with a written quote. Paid once a year."),
-    _L("npo", "onetime", "501(c)(3) setup (legal and filing)", 1, 3000, 1, "plain", "$3,000 one-time to set up the nonprofit"),
+       "Banner 1: \"You can't change or heal what you don't acknowledge.\" Banners 2 and 3: text to be decided; get a printer quote"),
+    _L("insurance", "onetime", "General Liability Insurance (annual premium)", 1, 1850, 1, "plain",
+       "PLACEHOLDER: Austin paid $1,825 for 2025. Replace with a written quote. Paid once a year, so it is shown here as one-time."),
+    _L("npo", "onetime", "501(c)(3) Formation (legal and filing)", 1, 4500, 1, "plain",
+       "ESTIMATE: attorney about $3,500 plus the $25 state and $600 IRS filing fees (about $4,125); see the nonprofit packet"),
 ]
 
 SECTIONS = [
     ("income", "Income"),
-    ("venue", "Venue"),
-    ("team", "Team hotel rooms (paid by the program)"),
+    ("rooms", "Hotel rooms"),
     ("meals", "Meals"),
     ("other", "Other operating expenses"),
-    ("onetime", "Fixed and one-time expenses (equipment, banners, insurance, nonprofit setup)"),
+    ("onetime", "One-time expenses (equipment, banners, insurance, nonprofit setup)"),
 ]
+
+# column headings that differ by section: (head count, quantity, unit cost, times)
+SECTION_COLS = {
+    "rooms": ("Head count", "Rooms", "Room rate", "Nights"),
+    "meals": (None, "Count", "Rate", "Times"),
+}
 
 
 DONATION_LINES = [
@@ -85,9 +133,9 @@ DONATION_LINES = [
 
 
 def _lines_for(kind):
+    """'training' = everything except one-time expenses; 'fixed' = only the one-time / fixed expenses."""
     if kind == "donations":
         return [copy.deepcopy(ln) for ln in DONATION_LINES]
-    """'training' = everything except one-time expenses; 'fixed' = only the one-time / fixed expenses."""
     if kind == "fixed":
         return [copy.deepcopy(ln) for ln in DEFAULT_LINES if ln["section"] == "onetime"]
     return [copy.deepcopy(ln) for ln in DEFAULT_LINES if ln["section"] != "onetime"]
@@ -99,20 +147,44 @@ def sections_for(kind):
     return [x for x in SECTIONS if (x[0] == "onetime") == (kind == "fixed")]
 
 
-def default_budget(title="", kind="training"):
-    return {"title": title, "vars": {k: v for k, _, v, _, _ in KEY_VARS}, "lines": _lines_for(kind)}
+def default_budget(title="", kind="training", key=None):
+    data = {"format": FORMAT, "title": title, "vars": {k: v for k, _, v, _, _ in KEY_VARS},
+            "lines": _lines_for(kind), "dates": "", "hotel": "", "schedule": []}
+    if kind == "training" and key == "prog_D4":
+        data["dates"] = "February 12–14, 2027"
+        data["hotel"] = "Four Points by Sheraton Dallas Fort Worth Airport North."
+        data["schedule"] = list(ART_OF_US_SCHEDULE)
+    return data
 
 
-def loads(text, kind="training"):
+def parse(text, kind="training"):
+    """Stored JSON -> (data, is_current). Budgets saved before format 2 come back as is_current False so the
+    caller can archive them and start from the new template (donation budgets simply carry over)."""
     try:
         data = json.loads(text)
-        data.setdefault("vars", {})
-        for k, _, v, _, _ in KEY_VARS:
-            data["vars"].setdefault(k, v)
-        data.setdefault("lines", _lines_for(kind))
-        return data
+        if not isinstance(data, dict) or "lines" not in data:
+            return None, False
     except (TypeError, ValueError):
-        return default_budget(kind=kind)
+        return None, False
+    if kind == "donations":
+        data["format"] = FORMAT
+        is_current = True
+    else:
+        is_current = data.get("format") == FORMAT
+    data.setdefault("vars", {})
+    for k, _, v, _, _ in KEY_VARS:
+        data["vars"].setdefault(k, v)
+    data.setdefault("dates", "")
+    data.setdefault("hotel", "")
+    data.setdefault("schedule", [])
+    return data, is_current
+
+
+def loads(text, kind="training", key=None):
+    data, ok = parse(text, kind)
+    if data is None or not ok:
+        return default_budget(kind=kind, key=key)
+    return data
 
 
 def _num(x, default=0.0):
@@ -122,62 +194,87 @@ def _num(x, default=0.0):
         return default
 
 
-def compute(data):
-    """Returns (rows, totals). rows keep the input order and gain 'amount', 'qv', 'uv' (resolved quantity / unit)."""
+def derived(data):
+    """Calculated values shown beside the key variables (not typed in)."""
     v = {k: _num(data["vars"].get(k)) for k, *_ in KEY_VARS}
+    after_discount = v["rack"] * (1 - v["room_discount"])
+    with_tax = after_discount * (1 + v["room_tax"])
+    roomrate = with_tax * (1 + v["room_cc"])
+    team = v["fac_people"] + v["ta_people"] + v["av_people"] + v["staff_people"]
+    return {
+        "after_discount": after_discount, "with_tax": with_tax, "roomrate": roomrate,
+        "team": team, "team_dance": v["fac_people"] + v["ta_people"] + v["av_people"],
+        "ta_rooms": v["ta_people"] / 2.0,
+        "lunch": v["lunch_rate"] * (1 + v["lunch_svc"]), "dinner": v["dinner_rate"] * (1 + v["dinner_svc"]),
+        "hors": v["hors_rate"] * (1 + v["hors_svc"]), "dance": v["dance_rate"] * (1 + v["dance_svc"]),
+    }
+
+
+def compute(data):
+    """Returns (rows, totals). rows keep the input order and gain 'amount', 'qv', 'uv', 'tv', 'hv' (resolved values)."""
+    v = {k: _num(data["vars"].get(k)) for k, *_ in KEY_VARS}
+    d = derived(data)
     lines = data["lines"]
     by_id = {ln["id"]: ln for ln in lines}
     couples = _num(by_id.get("fee_income", {}).get("q"), 0)
-    people = 2 * couples + v["team_people"]
-    links = {"=couples": couples, "=trainees": 2 * couples, "=people": people, "=rack": v["rack"]}
+    links = {"=couples": couples, "=trainees": 2 * couples, "=roomrate": d["roomrate"], "=rack": v["rack"],
+             "=team": d["team"], "=team_dance": d["team_dance"], "=ta_rooms": d["ta_rooms"],
+             "=lunch": d["lunch"], "=dinner": d["dinner"], "=hors": d["hors"], "=dance": d["dance"],
+             "=fac": v["fac_people"], "=ta": v["ta_people"], "=av": v["av_people"], "=staff": v["staff_people"]}
 
     def resolve(x):
         return links[x] if isinstance(x, str) and x in links else _num(x)
 
-    room_f = (1 - v["room_discount"]) * (1 + v["room_tax"])
-    food_f = (1 - v["food_discount"]) * (1 + v["food_service"])
+    room_f = (1 - v["room_discount"]) * (1 + v["room_tax"]) * (1 + v["room_cc"])
     rows = []
-    fee_income = 0.0
     for ln in lines:
         q, u, t = resolve(ln["q"]), resolve(ln["u"]), _num(ln["t"], 1)
-        base = q * u * t
-        mode = ln.get("mode", "plain")
-        if mode == "room":
-            amt = base * room_f
-        elif mode == "food":
-            amt = base * food_f
-        elif mode == "coffee":
-            amt = base * v["coffee_on"] * food_f
-        else:
-            amt = base
-        if ln["id"] == "fee_income":
-            fee_income = amt
-        rows.append(dict(ln, qv=q, uv=u, tv=t, amount=amt))
-    for r in rows:
-        if r["mode"] == "fee":
-            r["amount"] += fee_income * v["card_rate"]
+        amt = q * u * t
+        if ln.get("mode") == "room":
+            amt *= room_f
+        h = resolve(ln["h"]) if "h" in ln else None
+        rows.append(dict(ln, qv=q, uv=u, tv=t, amount=amt, hv=h))
     tot = {}
     for sec, _ in SECTIONS:
         tot[sec] = sum(r["amount"] for r in rows if r["section"] == sec)
-    operating = tot["venue"] + tot["team"] + tot["meals"] + tot["other"]
+    operating = tot["rooms"] + tot["meals"] + tot["other"]
     contingency = operating * v["contingency"]
-    expenses = operating + contingency + tot["onetime"]
+    expenses = operating + contingency
     net = tot["income"] - expenses
+    price = _num(by_id.get("fee_income", {}).get("u"))
     couples_n = couples or 1
-    price_net = _num(by_id.get("fee_income", {}).get("u")) * (1 - v["card_rate"])
+    room_lines = [r for r in rows if r["section"] == "rooms" and r["hv"] is not None]
     totals = dict(tot, operating=operating, contingency=contingency, expenses=expenses, net=net,
-                  net_before_onetime=net + tot["onetime"], per_couple_expense=expenses / couples_n,
-                  per_couple_net=net / couples_n,
-                  breakeven=(math.ceil(expenses / price_net) if price_net > 0 else None), couples=couples, people=people)
+                  net_before_onetime=net, per_couple_expense=expenses / couples_n, per_couple_net=net / couples_n,
+                  breakeven=(math.ceil(expenses / price) if price > 0 else None), couples=couples,
+                  people=2 * couples + d["team"], room_count=sum(r["qv"] for r in room_lines),
+                  head_count=sum(r["hv"] for r in room_lines), price=price, derived=d)
     return rows, totals
 
 
+def with_onetime(totals, onetime):
+    """Adds the 'after one-time expenses' lines (Kent's Total Operating & One Time Expenses, Net Operating Income and
+    the break-even that covers everything). `onetime` is the total of the shared one-time budget."""
+    t = dict(totals)
+    t["onetime_total"] = onetime
+    t["all_expenses"] = totals["expenses"] + onetime
+    t["net_after_onetime"] = totals["income"] - t["all_expenses"]
+    t["breakeven_all"] = math.ceil(t["all_expenses"] / totals["price"]) if totals.get("price", 0) > 0 else None
+    return t
+
+
 def apply_form(data, form):
-    """Updates key variables and the editable numbers of each line from a posted form. Linked values stay linked."""
+    """Updates key variables, the heading text and the editable numbers of each line from a posted form."""
     for k, _lbl, _d, kind, _n in KEY_VARS:
         if f"var_{k}" in form:
             val = _num(form.get(f"var_{k}"), data["vars"].get(k, 0) * (100 if kind == "pct" else 1))
             data["vars"][k] = val / 100 if kind == "pct" else val
+    if "dates" in form:
+        data["dates"] = (form.get("dates") or "").strip()[:120]
+    if "hotel" in form:
+        data["hotel"] = (form.get("hotel") or "").strip()[:200]
+    if "schedule" in form:
+        data["schedule"] = [s.strip()[:300] for s in (form.get("schedule") or "").splitlines() if s.strip()][:40]
     for ln in data["lines"]:
         for field in ("q", "u", "t"):
             key = f"{field}_{ln['id']}"
@@ -194,12 +291,11 @@ def apply_form(data, form):
         if not label:
             continue
         mode = form.get(f"new_mode_{sec}")
-        if mode not in ("plain", "room", "food"):
+        if mode not in ("plain", "room"):
             mode = "plain"
         new = _L("x" + _secrets.token_hex(4), sec, label, _num(form.get(f"new_q_{sec}"), 1),
                  _num(form.get(f"new_u_{sec}"), 0), _num(form.get(f"new_t_{sec}"), 1), mode,
                  (form.get(f"new_note_{sec}") or "")[:300])
-        # insert after the last line of that section
         idx = max([i for i, ln in enumerate(data["lines"]) if ln["section"] == sec], default=len(data["lines"]) - 1)
         data["lines"].insert(idx + 1, new)
     return data
