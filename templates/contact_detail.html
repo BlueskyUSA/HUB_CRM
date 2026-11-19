@@ -144,7 +144,7 @@
       b.disabled = (!cur && !v);
       if (!cur && !v){ b.textContent='Create login & get link'; n.style.display='none'; return; }
       if (v===cur){ b.textContent='Save'; n.style.display='none'; return; }
-      if (!v){ b.textContent='Remove login'; n.textContent='NOT DONE YET. Press "Remove login" to take '+name+' out of the Hub and Change/Access (they stay a contact).'; }
+      if (!v){ b.textContent='Remove login'; n.textContent='NOT DONE YET. Press "Remove login" to take '+name+' out of the Hub and HUB Access (they stay a contact).'; }
       else if (!cur){ var pc=document.getElementById('hubPersonal'); if (pc && pc.checked){ b.textContent='Create login & get link'; n.textContent='NOT DONE YET. Press "Create login & get link". Nothing is emailed; you get a one-time link to send to '+name+' yourself.'; } else { b.textContent='Send login by email'; n.textContent='NOT DONE YET. Press "Send login by email" to email '+name+' a login link and a temporary password.'; } }
       else { b.textContent='Change login'; n.textContent='NOT DONE YET. Press "Change login" to switch '+name+' to '+s.options[s.selectedIndex].text+' (no email is sent).'; }
       n.style.display='block';
@@ -155,7 +155,7 @@
     No login: a contact only. They get letters and invitations but can't open the Hub.<br>
     Volunteer Team: views and updates contacts and session information.
     {% if session.is_owner %}<br>Leadership: helps run the Hub day to day.<br>Accounting &amp; Legal: view-only access to the areas you choose.{% endif %}{% if session.is_owner and not session.is_admin %}<br>Administrator: can run everything when you are away, except making or removing Owners.{% endif %}<br>
-    <strong>Nothing changes until you press the button.</strong> Pick a login type, then press <b>Create login &amp; get link</b>: you get a one-time link to send them yourself, and they choose their own password. Untick the box if you would rather the Hub email them a login link and a temporary password. Choosing <strong>No login</strong> removes their Hub login and clears their Change/Access; they stay a contact. Fine-tune their areas under Change/Access.
+    <strong>Nothing changes until you press the button.</strong> Pick a login type, then press <b>Create login &amp; get link</b>: you get a one-time link to send them yourself, and they choose their own password. Untick the box if you would rather the Hub email them a login link and a temporary password. Choosing <strong>No login</strong> removes their Hub login and clears their HUB Access; they stay a contact. Fine-tune their areas under HUB Access.
   </p>
   {% endif %}
 </div>

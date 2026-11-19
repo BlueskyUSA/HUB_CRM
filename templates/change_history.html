@@ -1,20 +1,43 @@
 {% extends "crm_base.html" %}
-{% block title %}Change History — {{ program_name }} ERP{% endblock %}
+{% block title %}Change/Access — {{ program_name }} ERP{% endblock %}
 {% block content %}
-<h1>Change History</h1>
-<p class="muted">Who did what in the Hub, newest first. Every save, add, remove, import and sign-in is recorded automatically. What was typed into a form is <b>not</b> copied here, so no passwords or private details appear. The "What the Hub said" column is the message the person saw afterward, so a save that was refused shows that message. Visible to the Owner and Administrators.</p>
-<form method="get" class="card" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap">
-  <div class="field"><label>Find a person or action</label><input name="q" value="{{ q }}" placeholder="e.g. Max, login removed, import" size="32"></div>
-  <button class="btn" type="submit">Search</button>{% if q %}<a class="btn secondary" href="{{ url_for('.change_history', owner=('1' if show_owner else None), who=(who or None)) }}">Clear</a>{% endif %}
-  <label style="display:flex; align-items:center; gap:6px; margin:0">{% if who %}<input type="hidden" name="who" value="{{ who }}">{% endif %}<input type="checkbox" name="owner" value="1" {{ 'checked' if show_owner }} onchange="this.form.submit()"> Include Owner activity</label>
-  <span class="muted">{{ total }} entr{{ 'y' if total == 1 else 'ies' }}{% if not show_owner %} (Owner activity hidden){% endif %}</span>
-</form>
+<h1>Change/Access</h1>
+<p class="muted">Who did what in the Hub. Click a person's name to see what they have been doing, newest first. Every save, add, remove, import and sign-in is recorded automatically. What was typed into a form is <b>not</b> copied here, so no passwords or private details appear. Visible to the Owner and Administrators.</p>
+
 <div class="card">
-{% if rows %}
-<table class="stack"><tr><th>When</th><th>Who</th><th>Action</th><th>What the Hub said</th><th>Page</th></tr>
-{% for r in rows %}<tr><td data-label="When">{{ r.at }}</td><td data-label="Who">{{ r.staff_name }} <span class="muted">({{ r.staff_role }})</span></td><td data-label="Action">{{ r.action }}</td><td data-label="What the Hub said">{{ r.result }}</td><td data-label="Page" class="muted">{{ r.path }}</td></tr>{% endfor %}
-</table>
-{% if pages > 1 %}<p>{% if page > 1 %}<a href="{{ url_for('.change_history', q=q, page=page-1, owner=('1' if show_owner else None), who=(who or None)) }}">&larr; Newer</a>{% endif %} Page {{ page }} of {{ pages }} {% if page < pages %}<a href="{{ url_for('.change_history', q=q, page=page+1, owner=('1' if show_owner else None), who=(who or None)) }}">Older &rarr;</a>{% endif %}</p>{% endif %}
-{% else %}<p class="muted">Nothing recorded yet. Entries start from the moment this update goes live.</p>{% endif %}
+  {% for p in people %}
+  <details style="border-bottom:1px solid #ddd; padding:8px 2px" {{ 'open' if who_id == p.id }}>
+    <summary style="cursor:pointer; font-size:1.02rem">
+      <strong>{{ p.name }}</strong> <span class="muted">({{ p.role }}{% if not p.active %}, no longer active{% endif %})</span>
+      <span class="muted" style="font-size:.88rem"> &middot; {{ p.n }} action{{ '' if p.n == 1 else 's' }}{% if p.last_in %} &middot; last signed in {{ p.last_in[:10] }}{% endif %}{% if p.last_at %} &middot; last activity {{ p.last_at[:10] }}{% endif %}</span>
+    </summary>
+    {% if p.acts %}
+    <table class="stack" style="margin-top:8px"><tr><th>When</th><th>Action</th><th>What the Hub said</th><th>Page</th></tr>
+      {% for a in p.acts %}<tr><td data-label="When">{{ a.at }}</td><td data-label="Action">{{ a.action }}</td><td data-label="What the Hub said">{{ a.result }}</td><td data-label="Page" class="muted">{{ a.path }}</td></tr>{% endfor %}
+    </table>
+    {% if p.n > p.acts|length %}<p style="margin:6px 0 0"><a href="{{ url_for('.change_history', who=p.id) }}">Show more of {{ p.name }}'s activity ({{ p.n }} in all) &rarr;</a></p>{% endif %}
+    {% else %}
+    <p class="muted" style="margin:8px 0 0">No activity recorded yet.</p>
+    {% endif %}
+  </details>
+  {% else %}
+  <p class="muted">Nothing recorded yet.</p>
+  {% endfor %}
 </div>
+
+<details class="card" style="margin-top:14px" {{ 'open' if q or page > 1 or show_owner }}>
+  <summary style="cursor:pointer; font-weight:700">Everyone together, newest first &#9662;</summary>
+  <form method="get" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-top:10px">
+    <div class="field"><label>Find a person or action</label><input name="q" value="{{ q }}" placeholder="e.g. Max, login removed, import" size="32"></div>
+    <button class="btn" type="submit">Search</button>{% if q %}<a class="btn secondary" href="{{ url_for('.change_history', owner=('1' if show_owner else None)) }}">Clear</a>{% endif %}
+    <label style="display:flex; align-items:center; gap:6px; margin:0"><input type="checkbox" name="owner" value="1" {{ 'checked' if show_owner }} onchange="this.form.submit()"> Include Owner activity</label>
+    <span class="muted">{{ total }} entr{{ 'y' if total == 1 else 'ies' }}{% if not show_owner %} (Owner activity hidden){% endif %}</span>
+  </form>
+  {% if rows %}
+  <table class="stack" style="margin-top:10px"><tr><th>When</th><th>Who</th><th>Action</th><th>What the Hub said</th><th>Page</th></tr>
+  {% for r in rows %}<tr><td data-label="When">{{ r.at }}</td><td data-label="Who">{{ r.staff_name }} <span class="muted">({{ r.staff_role }})</span></td><td data-label="Action">{{ r.action }}</td><td data-label="What the Hub said">{{ r.result }}</td><td data-label="Page" class="muted">{{ r.path }}</td></tr>{% endfor %}
+  </table>
+  {% if pages > 1 %}<p>{% if page > 1 %}<a href="{{ url_for('.change_history', q=q, page=page-1, owner=('1' if show_owner else None)) }}">&larr; Newer</a>{% endif %} Page {{ page }} of {{ pages }} {% if page < pages %}<a href="{{ url_for('.change_history', q=q, page=page+1, owner=('1' if show_owner else None)) }}">Older &rarr;</a>{% endif %}</p>{% endif %}
+  {% else %}<p class="muted">Nothing recorded yet.</p>{% endif %}
+</details>
 {% endblock %}
