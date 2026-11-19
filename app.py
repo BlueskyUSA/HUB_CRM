@@ -437,6 +437,7 @@ FIXED_ACCESS_AREAS = [
     ("correspondence", "Correspondence"),
     ("guides", "Guides (choose and change who the Guides are)"),
     ("hub_access", "HUB Access page (see who has Hub access and their roles)"),
+    ("change_history", "Change/Access History (see what each person has done in the Hub)"),
     ("contacts", "Contacts"),
     ("donations", "Donations"),
     ("contracts", "Contracts & business plan"),
@@ -451,8 +452,8 @@ FIXED_ACCESS_AREAS = [
 # live under Contacts. These two (and the Contacts that comes with them) have no 4-person limit.
 SESSION_VIEW_AREAS = ("session_team", "trainee_roster")
 # "Grant full access" does not include these; only the Owner switches them on, person by person.
-FULL_ACCESS_EXCLUDED_AREAS = ("accounting", "donations", "contracts", "marketing", "correspondence", "guides", "budgets", "hub_access")
-UNCAPPED_AREAS = set(SESSION_VIEW_AREAS) | {"correspondence", "guides", "budgets", "hub_access", "alerts", "assign_logins", "checkin"}
+FULL_ACCESS_EXCLUDED_AREAS = ("accounting", "donations", "contracts", "marketing", "correspondence", "guides", "budgets", "hub_access", "change_history")
+UNCAPPED_AREAS = set(SESSION_VIEW_AREAS) | {"correspondence", "guides", "budgets", "hub_access", "change_history", "alerts", "assign_logins", "checkin"}
 
 
 def _can_see_session_part(part):
@@ -935,17 +936,22 @@ def change_password():
     return render_template("change_password.html")
 
 
-def _can_see_hub_access():
-    """The real Owner always; anyone else only if the Owner ticked 'HUB Access page' for them."""
+def _can_see_special(area_key):
+    """The real Owner always; anyone else only if the Owner ticked that box for them (Administrators included)."""
     if session.get("is_owner") and not session.get("is_admin"):
         return True
     if not session.get("staff_id"):
         return False
     conn = get_db()
-    row = conn.execute("SELECT 1 FROM access_grants WHERE area_key = 'hub_access' AND staff_id = ?",
-                       (session.get("staff_id"),)).fetchone()
+    row = conn.execute("SELECT 1 FROM access_grants WHERE area_key = ? AND staff_id = ?",
+                       (area_key, session.get("staff_id"))).fetchone()
     conn.close()
     return bool(row)
+
+
+def _can_see_hub_access():
+    """The real Owner always; anyone else only if the Owner ticked 'HUB Access page' for them."""
+    return _can_see_special("hub_access")
 
 
 @crm.route("/staff")
@@ -1002,7 +1008,8 @@ def staff_list():
                          ("contracts", "Legal (Contracts & business plan)"), ("marketing", "Marketing"),
                          ("correspondence", "Correspondence"),
                          ("guides", "Guides (choose and change who the Guides are)"),
-                         ("hub_access", "HUB Access page (see who has Hub access and their roles)")],
+                         ("hub_access", "HUB Access page (see who has Hub access and their roles)"),
+                         ("change_history", "Change/Access History (see what each person has done in the Hub)")],
         general_areas=[a for a in all_areas if a[0] not in FULL_ACCESS_EXCLUDED_AREAS],
         fixed_areas=FIXED_ACCESS_AREAS, program_groups=program_groups,
         door_staff_ids={g["staff_id"] for g in grants if g["area_key"] == ACCOUNTING_LOGIN_GRANT},
@@ -8451,7 +8458,7 @@ def inject_area_access():
     if not session.get("staff_id"):
         return {"has_contacts_access": False, "has_program_access": False, "has_donations_access": False,
                 "has_contracts_access": False, "has_accounting_access": False,
-                "has_correspondence_access": False, "has_budgets_access": False, "has_hub_access_view": False, "has_checkin_access": False, "nav_sessions": [], "nav_programs": []}
+                "has_correspondence_access": False, "has_budgets_access": False, "has_hub_access_view": False, "has_change_history_view": False, "has_checkin_access": False, "nav_sessions": [], "nav_programs": []}
     return {
         "has_contacts_access": _has_area_access("contacts"),
         "has_program_access": _has_any_program_access(),
@@ -8461,6 +8468,7 @@ def inject_area_access():
         "has_correspondence_access": _has_area_access("correspondence"),
         "has_budgets_access": _has_area_access("budgets"),
         "has_hub_access_view": _can_see_hub_access(),
+        "has_change_history_view": _can_see_special("change_history"),
         "has_checkin_access": _has_area_access("checkin") or _has_area_access("trainee_roster") or _has_area_access("session_team"),
         "nav_sessions": _nav_sessions(),
         "nav_programs": _nav_programs(),
