@@ -61,9 +61,9 @@ def register(app, crm, owner_required, get_db):
             page = 1
         show_owner = request.args.get("owner") == "1"
         conds, args = [], []
-        if not show_owner:
-            conds.append("COALESCE(staff_role, '') <> 'Owner'")      # the Owner's own activity is hidden unless asked for
         who = request.args.get("who")
+        if not show_owner and not (who and who.isdigit()):
+            conds.append("COALESCE(staff_role, '') <> 'Owner'")      # the Owner's own activity is hidden unless asked for
         if who and who.isdigit():
             conds.append("staff_id = ?"); args.append(int(who))
         if q:
