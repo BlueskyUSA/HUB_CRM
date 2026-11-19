@@ -63,9 +63,12 @@ def register(app, crm, owner_required, get_db):
         conds, args = [], []
         if not show_owner:
             conds.append("COALESCE(staff_role, '') <> 'Owner'")      # the Owner's own activity is hidden unless asked for
+        who = request.args.get("who")
+        if who and who.isdigit():
+            conds.append("staff_id = ?"); args.append(int(who))
         if q:
             conds.append("(staff_name ILIKE ? OR action ILIKE ? OR path ILIKE ? OR result ILIKE ?)")
-            args = [f"%{q}%"] * 4
+            args += [f"%{q}%"] * 4
         where = ("WHERE " + " AND ".join(conds)) if conds else ""
         conn = get_db()
         try:
@@ -76,4 +79,4 @@ def register(app, crm, owner_required, get_db):
         finally:
             conn.close()
         pages = max(1, (total + PAGE - 1) // PAGE)
-        return render_template("change_history.html", rows=rows, q=q, page=page, pages=pages, total=total, show_owner=show_owner)
+        return render_template("change_history.html", rows=rows, q=q, page=page, pages=pages, total=total, show_owner=show_owner, who=who or "")
