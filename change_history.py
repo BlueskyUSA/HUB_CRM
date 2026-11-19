@@ -52,6 +52,53 @@ def register(app, crm, owner_required, get_db):
             print(f"Change history could not be recorded: {e}", flush=True)
         return resp
 
+    @crm.after_request
+    def _record_visit(resp):
+        """Note that a signed-in person is looking around the Hub, even if they save nothing.
+        A 'Visited the Hub' entry is added when they come back after 30+ minutes away; last-seen is refreshed at most every 5 minutes."""
+        try:
+            ep = request.endpoint or ""
+            if (request.method != "GET" or ep.startswith(SKIP_PREFIXES) or ep in LOGIN_ENDPOINTS or not session.get("staff_id")
+                    or resp.status_code != 200 or "text/html" not in (resp.content_type or "")):
+                return resp
+            now = datetime.now()
+            last = session.get("seen_log_at")
+            if last:
+                try:
+                    if (now - datetime.fromisoformat(last)).total_seconds() < 300:
+                        return resp
+                except ValueError:
+                    pass
+            stamp = now.strftime("%Y-%m-%d %H:%M:%S")
+            conn = get_db()
+            try:
+                _ensure(conn)
+                conn.execute("CREATE TABLE IF NOT EXISTS staff_seen (staff_id INTEGER PRIMARY KEY, last_seen TEXT)")
+                row = conn.execute("SELECT last_seen FROM staff_seen WHERE staff_id = ?", (session.get("staff_id"),)).fetchone()
+                gap_long = True
+                if row and row["last_seen"]:
+                    try:
+                        gap_long = (now - datetime.strptime(row["last_seen"], "%Y-%m-%d %H:%M:%S")).total_seconds() > 1800
+                    except ValueError:
+                        gap_long = True
+                if row:
+                    conn.execute("UPDATE staff_seen SET last_seen = ? WHERE staff_id = ?", (stamp, session.get("staff_id")))
+                else:
+                    conn.execute("INSERT INTO staff_seen (staff_id, last_seen) VALUES (?, ?)", (session.get("staff_id"), stamp))
+                if gap_long:
+                    conn.execute("""INSERT INTO change_log (at, staff_id, staff_name, staff_role, action, path, result)
+                                    VALUES (?,?,?,?,?,?,?)""",
+                                 (stamp, session.get("staff_id"), session.get("staff_name"),
+                                  "Administrator" if session.get("is_admin") else ("Owner" if session.get("is_owner") else session.get("staff_role")),
+                                  "Visited the Hub", request.path[:200], "Looking around (no change made)"))
+                conn.commit()
+            finally:
+                conn.close()
+            session["seen_log_at"] = now.isoformat()
+        except Exception as e:     # keeping a record must never break the page
+            print(f"Visit could not be recorded: {e}", flush=True)
+        return resp
+
     @crm.route("/change-history")
     @owner_required
     def change_history():
@@ -82,6 +129,12 @@ def register(app, crm, owner_required, get_db):
                 """SELECT staff_id, MAX(id) AS mid, COUNT(*) AS n, MAX(at) AS last_at,
                           MAX(CASE WHEN action = 'Signed in' THEN at END) AS last_in
                    FROM change_log WHERE staff_id IS NOT NULL GROUP BY staff_id""").fetchall()}
+            try:
+                seen = {r["staff_id"]: r["last_seen"] for r in conn.execute("SELECT staff_id, last_seen FROM staff_seen").fetchall()}
+            except Exception:
+                try: conn.rollback()
+                except Exception: pass
+                seen = {}
             people = []
             for sid in set(staff) | set(stats):
                 st, sx = staff.get(sid), stats.get(sid)
@@ -99,7 +152,7 @@ def register(app, crm, owner_required, get_db):
                 acts = conn.execute("SELECT at, action, path, result FROM change_log WHERE staff_id = ? ORDER BY id DESC LIMIT ?",
                                     (sid, cap)).fetchall() if n else []
                 people.append(dict(id=sid, name=name, role=role, active=active, n=n,
-                                   last_at=(sx["last_at"] if sx else ""), last_in=(sx["last_in"] if sx else ""), acts=acts))
+                                   last_at=(sx["last_at"] if sx else ""), last_in=(sx["last_in"] if sx else ""), seen=seen.get(sid, ""), acts=acts))
             people.sort(key=lambda p: p["name"].lower())
             people.sort(key=lambda p: p["last_at"] or "", reverse=True)
             people.sort(key=lambda p: p["n"] == 0)      # people with no activity go last (stable)
