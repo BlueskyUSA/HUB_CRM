@@ -2,22 +2,32 @@
 {% block title %}Change/Access History — {{ program_name }} ERP{% endblock %}
 {% block content %}
 <h1>Change/Access History</h1>
-<p class="muted">Who did what in the Hub. Click a person's name to see what they have been doing, newest first. Every save, add, remove, import and sign-in is recorded automatically. What was typed into a form is <b>not</b> copied here, so no passwords or private details appear. Visible to the Owner and Administrators.</p>
+<p class="muted">Who did what in the Hub. Times are Central. Click a person's name to see what they have been doing, newest first. Every save, add, remove, import and sign-in is recorded automatically. What was typed into a form is <b>not</b> copied here, so no passwords or private details appear. Visible to the Owner, and to anyone the Owner has chosen.</p>
 
 <div class="card">
   {% for p in people %}
   <details style="border-bottom:1px solid #ddd; padding:8px 2px" {{ 'open' if who_id == p.id }}>
     <summary style="cursor:pointer; font-size:1.02rem">
       <strong>{{ p.name }}</strong> <span class="muted">({{ p.role }}{% if not p.active %}, no longer active{% endif %})</span>
-      <span class="muted" style="font-size:.88rem"> &middot; {{ p.n }} action{{ '' if p.n == 1 else 's' }}{% if p.last_in %} &middot; last signed in {{ p.last_in[:10] }}{% endif %}{% if p.last_at %} &middot; last activity {{ p.last_at[:10] }}{% endif %}{% if p.seen %} &middot; last seen {{ p.seen[:16] }}{% endif %}</span>
+      <span class="muted" style="font-size:.88rem"> &middot; {{ p.n }} action{{ '' if p.n == 1 else 's' }}{% if p.n == 0 and p.earlier %} (earlier signs inside){% endif %}{% if p.last_in %} &middot; last signed in {{ p.last_in[:10] }}{% endif %}{% if p.last_at %} &middot; last activity {{ p.last_at[:10] }}{% endif %}{% if p.seen %} &middot; last seen {{ p.seen[:16] }}{% endif %}</span>
     </summary>
-    {% if p.acts %}
-    <table class="stack" style="margin-top:8px"><tr><th>When</th><th>Action</th><th>What the Hub said</th><th>Page</th></tr>
-      {% for a in p.acts %}<tr><td data-label="When">{{ a.at }}</td><td data-label="Action">{{ a.action }}</td><td data-label="What the Hub said">{{ a.result }}</td><td data-label="Page" class="muted">{{ a.path }}</td></tr>{% endfor %}
-    </table>
-    {% if p.n > p.acts|length %}<p style="margin:6px 0 0"><a href="{{ url_for('.change_history', who=p.id) }}">Show more of {{ p.name }}'s activity ({{ p.n }} in all) &rarr;</a></p>{% endif %}
+    {% if p.days %}
+    {% for d in p.days %}
+    <details style="margin:6px 0 0 14px; border-left:3px solid #d9d4c4; padding-left:10px" {{ 'open' if loop.first }}>
+      <summary style="cursor:pointer"><strong>{{ d.label }}</strong> <span class="muted" style="font-size:.88rem">&middot; {{ d.entries|length }} action{{ '' if d.entries|length == 1 else 's' }} &middot; {{ d.first }}{% if d.first != d.last %} to {{ d.last }}{% endif %}{% if d.signins %} &middot; signed in {{ d.signins }}&times;{% endif %}</span></summary>
+      <table class="stack" style="margin-top:6px"><tr><th>Time</th><th>Action</th><th>What the Hub said</th><th>Page</th></tr>
+        {% for a in d.entries %}<tr><td data-label="Time">{{ a.at[11:16] }}</td><td data-label="Action">{{ a.action }}</td><td data-label="What the Hub said">{{ a.result }}</td><td data-label="Page" class="muted">{{ a.path }}</td></tr>{% endfor %}
+      </table>
+    </details>
+    {% endfor %}
+    {% if p.n > p.acts|length %}<p class="muted" style="margin:6px 0 0 14px">Showing the latest {{ p.acts|length }} of {{ p.n }} actions.</p>{% endif %}
     {% else %}
-    <p class="muted" style="margin:8px 0 0">No activity recorded yet.</p>
+    <p class="muted" style="margin:8px 0 0">No activity recorded in this log yet.</p>
+    {% endif %}
+    {% if p.earlier %}
+    <div style="margin-top:10px; font-size:.9rem"><strong>Earlier signs of activity</strong> <span class="muted">(found in the Hub's other records, from before this log began)</span>
+      {% for at, text in p.earlier %}<div class="muted">{{ at }} &middot; {{ text }}</div>{% endfor %}
+    </div>
     {% endif %}
   </details>
   {% else %}

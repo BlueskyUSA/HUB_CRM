@@ -1,0 +1,10 @@
+{% extends "crm_base.html" %}
+{% block title %}Change/Access History — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Change/Access History</h1>
+<div class="card" style="max-width:640px; border-left:4px solid #3d5a3d">
+  <p style="margin:0; font-size:1.05rem"><strong>Only the Owner can see the Change/Access History page.</strong></p>
+  <p class="muted" style="margin:8px 0 0">It shows what each person has been doing in the Hub. If you need to see it, please ask the Owner.</p>
+</div>
+<p style="margin-top:14px"><a href="{{ url_for('.dashboard') }}">&larr; Back to the Dashboard</a></p>
+{% endblock %}
