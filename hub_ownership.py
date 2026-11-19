@@ -99,12 +99,14 @@ def register(app, crm, owner_required, get_db):
             flash("The development hours are for the Owner only.")
             return redirect(url_for(".hub_ownership"))
         f = request.form
+        import re
+        txt = re.sub(r"(?i)\s*(hours?|hrs?)\.?\s*$", "", (f.get("hours") or "").replace(",", "").strip())
         try:
-            hours = float((f.get("hours") or "").strip())
-            if not (0 < hours <= 100):
+            hours = float(txt)
+            if not (0 < hours <= 10000):
                 raise ValueError
         except ValueError:
-            flash("Please enter the hours as a number, such as 1.5. Nothing was saved.")
+            flash("Please enter the hours as a number, such as 1.5 or 200. Nothing was saved.")
             return redirect(url_for(".hub_ownership") + "#hours")
         rate_txt = (f.get("rate") or "").replace("$", "").strip()
         try:
