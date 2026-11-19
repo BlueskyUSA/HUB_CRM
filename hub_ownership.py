@@ -1,5 +1,6 @@
 """Hub Ownership page (Administrator menu): the legal entities that own and use the Hub, the documents that prove it,
 and the professionals involved. Owner and Administrators. No passwords, no personal Social Security or bank account numbers."""
+from datetime import datetime
 from flask import render_template, request, redirect, url_for, session, flash
 
 TABLES = {
@@ -31,6 +32,11 @@ SEED_DOCS = [
 SEED_PEOPLE = [("Attorney", ""), ("Accountant / bookkeeper", ""), ("Registered agent", "")]
 
 
+def _true_owner():
+    """Only the real Owner (an Administrator is not the Owner)."""
+    return bool(session.get("is_owner")) and not session.get("is_admin")
+
+
 def register(app, crm, owner_required, get_db):
     def ensure(conn):
         conn.execute("""CREATE TABLE IF NOT EXISTS ownership_entities (id SERIAL PRIMARY KEY, name TEXT, kind TEXT, state TEXT,
@@ -39,6 +45,8 @@ def register(app, crm, owner_required, get_db):
             doc_date TEXT, where_kept TEXT, link TEXT, notes TEXT, updated_by TEXT, updated_at TEXT)""")
         conn.execute("""CREATE TABLE IF NOT EXISTS ownership_people (id SERIAL PRIMARY KEY, role TEXT, name TEXT, firm TEXT,
             email TEXT, phone TEXT, notes TEXT, updated_by TEXT, updated_at TEXT)""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS dev_hours (id SERIAL PRIMARY KEY, work_date TEXT, hours DOUBLE PRECISION,
+            rate DOUBLE PRECISION, what TEXT, who TEXT, updated_by TEXT, updated_at TEXT)""")
         if not conn.execute("SELECT 1 FROM ownership_entities LIMIT 1").fetchone():
             for n, k, st, notes, status in SEED_ENTITIES:
                 conn.execute("INSERT INTO ownership_entities (name, kind, state, notes, status) VALUES (?,?,?,?,?)", (n, k, st, notes, status))
@@ -57,10 +65,88 @@ def register(app, crm, owner_required, get_db):
             entities = conn.execute("SELECT * FROM ownership_entities ORDER BY id").fetchall()
             docs = conn.execute("SELECT * FROM ownership_documents ORDER BY id").fetchall()
             people = conn.execute("SELECT * FROM ownership_people ORDER BY id").fetchall()
+            months, totals = [], None
+            if _true_owner():
+                rows = conn.execute("SELECT * FROM dev_hours ORDER BY work_date DESC, id DESC").fetchall()
+                by = {}
+                for r in rows:
+                    by.setdefault((r["work_date"] or "")[:7] or "No date", []).append(r)
+                this_month, this_year = datetime.now().strftime("%Y-%m"), datetime.now().strftime("%Y")
+                allh = sum((r["hours"] or 0) for r in rows)
+                value = sum((r["hours"] or 0) * (r["rate"] or 0) for r in rows)
+                totals = dict(all=allh, year=sum((r["hours"] or 0) for r in rows if (r["work_date"] or "")[:4] == this_year),
+                              month=sum((r["hours"] or 0) for r in rows if (r["work_date"] or "")[:7] == this_month),
+                              value=value, count=len(rows), this_year=this_year)
+                for key in sorted(by, reverse=True):
+                    try:
+                        label = datetime.strptime(key, "%Y-%m").strftime("%B %Y")
+                    except ValueError:
+                        label = key
+                    items = by[key]
+                    months.append(dict(key=key, label=label, rows=items, hours=sum((r["hours"] or 0) for r in items),
+                                       value=sum((r["hours"] or 0) * (r["rate"] or 0) for r in items)))
         finally:
             conn.close()
         return render_template("hub_ownership.html", entities=entities, docs=docs, people=people,
-                               doc_status=DOC_STATUS, entity_status=ENTITY_STATUS)
+                               doc_status=DOC_STATUS, entity_status=ENTITY_STATUS,
+                               hours_ok=_true_owner(), hour_months=months, hour_totals=totals,
+                               today=datetime.now().strftime("%Y-%m-%d"))
+
+    @crm.route("/hub-ownership/hours/save", methods=["POST"])
+    @owner_required
+    def hub_ownership_hours_save():
+        if not _true_owner():
+            flash("The development hours are for the Owner only.")
+            return redirect(url_for(".hub_ownership"))
+        f = request.form
+        try:
+            hours = float((f.get("hours") or "").strip())
+            if not (0 < hours <= 100):
+                raise ValueError
+        except ValueError:
+            flash("Please enter the hours as a number, such as 1.5. Nothing was saved.")
+            return redirect(url_for(".hub_ownership") + "#hours")
+        rate_txt = (f.get("rate") or "").replace("$", "").strip()
+        try:
+            rate = float(rate_txt) if rate_txt else None
+        except ValueError:
+            flash("The hourly rate should be a number, such as 75. Nothing was saved.")
+            return redirect(url_for(".hub_ownership") + "#hours")
+        day = (f.get("work_date") or "").strip()
+        try:
+            datetime.strptime(day, "%Y-%m-%d")
+        except ValueError:
+            flash("Please enter the date like 2026-11-19. Nothing was saved.")
+            return redirect(url_for(".hub_ownership") + "#hours")
+        what, who = (f.get("what") or "").strip(), (f.get("who") or "").strip()
+        conn = get_db()
+        try:
+            ensure(conn)
+            rid = f.get("id")
+            if rid:
+                conn.execute("UPDATE dev_hours SET work_date=?, hours=?, rate=?, what=?, who=?, updated_by=?, updated_at=to_char(now(), 'YYYY-MM-DD') WHERE id=?",
+                             (day, hours, rate, what, who, session.get("staff_name"), rid))
+            else:
+                conn.execute("INSERT INTO dev_hours (work_date, hours, rate, what, who, updated_by, updated_at) VALUES (?,?,?,?,?,?,to_char(now(), 'YYYY-MM-DD'))",
+                             (day, hours, rate, what, who, session.get("staff_name")))
+            conn.commit()
+        finally:
+            conn.close()
+        flash("Hours saved.")
+        return redirect(url_for(".hub_ownership") + "#hours")
+
+    @crm.route("/hub-ownership/hours/<int:rid>/delete", methods=["POST"])
+    @owner_required
+    def hub_ownership_hours_delete(rid):
+        if _true_owner():
+            conn = get_db()
+            try:
+                conn.execute("DELETE FROM dev_hours WHERE id = ?", (rid,))
+                conn.commit()
+            finally:
+                conn.close()
+            flash("Removed.")
+        return redirect(url_for(".hub_ownership") + "#hours")
 
     @crm.route("/hub-ownership/<kind>/save", methods=["POST"])
     @owner_required
