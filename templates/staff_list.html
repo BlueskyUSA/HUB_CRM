@@ -48,7 +48,8 @@
       </td>
       <td data-label="Email">{{ s.email }}</td>
       <td data-label="Role">{{ role_label(s.role) }}</td>
-      <td data-label="Status">{% if s.active %}<span class="badge good">Active</span>{% else %}<span class="badge">Deactivated</span>{% endif %}</td>
+      <td data-label="Status">{% if s.active %}<span class="badge good">Active</span>{% else %}<span class="badge">Deactivated</span>{% endif %}
+        <div class="muted" style="font-size:.8rem; margin-top:4px">Last signed in: {{ (last_in.get(s.id) or '')[:10] or 'not recorded' }}<br>Last activity: {{ (last_active.get(s.id) or '')[:10] or 'not recorded' }}</div></td>
       <td data-label="Access">
         {% if s.is_owner %}
         <span class="muted">Everything ({{ 'Owner' if s.is_owner == 1 else 'Administrator' }})</span>
