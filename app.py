@@ -1670,6 +1670,32 @@ def staff_reactivate(staff_id):
     )
 
 
+@crm.route("/staff/<int:staff_id>/special-access", methods=["POST"])
+@true_owner_required
+def staff_special_access(staff_id):
+    """Owner ticks or unticks the two history pages for one person (used for Administrators, who otherwise have no boxes)."""
+    conn = get_db()
+    staff = conn.execute("SELECT * FROM staff WHERE id = ?", (staff_id,)).fetchone()
+    if not staff or staff["is_owner"] == 1:
+        conn.close()
+        flash("Nothing was changed.")
+        return redirect(url_for(".staff_list"))
+    chosen = set(request.form.getlist("area_key"))
+    changes = []
+    for key, label in (("hub_access", "the HUB Access page"), ("change_history", "Change/Access History")):
+        has = conn.execute("SELECT id FROM access_grants WHERE area_key = ? AND staff_id = ?", (key, staff_id)).fetchone()
+        if key in chosen and not has:
+            conn.execute("INSERT INTO access_grants (area_key, staff_id) VALUES (?, ?)", (key, staff_id))
+            changes.append(f"can now see {label}")
+        elif key not in chosen and has:
+            conn.execute("DELETE FROM access_grants WHERE id = ?", (has["id"],))
+            changes.append(f"can no longer see {label}")
+    conn.commit()
+    conn.close()
+    flash(f"{staff['name']} " + (" and ".join(changes) + "." if changes else "already had exactly those choices. Nothing changed."))
+    return redirect(url_for(".staff_list", open=staff_id))
+
+
 @crm.route("/staff/<int:staff_id>/accounting-door", methods=["POST"])
 @owner_required
 def staff_accounting_door(staff_id):
