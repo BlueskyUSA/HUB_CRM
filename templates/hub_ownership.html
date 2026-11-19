@@ -5,6 +5,49 @@
 <p class="muted">Who owns the Hub and the Sojourn<span style="color:#FF0000">!</span> assets, the papers that prove it, and who helps. Visible to the Owner and Administrators.
 <b>Do not enter passwords, personal Social Security numbers or bank account numbers here.</b> A business tax ID (EIN) is fine. Put scanned documents in a shared folder and note the place under "Where kept".</p>
 
+{% if hours_ok %}
+<div class="card" id="hours">
+  <h3 style="margin-top:0">Development hours <span class="muted" style="font-weight:400; font-size:.85rem">(Owner only)</span></h3>
+  <p class="muted" style="margin-top:0">A running log of the time spent building and improving the Hub. Add an entry whenever you work on it. The rate is optional; fill it in to see the value of the work.</p>
+  {% if hour_totals %}
+  <p style="font-size:1.02rem; margin:6px 0 10px"><strong>{{ '%.1f'|format(hour_totals.all) }} hours</strong> in all
+    <span class="muted">&middot; {{ '%.1f'|format(hour_totals.year) }} this year &middot; {{ '%.1f'|format(hour_totals.month) }} this month &middot; {{ hour_totals.count }} entr{{ 'y' if hour_totals.count == 1 else 'ies' }}</span>
+    {% if hour_totals.value %}<span class="muted"> &middot; value at the rates entered: <strong>${{ '{:,.0f}'.format(hour_totals.value) }}</strong></span>{% endif %}</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('.hub_ownership_hours_save') }}" style="padding:8px 0 10px; border-bottom:2px solid #bbb">
+    <b>Add hours</b>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">
+      <input name="work_date" value="{{ today }}" placeholder="Date (2026-11-19)" style="flex:0 1 130px">
+      <input name="hours" placeholder="Hours (1.5)" required style="flex:0 1 100px">
+      <input name="rate" placeholder="Rate $/hr (optional)" style="flex:0 1 150px">
+      <input name="who" value="{{ session.staff_name }}" placeholder="Who" style="flex:0 1 150px">
+    </div>
+    <div style="display:flex; gap:6px; margin-top:6px"><input name="what" placeholder="What was done (for example: Change/Access History page)" style="flex:1 1 auto"><button class="btn" type="submit">Add</button></div>
+  </form>
+  {% for m in hour_months %}
+  <details style="border-bottom:1px solid #ddd; padding:6px 0" {{ 'open' if loop.first }}>
+    <summary style="cursor:pointer"><strong>{{ m.label }}</strong> <span class="muted">&middot; {{ '%.1f'|format(m.hours) }} hours &middot; {{ m.rows|length }} entr{{ 'y' if m.rows|length == 1 else 'ies' }}{% if m.value %} &middot; ${{ '{:,.0f}'.format(m.value) }}{% endif %}</span></summary>
+    {% for h in m.rows %}
+    <form method="post" action="{{ url_for('.hub_ownership_hours_save') }}" style="padding:6px 0; border-top:1px solid #eee">
+      <input type="hidden" name="id" value="{{ h.id }}">
+      <div style="display:flex; gap:6px; flex-wrap:wrap">
+        <input name="work_date" value="{{ h.work_date or '' }}" style="flex:0 1 120px">
+        <input name="hours" value="{{ h.hours if h.hours is not none else '' }}" style="flex:0 1 80px">
+        <input name="rate" value="{{ h.rate if h.rate is not none else '' }}" placeholder="Rate" style="flex:0 1 80px">
+        <input name="who" value="{{ h.who or '' }}" style="flex:0 1 130px">
+        <input name="what" value="{{ h.what or '' }}" style="flex:1 1 240px">
+        <button class="btn" type="submit" style="padding:2px 12px">Save</button>
+      </div>
+    </form>
+    <form method="post" action="{{ url_for('.hub_ownership_hours_delete', rid=h.id) }}" onsubmit="return confirm('Remove this entry?');" style="margin:0 0 4px"><button class="btn danger" type="submit" style="padding:1px 8px; font-size:.8rem">Remove</button></form>
+    {% endfor %}
+  </details>
+  {% else %}
+  <p class="muted" style="margin:10px 0 0">No hours logged yet. Add the first entry above.</p>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="card" id="entity">
   <h3 style="margin-top:0">Entities</h3>
   {% for e in entities %}
