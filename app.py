@@ -963,7 +963,7 @@ def staff_list():
     last_in, last_active = {}, {}
     activity, activity_n = {}, {}
     try:
-        ids = [r["id"] for r in rows if r["active"]]
+        ids = [r["id"] for r in rows if r["active"] and not r["is_owner"] == 1]
         if ids:
             marks = ",".join("?" for _ in ids)
             for r in conn.execute(f"SELECT staff_id, COUNT(*) c FROM change_log WHERE staff_id IN ({marks}) GROUP BY staff_id", ids).fetchall():
