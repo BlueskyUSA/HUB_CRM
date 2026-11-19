@@ -413,8 +413,10 @@ def register(app, crm, get_db, h):
         return redirect(back + "#suggest")
 
     @crm.route("/correspondence/go-live")
-    @leadership_required
     def correspondence_golive():
+        if not session.get("is_owner") or session.get("is_admin"):
+            flash("The go-live switches are for the Owner only.")
+            return redirect(url_for(".dashboard"))
         return render_template("correspondence_golive.html", live=live(), switches=switches())
 
     @crm.route("/correspondence/all-letters")

@@ -358,7 +358,7 @@ ROLE_BLURBS = {
     "Team": "You can view and update contacts and session information.",
     "Leadership": "You can help run the Hub day to day: contacts, sessions, letters and the team.",
     "Accounting": "You have view-only access to the accounting and legal areas you have been given.",
-    "Administrator": "You can run everything in the Hub when the Owner is away, including letters, logins and the go-live switches. Only ownership itself stays with the Owner.",
+    "Administrator": "You can run everything in the Hub when the Owner is away, including letters and logins. The go-live switches and ownership itself stay with the Owner.",
 }
 ACCOUNTING_ROLE = "Accounting"
 # The only areas an Accounting & Legal login can ever be given (the Owner picks
