@@ -46,7 +46,7 @@
           <a href="{{ url_for('.correspondence_note', group='accounting') }}">Accounting &amp; Legal</a>
           <a href="{{ url_for('.email_blasts') }}">Marketing &amp; Email Blasts</a>
           {% endif %}
-          {% if session.is_owner or is_lead %}
+          {% if session.is_owner and not session.is_admin %}
           <a href="{{ url_for('.correspondence_golive') }}">Ready to Go Live?</a>
           {% endif %}
         </div>

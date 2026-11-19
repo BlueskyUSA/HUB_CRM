@@ -45,6 +45,7 @@
   </form>
 </details>
 
+{% if not session.is_admin %}
 <details class="card" open id="switches">
   <summary style="cursor:pointer; font-weight:700; font-size:1.05rem">Safety switches (what is ON or OFF right now) &#9662;</summary>
   <p class="muted">Each switch holds back a kind of email until you are ready. They are changed in Render, not here (see "How to change a switch" below).</p>
@@ -55,11 +56,12 @@
     {% endfor %}
   </table>
 </details>
+{% endif %}
 
 
 <details class="card" id="administrators">
   <summary style="cursor:pointer; font-weight:700; font-size:1.05rem">Administrators (backup operators) &#9662;</summary>
-  <p>An Administrator can do everything the Owner can in the Hub: switches, letters, logins, HUB Access and the Accounting &amp; Legal logins. Two things stay with the Owner: making or removing Owners and Administrators, and changing the Owner's own login.</p>
+  <p>An Administrator can do most of what the Owner can in the Hub: letters, logins and the Accounting &amp; Legal logins. These stay with the Owner: the go-live switches, making or removing Owners and Administrators, changing the Owner's own login, and the HUB Access and Change/Access History pages (the Owner can tick those for a person).</p>
   <p>To add one: Contacts &rarr; find the person &rarr; Hub Login &rarr; <strong>Administrator</strong> &rarr; Set. They are emailed a login link. They also need their own access to Render, GitHub and Brevo to cover everything outside the Hub; that is set up in those services, not here.</p>
 </details>
 
@@ -76,6 +78,7 @@
   {% endfor %}
 </details>
 
+{% if not session.is_admin %}
 <details class="card">
   <summary style="cursor:pointer; font-weight:700; font-size:1.05rem">How to change a switch in Render &#9662;</summary>
   <ol>
@@ -87,6 +90,7 @@
   </ol>
   <p class="muted">Order that makes sense: <code>SESSION_LETTERS_LIVE</code> first, then <code>AUTO_LETTERS_LIVE</code> (it needs the first one), then <code>BLASTS_LIVE</code> when you are ready to send email blasts.</p>
 </details>
+{% endif %}
 
 <details class="card">
   <summary style="cursor:pointer; font-weight:700; font-size:1.05rem">Brevo bounce connection (one-time) &#9662;</summary>
