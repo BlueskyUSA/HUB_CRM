@@ -9,7 +9,7 @@
   <details style="border-bottom:1px solid #ddd; padding:8px 2px" {{ 'open' if who_id == p.id }}>
     <summary style="cursor:pointer; font-size:1.02rem">
       <strong>{{ p.name }}</strong> <span class="muted">({{ p.role }}{% if not p.active %}, no longer active{% endif %})</span>
-      <span class="muted" style="font-size:.88rem"> &middot; {{ p.n }} action{{ '' if p.n == 1 else 's' }}{% if p.last_in %} &middot; last signed in {{ p.last_in[:10] }}{% endif %}{% if p.last_at %} &middot; last activity {{ p.last_at[:10] }}{% endif %}</span>
+      <span class="muted" style="font-size:.88rem"> &middot; {{ p.n }} action{{ '' if p.n == 1 else 's' }}{% if p.last_in %} &middot; last signed in {{ p.last_in[:10] }}{% endif %}{% if p.last_at %} &middot; last activity {{ p.last_at[:10] }}{% endif %}{% if p.seen %} &middot; last seen {{ p.seen[:16] }}{% endif %}</span>
     </summary>
     {% if p.acts %}
     <table class="stack" style="margin-top:8px"><tr><th>When</th><th>Action</th><th>What the Hub said</th><th>Page</th></tr>
