@@ -1,0 +1,35 @@
+{% extends "crm_base.html" %}
+{% block title %}Chat Review — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Chat Review <span class="muted" style="font-size:1rem">(Owner only)</span></h1>
+<p class="muted">Everything the team has written in the chat: private messages, the live room and the discussion board. Read-only. Only the Owner sees this page. Team members are told on their private chat screens that the Owner can review chats.</p>
+<div style="display:flex;gap:8px;margin-bottom:14px">
+  <a class="btn {% if kind != 'private' %}secondary{% endif %}" href="?kind=private">Private messages</a>
+  <a class="btn {% if kind != 'room' %}secondary{% endif %}" href="?kind=room">Live room</a>
+  <a class="btn {% if kind != 'board' %}secondary{% endif %}" href="?kind=board">Discussion board</a>
+</div>
+
+{% if kind == 'private' %}
+  {% for c in convos %}
+  <details class="card" style="margin-bottom:10px">
+    <summary><b>{{ c.a }} &harr; {{ c.b }}</b> <span class="muted">&middot; {{ c.n }} messages &middot; last {{ c.last[5:16] }}</span></summary>
+    <div style="margin-top:10px">
+      {% for m in c.msgs %}<div style="margin-bottom:8px"><span class="muted" style="font-size:.85rem">{{ m.who }} &middot; {{ m.at[5:16] }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ m.body }}</div></div>{% endfor %}
+    </div>
+  </details>
+  {% else %}<p class="muted">No private messages yet.</p>{% endfor %}
+{% elif kind == 'room' %}
+  <div class="card">
+    {% for m in room %}<div style="margin-bottom:8px"><span class="muted" style="font-size:.85rem">{{ m.author_name }} &middot; {{ m.created_at[5:16] }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ m.body }}</div></div>
+    {% else %}<p class="muted">No live room messages yet.</p>{% endfor %}
+  </div>
+{% else %}
+  {% for x in topics %}
+  <details class="card" style="margin-bottom:10px">
+    <summary><b>{{ x.t.title }}</b> <span class="muted">&middot; {{ x.t.author_name }} &middot; {{ x.replies|length }} replies</span></summary>
+    <div style="margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere">{{ x.t.body }}</div>
+    {% for r in x.replies %}<div style="margin:8px 0 0 16px"><span class="muted" style="font-size:.85rem">{{ r.author_name }} &middot; {{ r.created_at[5:16] }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ r.body }}</div></div>{% endfor %}
+  </details>
+  {% else %}<p class="muted">No discussion topics yet.</p>{% endfor %}
+{% endif %}
+{% endblock %}

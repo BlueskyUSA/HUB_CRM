@@ -1,0 +1,32 @@
+{% extends "crm_base.html" %}
+{% block title %}Private Messages — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Chat Room</h1>
+{% set chat_tab = 'private' %}
+{% include "_chat_tabs.html" %}
+<p class="muted">Private messages between you and one other person. Only the two of you and the Owner can read them. Other team members cannot. They are not shown on the Correspondence page, and nothing is emailed or texted from here.</p>
+
+<h2>Your private chats</h2>
+<div class="card">
+  {% if chats %}
+  <table>
+    {% for c in chats %}
+    <tr>
+      <td style="width:30%"><a href="{{ url_for('.chat_private_thread', other_id=c.id) }}"><b>{{ c.name }}</b></a>{% if c.unread %} <span style="background:#d9534f;color:#fff;border-radius:10px;padding:1px 8px;font-size:.8rem">{{ c.unread }} new</span>{% endif %}</td>
+      <td class="muted">{{ 'You: ' if c.last.from_id == my_id else '' }}{{ c.last.body[:90] }}{% if c.last.body|length > 90 %}&hellip;{% endif %}</td>
+      <td class="muted" style="text-align:right;white-space:nowrap">{{ c.last.created_at[5:16] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted" style="margin:0">No private chats yet. Pick a person below to start one.</p>{% endif %}
+</div>
+
+<h2>Start a private chat with</h2>
+<div class="card">
+  {% if others %}
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    {% for p in others %}<a class="btn secondary" href="{{ url_for('.chat_private_thread', other_id=p.id) }}">{{ p.name }}</a>{% endfor %}
+  </div>
+  {% else %}<p class="muted" style="margin:0">Everyone you can chat with is already listed above.</p>{% endif %}
+</div>
+{% endblock %}

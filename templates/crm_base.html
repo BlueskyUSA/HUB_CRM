@@ -96,6 +96,7 @@
             <a href="{{ url_for('.hub_ownership') }}" style="padding-left:30px">Hub Ownership</a>
             <a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports (Finances)</a>
             {% if (session.is_owner and not session.is_admin) or has_change_history_view %}<a href="{{ url_for('.change_history') }}" style="padding-left:30px">Change/Access History</a>{% endif %}
+            {% if not session.is_admin %}<a href="{{ url_for('.chat_review') }}" style="padding-left:30px">Chat Review</a>{% endif %}
             <a href="{{ url_for('.do_not_contact_list') }}" style="padding-left:30px">Do Not Contact</a>
             <a href="{{ url_for('.feature_guide') }}" style="padding-left:30px">How the site works</a>
             <a href="{{ url_for('.database_map') }}" style="padding-left:30px">Database map</a>
@@ -144,7 +145,7 @@
       <details class="navmenu"><summary>Programs &#9662;</summary><div class="navmenu-items"><a href="{{ url_for('.checkin_home') }}">Check-in</a></div></details>
       {% endif %}
       {% endif %}
-      {% if chat_ok %}<a href="{{ url_for('.chat_home') }}">Chat Room{% if chat_new_board or chat_new_room %} <span title="New posts" style="color:#e8554e">&#9679;</span>{% endif %}</a>{% endif %}
+      {% if chat_ok %}<a href="{{ url_for('.chat_home') }}">Chat Room{% if chat_new_board or chat_new_room or chat_new_private %} <span title="New posts or messages" style="color:#e8554e">&#9679;</span>{% endif %}</a>{% endif %}
       <a href="{{ url_for('public_home') }}">Public Web Site &rarr;</a>
     </nav>
       {% if session.staff_id %}
