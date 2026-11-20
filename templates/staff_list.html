@@ -5,7 +5,8 @@
 <p class="muted">Who can log in, and what each person can open. Open the chart below to see what each kind of login gets.</p>
 <details class="card" style="margin-bottom:12px; padding:12px 16px">
   <summary style="cursor:pointer; font-weight:700">Access Permissions &#9662;</summary>
-  <div style="margin-top:10px; overflow-x:auto">
+  <style>#permScroll th{position:sticky; top:0; z-index:2; background:#3d5a3d}</style>
+  <div id="permScroll" style="margin-top:10px; overflow:auto; max-height:60vh; border:1px solid #ddd; border-radius:6px">
     <p class="muted" style="margin:0 0 8px; font-size:.9rem"><strong>Yes</strong> = the login has it. <strong>If ticked</strong> = only when the Owner ticks that box for the person (&ldquo;Modify access&rdquo; in their row below). <strong>No</strong> = never, for that kind of login.</p>
     <table style="border-collapse:collapse; width:100%; min-width:640px; font-size:.9rem">
       <tr style="background:#3d5a3d; color:#fff"><th style="text-align:left; padding:8px; color:#fff !important; font-weight:700; text-transform:none; letter-spacing:0; font-size:.95rem">What it covers</th><th style="padding:8px; color:#fff !important; font-weight:700; text-transform:none; letter-spacing:0; font-size:.95rem">Administrator</th><th style="padding:8px; color:#fff !important; font-weight:700; text-transform:none; letter-spacing:0; font-size:.95rem">Leadership</th><th style="padding:8px; color:#fff !important; font-weight:700; text-transform:none; letter-spacing:0; font-size:.95rem">Volunteer Team</th><th style="padding:8px; color:#fff !important; font-weight:700; text-transform:none; letter-spacing:0; font-size:.95rem">Accounting &amp; Legal<br><span style="font-weight:400; font-size:.78rem; color:#fff !important">(view only)</span></th></tr>
