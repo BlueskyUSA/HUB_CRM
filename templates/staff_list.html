@@ -74,7 +74,7 @@
     {% for s in staff if s.active %}
     <tr data-staff="{{ s.id }}">
       <td>
-        {{ s.name }}{% if s.is_owner == 1 %} <span class="badge good">Owner</span>{% elif s.is_owner == 2 %} <span class="badge good">Administrator</span>{% endif %}
+        {{ s.name }}{% if s.is_owner == 1 %} <span class="badge good">Owner</span>{% elif s.is_owner == 2 %} <span class="badge good">Administrator{% if s.id in limited_ids %} (limited){% endif %}</span>{% endif %}
         <br>
         {% if s.contact_id %}
         <a href="{{ url_for('.contact_detail', contact_id=s.contact_id) }}" style="font-size:0.82rem">View contact profile</a>
@@ -87,13 +87,19 @@
       <td data-label="Status">{% if s.active %}<span class="badge good">Active</span>{% else %}<span class="badge">Deactivated</span>{% endif %}
         <div class="muted" style="font-size:.8rem; margin-top:4px">Last signed in: {{ (last_in.get(s.id) or '')[:10] or 'not recorded' }}<br>Last activity: {{ (last_active.get(s.id) or '')[:10] or 'not recorded' }}</div></td>
       <td data-label="Access">
-        {% if s.is_owner %}
+        {% if s.is_owner and s.id not in limited_ids %}
         <span class="muted">Everything ({{ 'Owner' if s.is_owner == 1 else 'Administrator' }})</span>
         {% if s.is_owner == 2 and session.is_owner and not session.is_admin %}
         <form method="post" action="{{ url_for('.staff_remove_owner', staff_id=s.id) }}" onsubmit="return confirm('Remove Administrator access from {{ s.name|e }}? They stay on the team as a Leadership login, and you can then choose what they can open.');" style="margin-top:6px">
           <input type="hidden" name="redirect_to" value="staff_list">
           <button class="btn danger" type="submit" style="padding:2px 8px; font-size:.85rem">Remove Administrator access</button>
         </form>
+        {% if s.is_owner == 2 and session.is_owner and not session.is_admin %}
+        <form method="post" action="{{ url_for('.staff_admin_limit', staff_id=s.id) }}" onsubmit="return confirm('Limit {{ s.name|e }} to only the areas you tick for them? They will be signed out and must sign in again.');" style="margin-top:6px">
+          <input type="hidden" name="mode" value="limit">
+          <button class="btn secondary" type="submit" style="padding:2px 8px; font-size:.85rem">Limit what this Administrator sees</button>
+        </form>
+        {% endif %}
         {% set gk = granted_keys_by_staff.get(s.id, []) %}
         <form method="post" action="{{ url_for('.staff_special_access', staff_id=s.id) }}" style="margin-top:8px; padding:8px 10px; border:1px solid #ddd; border-radius:6px; max-width:300px">
           <div style="font-weight:700; font-size:.88rem; margin-bottom:4px">Pages this Administrator may also see</div>
@@ -103,6 +109,16 @@
         </form>
         {% endif %}
         {% else %}
+          {% if s.is_owner == 2 and session.is_owner and not session.is_admin %}
+          <form method="post" action="{{ url_for('.staff_admin_limit', staff_id=s.id) }}" onsubmit="return confirm('Give {{ s.name|e }} full Administrator access again?');" style="margin-bottom:6px">
+            <input type="hidden" name="mode" value="full">
+            <button class="btn secondary" type="submit" style="padding:2px 8px; font-size:.85rem">Make a full Administrator again</button>
+          </form>
+          <form method="post" action="{{ url_for('.staff_remove_owner', staff_id=s.id) }}" onsubmit="return confirm('Remove Administrator access from {{ s.name|e }}? They stay on the team as a Leadership login.');" style="margin-bottom:6px">
+            <input type="hidden" name="redirect_to" value="staff_list">
+            <button class="btn danger" type="submit" style="padding:2px 8px; font-size:.85rem">Remove Administrator access</button>
+          </form>
+          {% endif %}
           {% set groups = access_groups_by_staff.get(s.id, []) %}
           {% set n_access = namespace(n=0) %}{% for h, items in groups %}{% set n_access.n = n_access.n + items|length %}{% endfor %}
           <details class="acc-view">
