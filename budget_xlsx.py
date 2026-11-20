@@ -104,19 +104,29 @@ def build_xlsx(label, kind, data, updated_at=None, fixed_data=None):
         put("D", r, f"=(C{r}+1)*D{tax_r}", M2, A, RIGHT)
         K["roomrate"] = f"$D${r}"
         r += 1
-        put("A", r, "Room Count (people):", font=B)
+        put("A", r, "Room Count:", font=B)
+        put("C", r, "Per room", font=B, align=RIGHT)
+        put("D", r, "People", font=B, align=RIGHT)
+        put("E", r, "Rooms", font=B, align=RIGHT)
+        put("F", r, "(1 or 2 people per room; rooms rounded up)", font=A)
         r += 1
-        for key, lab in (("fac_people", "Facilitators"), ("ta_people", "TA's"), ("av_people", "Audio/Visual"),
-                         ("staff_people", "Staff")):
+        group_rows = {}
+        for g, lab in (("trainee", "Trainees (couples x 2)"), ("fac", "Facilitators"), ("ta", "TA's"),
+                       ("av", "Audio/Visual"), ("staff", "Staff")):
             put("A", r, lab)
-            inp("D", r, v[key], "0")
-            K[key] = f"$D${r}"
+            inp("C", r, 2 if v[g + "_per_room"] >= 1.5 else 1, "0")
+            if g != "trainee":
+                inp("D", r, v[g + "_people"], "0")
+                K[g + "_people"] = f"$D${r}"
+            put("E", r, f"=ROUNDUP(D{r}/C{r},0)", "#,##0", B, RIGHT)
+            K[g + "_rooms"] = f"$E${r}"
+            group_rows[g] = r
             r += 1
+        trainee_people_r = group_rows["trainee"]
         put("A", r, "Total team (people)")
         put("D", r, f"=SUM({K['fac_people']}:{K['staff_people']})", "0", B, RIGHT)
         K["team"] = f"$D${r}"
         K["team_dance"] = f"({K['fac_people']}+{K['ta_people']}+{K['av_people']})"
-        K["ta_rooms"] = f"({K['ta_people']}/2)"
         r += 2
         put("A", r, "Food Service Rates (CC Fee Included)", font=B)
         put("B", r, "Rate", align=RIGHT)
@@ -151,7 +161,7 @@ def build_xlsx(label, kind, data, updated_at=None, fixed_data=None):
         """A formula for a link such as '=couples', or None when raw is a plain number."""
         if not (isinstance(raw, str) and raw.startswith("=")):
             return None
-        table = {"=couples": cref, "=trainees": f"2*{cref}", "=roomrate": K.get("roomrate"), "=rack": K.get("rack"),
+        table = {"=couples": cref, "=trainees": f"2*{cref}", "=trainee_rooms": K.get("trainee_rooms"), "=fac_rooms": K.get("fac_rooms"), "=av_rooms": K.get("av_rooms"), "=staff_rooms": K.get("staff_rooms"), "=roomrate": K.get("roomrate"), "=rack": K.get("rack"),
                  "=team": K.get("team"), "=team_dance": K.get("team_dance"), "=ta_rooms": K.get("ta_rooms"),
                  "=lunch": K.get("lunch"), "=dinner": K.get("dinner"), "=hors": K.get("hors"), "=dance": K.get("dance"),
                  "=fac": K.get("fac_people"), "=ta": K.get("ta_people"), "=av": K.get("av_people"),
@@ -223,6 +233,7 @@ def build_xlsx(label, kind, data, updated_at=None, fixed_data=None):
 
     if kind == "training":
         section("income", "Income", lines_of(data, "income"))
+        put("D", trainee_people_r, f"=2*$D${fee_ref[0]}", "#,##0", A, RIGHT)
         section("rooms", "Hotel rooms", lines_of(data, "rooms"))
         section("meals", "Meals", lines_of(data, "meals"))
         section("other", "Other operating expenses", lines_of(data, "other"))

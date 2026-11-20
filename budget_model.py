@@ -25,10 +25,16 @@ KEY_VARS = [
     ("room_discount", "Negotiated discount off room rate", 0.20, "pct", "Percent off the rack rate (0% = none)."),
     ("room_tax", "Hotel tax on rooms", 0.13, "pct", "Total taxes of 13% listed for this hotel. Confirm."),
     ("room_cc", "Credit card processing fee on the hotel bill", 0.035, "pct", "ESTIMATE. Added to the room rate."),
+    ("trainee_per_room", "Room count: Trainees, people per room (1 or 2)", 2, "choice12",
+     "2 = each couple shares one room. 1 = everyone gets their own room. The number of trainees comes from the couples line in Income."),
     ("fac_people", "Room count: Facilitators (people)", 3, "int", ""),
-    ("ta_people", "Room count: TA's (people, 2 per room)", 10, "int", ""),
+    ("fac_per_room", "Facilitators: people per room (1 or 2)", 2, "choice12", "Rooms are rounded up (3 people at 2 per room = 2 rooms)."),
+    ("ta_people", "Room count: TA's (people)", 10, "int", ""),
+    ("ta_per_room", "TA's: people per room (1 or 2)", 2, "choice12", ""),
     ("av_people", "Room count: Audio/Visual (people)", 1, "int", ""),
+    ("av_per_room", "Audio/Visual: people per room (1 or 2)", 2, "choice12", ""),
     ("staff_people", "Room count: Staff (people)", 2, "int", ""),
+    ("staff_per_room", "Staff: people per room (1 or 2)", 2, "choice12", ""),
     ("lunch_rate", "Lunch rate (per person)", 35, "money2", "Hotel food price before the banquet service charge."),
     ("lunch_svc", "Lunch banquet service charge", 0.25, "pct", "ESTIMATE: hotels commonly add service charge plus tax to food. Confirm."),
     ("dinner_rate", "Dinner rate (per person)", 60, "money2", ""),
@@ -67,11 +73,11 @@ DEFAULT_LINES = [
        "Couples x price per couple ($1,299; one payment covers both partners)"),
     _L("merch", "income", "Merchandise Sales Income", 0, 0, 1, "plain", "None planned"),
     _L("donations", "income", "Financial Partnerships / donations", 0, 0, 1, "plain", "None assumed"),
-    _L("r_trainees", "rooms", "Trainees", "=couples", "=roomrate", 2, "plain", "One room per couple", h="=trainees"),
-    _L("r_fac", "rooms", "Facilitators", 2, "=roomrate", 2, "plain", "", h="=fac"),
+    _L("r_trainees", "rooms", "Trainees", "=trainee_rooms", "=roomrate", 2, "plain", "Trainees divided by people per room (see Key variables)", h="=trainees"),
+    _L("r_fac", "rooms", "Facilitators", "=fac_rooms", "=roomrate", 2, "plain", "", h="=fac"),
     _L("r_ta", "rooms", "TA's", "=ta_rooms", "=roomrate", 2, "plain", "", h="=ta"),
-    _L("r_av", "rooms", "Audio/Visual Coordinator", 1, "=roomrate", 2, "plain", "", h="=av"),
-    _L("r_staff", "rooms", "Staff", 1, "=roomrate", 2, "plain", "", h="=staff"),
+    _L("r_av", "rooms", "Audio/Visual Coordinator", "=av_rooms", "=roomrate", 2, "plain", "", h="=av"),
+    _L("r_staff", "rooms", "Staff", "=staff_rooms", "=roomrate", 2, "plain", "", h="=staff"),
     _L("meeting", "rooms", "Meeting rooms / convention center", 0, 0, 1, "plain", "Included with room block"),
     _L("m_fri", "meals", "5pm Friday TA Dinner 5pm", "=team", "=dinner", 1, "plain",
        "Two per room - Hotel included...Trainees are assigned rooms - Double Beds required."),
@@ -177,6 +183,13 @@ def parse(text, kind="training"):
     data.setdefault("dates", "")
     data.setdefault("hotel", "")
     data.setdefault("schedule", [])
+    # budgets saved before the people-per-room choices had typed-in room counts: switch the untouched ones to the new link
+    moves = {"r_trainees": ("=couples", "=trainee_rooms"), "r_fac": (2, "=fac_rooms"), "r_av": (1, "=av_rooms"),
+             "r_staff": (1, "=staff_rooms")}
+    for ln in data["lines"]:
+        m = moves.get(ln.get("id"))
+        if m and ln.get("q") == m[0]:
+            ln["q"] = m[1]
     return data, is_current
 
 
@@ -197,14 +210,27 @@ def _num(x, default=0.0):
 def derived(data):
     """Calculated values shown beside the key variables (not typed in)."""
     v = {k: _num(data["vars"].get(k)) for k, *_ in KEY_VARS}
+    couples = 0.0
+    for ln in data.get("lines", []):
+        if ln.get("id") == "fee_income":
+            couples = _num(ln.get("q"))
+    def per(key):
+        return 1 if v[key] < 1.5 else 2
+
+    per_room = per("trainee_per_room")
+    trainee_people = 2 * couples
+    trainee_rooms = math.ceil(trainee_people / per_room)
+    rooms = {g: math.ceil(v[g + "_people"] / per(g + "_per_room")) for g in ("fac", "ta", "av", "staff")}
     after_discount = v["rack"] * (1 - v["room_discount"])
     with_tax = after_discount * (1 + v["room_tax"])
     roomrate = with_tax * (1 + v["room_cc"])
     team = v["fac_people"] + v["ta_people"] + v["av_people"] + v["staff_people"]
     return {
+        "couples": couples, "per_room": per_room, "trainee_people": trainee_people, "trainee_rooms": trainee_rooms,
         "after_discount": after_discount, "with_tax": with_tax, "roomrate": roomrate,
         "team": team, "team_dance": v["fac_people"] + v["ta_people"] + v["av_people"],
-        "ta_rooms": v["ta_people"] / 2.0,
+        "fac_rooms": rooms["fac"], "ta_rooms": rooms["ta"], "av_rooms": rooms["av"], "staff_rooms": rooms["staff"],
+        "fac_people": v["fac_people"], "ta_people": v["ta_people"], "av_people": v["av_people"], "staff_people": v["staff_people"],
         "lunch": v["lunch_rate"] * (1 + v["lunch_svc"]), "dinner": v["dinner_rate"] * (1 + v["dinner_svc"]),
         "hors": v["hors_rate"] * (1 + v["hors_svc"]), "dance": v["dance_rate"] * (1 + v["dance_svc"]),
     }
@@ -217,8 +243,8 @@ def compute(data):
     lines = data["lines"]
     by_id = {ln["id"]: ln for ln in lines}
     couples = _num(by_id.get("fee_income", {}).get("q"), 0)
-    links = {"=couples": couples, "=trainees": 2 * couples, "=roomrate": d["roomrate"], "=rack": v["rack"],
-             "=team": d["team"], "=team_dance": d["team_dance"], "=ta_rooms": d["ta_rooms"],
+    links = {"=couples": couples, "=trainees": 2 * couples, "=trainee_rooms": d["trainee_rooms"], "=roomrate": d["roomrate"], "=rack": v["rack"],
+             "=team": d["team"], "=team_dance": d["team_dance"], "=ta_rooms": d["ta_rooms"], "=fac_rooms": d["fac_rooms"], "=av_rooms": d["av_rooms"], "=staff_rooms": d["staff_rooms"],
              "=lunch": d["lunch"], "=dinner": d["dinner"], "=hors": d["hors"], "=dance": d["dance"],
              "=fac": v["fac_people"], "=ta": v["ta_people"], "=av": v["av_people"], "=staff": v["staff_people"]}
 
@@ -268,6 +294,8 @@ def apply_form(data, form):
     for k, _lbl, _d, kind, _n in KEY_VARS:
         if f"var_{k}" in form:
             val = _num(form.get(f"var_{k}"), data["vars"].get(k, 0) * (100 if kind == "pct" else 1))
+            if kind == "choice12":
+                val = 1 if val < 1.5 else 2
             data["vars"][k] = val / 100 if kind == "pct" else val
     if "dates" in form:
         data["dates"] = (form.get("dates") or "").strip()[:120]

@@ -68,11 +68,13 @@ def build_pdf(label, kind, data, updated_at=None, fixed_data=None):
         kv = [["Variable", "Value", "Note"]]
         for k, lab, _d, vk, note in bm.KEY_VARS:
             val_ = data["vars"].get(k, _d)
-            val = f"{val_ * 100:g}%" if vk == "pct" else (f"${val_:,.2f}" if vk == "money2" else f"{val_:g}")
+            val = f"{val_ * 100:g}%" if vk == "pct" else (f"${val_:,.2f}" if vk == "money2" else (f"{val_:g} per room" if vk == "choice12" else f"{val_:g}"))
             kv.append([Paragraph(lab, small), val, Paragraph(note, small)])
         kv += [[Paragraph("<b>Room Rate (After Discount)</b>", small), _m2(d["after_discount"]), ""],
                [Paragraph("<b>Rate with Room Tax</b>", small), _m2(d["with_tax"]), ""],
                [Paragraph("<b>Total Rm Rate with Credit Card Processing Fee</b>", small), _m2(d["roomrate"]), ""],
+               [Paragraph("<b>Rooms: trainees / facilitators / TA's / A-V / staff</b>", small),
+                " / ".join(f"{d[g + '_rooms']:g}" for g in ("trainee", "fac", "ta", "av", "staff")), ""],
                [Paragraph("<b>Total team (people)</b>", small), f"{d['team']:g}", ""],
                [Paragraph("<b>Lunch / Dinner / d'oeuvres / Dinner-Dance with service</b>", small),
                 " / ".join(_m2(d[x]) for x in ("lunch", "dinner", "hors", "dance")), ""]]
