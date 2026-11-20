@@ -1,6 +1,19 @@
 {% extends "crm_base.html" %}
 {% block title %}Budget — {{ label }}{% endblock %}
 {% block content %}
+<style>
+.bv table th,.bv table td{padding:3px 8px;font-size:.85rem;line-height:1.25}
+.bv .card{padding:8px 12px;margin:8px 0}
+.bv details.bsec{margin:6px 0;border:1px solid #d8d8d0;border-radius:8px;background:#fff}
+.bv details.bsec>summary{cursor:pointer;padding:8px 12px;font-weight:600;display:flex;justify-content:space-between;gap:12px;list-style:none}
+.bv details.bsec>summary::-webkit-details-marker{display:none}
+.bv details.bsec>summary::before{content:"\25B8";margin-right:8px;color:#0c4561}
+.bv details.bsec[open]>summary::before{content:"\25BE"}
+.bv details.bsec>summary .sum{margin-left:auto;color:#0c4561}
+.bv details.bsec>.card{margin:0;border:0;box-shadow:none;border-top:1px solid #eee;border-radius:0}
+.bv .editbtn{font-size:1.1rem;padding:10px 24px;background:#1b7a3d;color:#fff;font-weight:700}
+</style>
+<div class="bv">
 {% macro money(x) %}{% if x < 0 %}(${{ '{:,.0f}'.format(-x) }}){% else %}${{ '{:,.0f}'.format(x) }}{% endif %}{% endmacro %}
 <p><a href="{{ url_for('.budgets_home') }}">&larr; All budgets</a></p>
 <h1>Budget &mdash; {{ label }}</h1>
@@ -11,7 +24,7 @@
     {% if editing %}<b>Editing.</b> <button class="btn" type="submit" form="budgetform">Save budget</button>
       <a class="btn secondary" href="{{ url_for('.budget_view', key=key) }}">Cancel</a>
       <span class="muted"> Change blue numbers, tick Delete to remove a line, or add a line at the bottom of a section.</span>
-    {% else %}<a class="btn" href="{{ url_for('.budget_view', key=key, edit=1) }}">Edit budget</a>
+    {% else %}<a class="btn editbtn" href="{{ url_for('.budget_view', key=key, edit=1) }}">&#9998; Edit budget</a>
       <span class="muted"> You are the Owner, so you can change this budget.</span>{% endif %}
   {% else %}
     <b>View only.</b> <a class="btn secondary" href="#request">Request a budget change</a>
@@ -43,10 +56,11 @@
 {% endif %}
 </div>
 
+<p class="muted" style="margin:6px 0">Click a heading to open or close it. <a href="#" onclick="document.querySelectorAll('.bv details.bsec').forEach(function(d){d.open=true});return false">Open all</a> &middot; <a href="#" onclick="document.querySelectorAll('.bv details.bsec').forEach(function(d){d.open=false});return false">Close all</a></p>
 {% if editing %}<form id="budgetform" method="post" action="{{ url_for('.budget_save', key=key) }}">{% endif %}
 
 {% if kind == 'training' %}
-<h2>Key variables</h2>
+<details class="bsec" {% if editing %}open{% endif %}><summary>Key variables <span class="sum">room rate ${{ '%.2f'|format(derived.roomrate) }} &middot; {{ '%g'|format(derived.team) }} on the team</span></summary>
 <div class="card">
   <table>
     <tr><th>Variable</th><th>Value</th><th>Note</th></tr>
@@ -66,8 +80,9 @@
     <tr><td><b>Lunch / Dinner / d'oeuvres / Dinner-Dance with service</b></td><td colspan="2"><b>${{ '%.2f'|format(derived.lunch) }} / ${{ '%.2f'|format(derived.dinner) }} / ${{ '%.2f'|format(derived.hors) }} / ${{ '%.2f'|format(derived.dance) }}</b> <span class="muted">Calculated (rate plus banquet service charge)</span></td></tr>
   </table>
 </div>
+</details>
 
-<h2>Dates and venue schedule</h2>
+<details class="bsec" {% if editing %}open{% endif %}><summary>Dates and venue schedule <span class="sum">{{ data.dates }}</span></summary>
 <div class="card">
   {% if editing %}
   <label>Dates</label><input type="text" name="dates" value="{{ data.dates }}" style="width:100%">
@@ -79,10 +94,11 @@
   {% else %}<p class="muted">No schedule entered yet. Click Edit budget to add the dates, hotel and schedule.</p>{% endif %}
   {% endif %}
 </div>
+</details>
 {% endif %}
 
 {% for sec, sec_label in sections %}
-<h2>{{ sec_label }}</h2>
+<details class="bsec" {% if editing %}open{% endif %}><summary>{{ sec_label }} <span class="sum">{{ money(totals[sec]) }}</span></summary>
 <div class="card">
   <table>
     {% set cols = section_cols.get(sec) %}{% set has_h = cols and cols[0] %}
@@ -123,6 +139,7 @@
     <tr style="background:#ffff99"><td colspan="4"><b>Break even (couples)</b></td><td style="text-align:right"><b>{{ totals.breakeven if totals.breakeven else '—' }}</b></td><td></td></tr>{% endif %}
   </table>
 </div>
+</details>
 {% endfor %}
 
 {% if editing %}<p><button class="btn" type="submit">Save budget</button> <a href="{{ url_for('.budget_view', key=key) }}">Cancel</a></p></form>{% endif %}
@@ -173,4 +190,5 @@
   {% endfor %}
 </table></div>
 {% endif %}
+</div>
 {% endblock %}
