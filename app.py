@@ -2436,6 +2436,10 @@ def dashboard():
                 if r:
                     alerts.append(dict(level="urgent" if r_old else "note", cat="Chat", url=url_for(".chat_room"), cta="Open the chat room",
                                        text=f"{r} new {'message' if r == 1 else 'messages'} in the live chat room."))
+            pm = conn.execute("SELECT COUNT(*) AS n FROM chat_private WHERE to_id = ? AND read_at IS NULL", (sid,)).fetchone()["n"]
+            if pm:
+                alerts.append(dict(level="note", cat="Chat", url=url_for(".chat_private_home"), cta="Open private messages",
+                                   text=f"{pm} new private {'message' if pm == 1 else 'messages'} for you."))
         except Exception as e:
             conn.rollback()
             print(f"dashboard chat alert skipped: {e}", flush=True)
@@ -8636,6 +8640,9 @@ def _ensure_chat_tables(conn):
         id SERIAL PRIMARY KEY, body TEXT NOT NULL,
         author_id INTEGER, author_name TEXT,
         created_at TEXT NOT NULL DEFAULT {CHAT_NOW})""")
+    conn.execute(f"""CREATE TABLE IF NOT EXISTS chat_private (
+        id SERIAL PRIMARY KEY, from_id INTEGER NOT NULL, to_id INTEGER NOT NULL, body TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT {CHAT_NOW}, read_at TEXT)""")
     conn.execute("""CREATE TABLE IF NOT EXISTS chat_seen (
         staff_id INTEGER PRIMARY KEY, board_seen TEXT NOT NULL DEFAULT '',
         room_seen_id INTEGER NOT NULL DEFAULT 0)""")
@@ -8677,19 +8684,22 @@ def _chat_mark_seen(conn, board=False, room=False):
 @crm.context_processor
 def _inject_chat_flags():
     """Small 'new' dots on the menu link. Never allowed to break a page."""
-    out = {"chat_new_board": False, "chat_new_room": False, "chat_ok": False}
+    out = {"chat_new_board": False, "chat_new_room": False, "chat_new_private": False, "chat_ok": False}
     try:
         if not session.get("staff_id"):
             return out
         if session.get("staff_role") == ACCOUNTING_ROLE and not session.get("is_owner"):
             return out
         out["chat_ok"] = True
-        if request.endpoint and request.endpoint.startswith("crm.chat_"):
-            return out
+        out["chat_new_private"] = False
         conn = get_db()
         try:
             _ensure_chat_tables(conn)
             sid = session["staff_id"]
+            pn = conn.execute("SELECT COUNT(*) AS n FROM chat_private WHERE to_id = ? AND read_at IS NULL", (sid,)).fetchone()
+            out["chat_new_private"] = pn["n"] > 0
+            if request.endpoint and request.endpoint.startswith("crm.chat_"):
+                return out
             seen = conn.execute("SELECT * FROM chat_seen WHERE staff_id = ?", (sid,)).fetchone()
             if not seen:
                 return out  # never opened it yet; no dot until they've visited once
@@ -8863,6 +8873,153 @@ def chat_room_delete(msg_id):
         conn.commit()
     conn.close()
     return redirect(url_for(".chat_room"))
+
+
+# ---- Private chats: one person to one person. Only those two can read them: not the Owner, not Leadership, and they never
+# ---- appear on the Correspondence page or in the Change/Access History. Nothing is emailed or texted from here.
+
+def _chat_private_person(conn, other_id):
+    """The person to chat with, or None (must be an active login that can use the chat, and not yourself)."""
+    if other_id == session["staff_id"]:
+        return None
+    return conn.execute(
+        "SELECT id, name, role, is_owner FROM staff WHERE id = ? AND active = 1 AND (role <> ? OR is_owner IN (1, 2))",
+        (other_id, ACCOUNTING_ROLE)).fetchone()
+
+
+@crm.route("/chat/private")
+@chat_required
+def chat_private_home():
+    conn = get_db()
+    _ensure_chat_tables(conn)
+    me = session["staff_id"]
+    people = conn.execute(
+        "SELECT id, name FROM staff WHERE active = 1 AND id <> ? AND (role <> ? OR is_owner IN (1, 2)) ORDER BY name",
+        (me, ACCOUNTING_ROLE)).fetchall()
+    last, unread = {}, {}
+    for m in conn.execute("SELECT id, from_id, to_id, body, created_at, read_at FROM chat_private "
+                          "WHERE from_id = ? OR to_id = ? ORDER BY id DESC LIMIT 3000", (me, me)).fetchall():
+        other = m["to_id"] if m["from_id"] == me else m["from_id"]
+        last.setdefault(other, m)
+        if m["to_id"] == me and m["read_at"] is None:
+            unread[other] = unread.get(other, 0) + 1
+    conn.close()
+    chats = [dict(id=p["id"], name=p["name"], last=last[p["id"]], unread=unread.get(p["id"], 0)) for p in people if p["id"] in last]
+    chats.sort(key=lambda c: c["last"]["id"], reverse=True)
+    others = [p for p in people if p["id"] not in last]
+    return render_template("chat_private.html", chats=chats, others=others, my_id=me)
+
+
+def _chat_private_json(m, me):
+    return {"id": m["id"], "body": m["body"], "mine": m["from_id"] == me, "at": m["created_at"]}
+
+
+def _chat_private_mark_read(conn, me, other_id):
+    conn.execute(f"UPDATE chat_private SET read_at = {CHAT_NOW} WHERE to_id = ? AND from_id = ? AND read_at IS NULL", (me, other_id))
+    conn.commit()
+
+
+@crm.route("/chat/private/<int:other_id>")
+@chat_required
+def chat_private_thread(other_id):
+    conn = get_db()
+    _ensure_chat_tables(conn)
+    me = session["staff_id"]
+    person = _chat_private_person(conn, other_id)
+    if not person:
+        conn.close()
+        abort(404)
+    msgs = conn.execute(
+        "SELECT * FROM (SELECT * FROM chat_private WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?) "
+        "ORDER BY id DESC LIMIT 200) x ORDER BY id", (me, other_id, other_id, me)).fetchall()
+    _chat_private_mark_read(conn, me, other_id)
+    conn.close()
+    return render_template("chat_private_thread.html", person=person, msgs=[_chat_private_json(m, me) for m in msgs])
+
+
+@crm.route("/chat/private/<int:other_id>/poll")
+@chat_required
+def chat_private_poll(other_id):
+    from flask import jsonify
+    after = request.args.get("after", type=int) or 0
+    conn = get_db()
+    _ensure_chat_tables(conn)
+    me = session["staff_id"]
+    if not _chat_private_person(conn, other_id):
+        conn.close()
+        abort(404)
+    rows = conn.execute(
+        "SELECT * FROM chat_private WHERE id > ? AND ((from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)) ORDER BY id LIMIT 200",
+        (after, me, other_id, other_id, me)).fetchall()
+    if rows:
+        _chat_private_mark_read(conn, me, other_id)
+    conn.close()
+    return jsonify([_chat_private_json(m, me) for m in rows])
+
+
+@crm.route("/chat/private/<int:other_id>/send", methods=["POST"])
+@chat_required
+def chat_private_send(other_id):
+    from flask import jsonify
+    body = _chat_clean(request.form.get("body"), 2000)
+    if not body:
+        return jsonify({"ok": False}), 400
+    conn = get_db()
+    _ensure_chat_tables(conn)
+    if not _chat_private_person(conn, other_id):
+        conn.close()
+        abort(404)
+    conn.execute("INSERT INTO chat_private (from_id, to_id, body) VALUES (?, ?, ?)", (session["staff_id"], other_id, body))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
+@crm.route("/chat/private/message/<int:msg_id>/delete", methods=["POST"])
+@chat_required
+def chat_private_delete(msg_id):
+    """You can remove a message you sent (it disappears for both of you). Nobody else can delete or read it."""
+    conn = get_db()
+    _ensure_chat_tables(conn)
+    m = conn.execute("SELECT to_id FROM chat_private WHERE id = ? AND from_id = ?", (msg_id, session["staff_id"])).fetchone()
+    if not m:
+        conn.close()
+        abort(404)
+    conn.execute("DELETE FROM chat_private WHERE id = ? AND from_id = ?", (msg_id, session["staff_id"]))
+    conn.commit()
+    conn.close()
+    return redirect(url_for(".chat_private_thread", other_id=m["to_id"]))
+
+
+@crm.route("/owner/chat-review")
+@true_owner_required
+def chat_review():
+    """Owner only: read every chat in one place (private, live room, discussion board). Read-only."""
+    kind = request.args.get("kind", "private")
+    conn = get_db()
+    _ensure_chat_tables(conn)
+    names = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM staff").fetchall()}
+    convos, room, topics = [], [], []
+    if kind == "private":
+        rows = conn.execute("SELECT * FROM chat_private ORDER BY id DESC LIMIT 2000").fetchall()
+        pairs = {}
+        for m in rows:
+            key = tuple(sorted((m["from_id"], m["to_id"])))
+            pairs.setdefault(key, []).append(m)
+        for key, ms in pairs.items():
+            ms = list(reversed(ms[:300]))
+            convos.append(dict(a=names.get(key[0], "?"), b=names.get(key[1], "?"), last=ms[-1]["created_at"], n=len(ms),
+                               msgs=[dict(who=names.get(m["from_id"], "?"), body=m["body"], at=m["created_at"]) for m in ms]))
+        convos.sort(key=lambda c: c["last"], reverse=True)
+    elif kind == "room":
+        room = list(reversed(conn.execute("SELECT * FROM chat_messages ORDER BY id DESC LIMIT 500").fetchall()))
+    else:
+        kind = "board"
+        for t in conn.execute("SELECT * FROM chat_topics ORDER BY last_activity DESC LIMIT 100").fetchall():
+            reps = conn.execute("SELECT * FROM chat_replies WHERE topic_id = ? ORDER BY id", (t["id"],)).fetchall()
+            topics.append(dict(t=t, replies=reps))
+    conn.close()
+    return render_template("chat_review.html", kind=kind, convos=convos, room=room, topics=topics)
 
 
 # ---------- Website Team: who appears on the public Meet the Team page ----------
