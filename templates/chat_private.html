@@ -36,6 +36,17 @@
 })();
 </script>
 
+<h2>Alerts for new private messages</h2>
+<form class="card" method="post" action="{{ url_for('.chat_private_alerts') }}">
+  <p class="muted" style="margin-top:0">The alert never contains the message. It only says you have one waiting, and you get at most one an hour.</p>
+  <label style="display:block;padding:3px 0"><input type="checkbox" name="email_on" {% if email_on %}checked{% endif %}> Email me</label>
+  <label style="display:block;padding:3px 0"><input type="checkbox" name="text_on" {% if text_on %}checked{% endif %} {% if not phone_last4 %}disabled{% endif %}> Text me{% if phone_last4 %} at the cell number ending {{ phone_last4 }} on my Contact record{% endif %}</label>
+  {% if not phone_last4 %}<p class="muted" style="margin:2px 0 6px;font-size:.85rem">No cell number is on your Contact record yet, so texting is unavailable. Ask the Owner to add it.</p>{% endif %}
+  {% if not alerts_live %}<p class="muted" style="margin:2px 0 6px;font-size:.85rem">Email alerts are switched off site-wide right now, so nothing is being sent yet.</p>{% endif %}
+  {% if not texting_ready %}<p class="muted" style="margin:2px 0 6px;font-size:.85rem">Texting is not turned on for the Hub yet. Your choice is saved and will start working when it is.</p>{% endif %}
+  <button class="btn" type="submit" style="margin-top:6px">Save my alert choices</button>
+</form>
+
 <h2>Your private chats</h2>
 <div class="card">
   {% if chats %}
