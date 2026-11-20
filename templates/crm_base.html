@@ -96,6 +96,7 @@
             <a href="{{ url_for('.hub_ownership') }}" style="padding-left:30px">Hub Ownership</a>
             <a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports (Finances)</a>
             {% if (session.is_owner and not session.is_admin) or has_change_history_view %}<a href="{{ url_for('.change_history') }}" style="padding-left:30px">Change/Access History</a>{% endif %}
+            {% if not session.is_admin %}<a href="{{ url_for('.chat_review') }}" style="padding-left:30px">Chat Review</a>{% endif %}
             <a href="{{ url_for('.do_not_contact_list') }}" style="padding-left:30px">Do Not Contact</a>
             <a href="{{ url_for('.feature_guide') }}" style="padding-left:30px">How the site works</a>
             <a href="{{ url_for('.database_map') }}" style="padding-left:30px">Database map</a>

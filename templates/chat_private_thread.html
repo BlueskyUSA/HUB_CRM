@@ -1,29 +1,29 @@
 {% extends "crm_base.html" %}
-{% block title %}Private chat with {{ person.name }} — {{ program_name }}{% endblock %}
+{% block title %}Private chat with {{ others|join(", ") }} — {{ program_name }}{% endblock %}
 {% block content %}
-<h1>Private chat with {{ person.name }}</h1>
+<h1>Private chat with {{ others|join(", ") }}</h1>
 {% set chat_tab = 'private' %}
 {% include "_chat_tabs.html" %}
 <p><a href="{{ url_for('.chat_private_home') }}">&larr; All private chats</a></p>
-<p class="muted">Only you and {{ person.name }} can read this. It is not shown to anyone else, is not on the Correspondence page, and nothing is emailed or texted. You can delete a message you sent.</p>
+<p class="muted">Only the people listed above and the Owner can read this. Other team members cannot. It is not on the Correspondence page, and nothing is emailed or texted. You can delete a message you sent.</p>
 <div class="card" style="padding:0">
   <div id="msgs" style="height:55vh; min-height:260px; overflow-y:auto; padding:12px"></div>
   <form id="sendForm" style="display:flex; gap:8px; padding:10px; border-top:1px solid #ddd">
-    <input id="msgBody" type="text" maxlength="2000" autocomplete="off" placeholder="Message to {{ person.name }}…" style="flex:1; font-size:1rem; padding:10px; min-width:0">
+    <input id="msgBody" type="text" maxlength="2000" autocomplete="off" placeholder="Type a message…" style="flex:1; font-size:1rem; padding:10px; min-width:0">
     <button class="btn" type="submit">Send</button>
   </form>
 </div>
 <script>
 (function(){
-  var box = document.getElementById('msgs'), last = 0, who = {{ person.name | tojson }};
+  var box = document.getElementById('msgs'), last = 0;
   function add(m){
     if (m.id <= last) return; last = m.id;
     var d = document.createElement('div'); d.style.cssText = 'margin-bottom:10px';
     var h = document.createElement('div'); h.className = 'muted'; h.style.fontSize = '.85rem';
-    h.textContent = (m.mine ? 'You' : who) + ' · ' + (m.at || '').slice(5,16);
+    h.textContent = (m.mine ? 'You' : m.who) + ' · ' + (m.at || '').slice(5,16);
     if (m.mine) {
       var f = document.createElement('form'); f.method = 'post'; f.action = '{{ url_for(".chat_private_home") }}/message/' + m.id + '/delete';
-      f.style.display = 'inline'; f.onsubmit = function(){ return confirm('Delete this message for both of you?'); };
+      f.style.display = 'inline'; f.onsubmit = function(){ return confirm('Delete this message for everyone in this chat?'); };
       var b = document.createElement('button'); b.type = 'submit'; b.textContent = 'delete';
       b.style.cssText = 'background:none;border:0;color:#999;cursor:pointer;font-size:.8rem;margin-left:8px';
       f.appendChild(b); h.appendChild(f);
@@ -33,7 +33,7 @@
   }
   function scrollDown(){ box.scrollTop = box.scrollHeight; }
   function poll(){
-    fetch('{{ url_for(".chat_private_poll", other_id=person.id) }}?after=' + last, {credentials:'same-origin'})
+    fetch('{{ url_for(".chat_private_poll", convo_id=convo_id) }}?after=' + last, {credentials:'same-origin'})
       .then(function(r){ if (r.redirected) { location.reload(); return []; } return r.json(); })
       .then(function(rows){ if (rows.length) { var atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 80; rows.forEach(add); if (atEnd) scrollDown(); } })
       .catch(function(){});
@@ -47,7 +47,7 @@
     e.preventDefault();
     var inp = document.getElementById('msgBody'), v = inp.value.trim(); if (!v) return;
     inp.value = '';
-    fetch('{{ url_for(".chat_private_send", other_id=person.id) }}', {method:'POST', credentials:'same-origin',
+    fetch('{{ url_for(".chat_private_send", convo_id=convo_id) }}', {method:'POST', credentials:'same-origin',
       headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'body=' + encodeURIComponent(v)})
       .then(function(){ poll(); setTimeout(scrollDown, 300); });
   });

@@ -4,7 +4,37 @@
 <h1>Chat Room</h1>
 {% set chat_tab = 'private' %}
 {% include "_chat_tabs.html" %}
-<p class="muted">Private messages between you and one other person. Only the two of you can read them: nobody else on the team, and not the Owner. They are never shown on the Correspondence page, and nothing is emailed or texted from here.</p>
+<p class="muted">Private messages with one person or a few. Only the people you pick and the Owner can read them. Other team members cannot. They are not on the Correspondence page, and nothing is emailed or texted from here.</p>
+
+<h2>Start a private chat</h2>
+<form class="card" method="post" action="{{ url_for('.chat_private_start') }}">
+  <details id="pick" style="margin-bottom:10px">
+    <summary class="btn secondary" style="display:inline-block;cursor:pointer" id="pickLabel">Choose people &#9662;</summary>
+    <div style="border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin-top:6px;max-height:280px;overflow-y:auto;background:#fff">
+      <label style="display:block;padding:4px 0;border-bottom:1px solid #eee"><input type="checkbox" id="pickAll"> <b>Select everyone</b></label>
+      {% for p in people %}
+      <label style="display:block;padding:4px 0"><input type="checkbox" name="people" value="{{ p.id }}" class="pp"> {{ p.name }}</label>
+      {% endfor %}
+    </div>
+  </details>
+  <button class="btn" type="submit">Start chat</button>
+  <span class="muted" id="pickCount" style="margin-left:8px">Nobody picked yet. Pick one person or as many as you like.</span>
+</form>
+<script>
+(function(){
+  var boxes = document.querySelectorAll('.pp'), all = document.getElementById('pickAll'),
+      label = document.getElementById('pickLabel'), count = document.getElementById('pickCount');
+  function upd(){
+    var n = 0, names = [];
+    boxes.forEach(function(b){ if (b.checked) { n++; names.push(b.parentNode.textContent.trim()); } });
+    count.textContent = n ? n + ' picked: ' + names.join(', ') : 'Nobody picked yet. Pick one person or as many as you like.';
+    label.innerHTML = (n ? n + ' picked' : 'Choose people') + ' &#9662;';
+    all.checked = n && n === boxes.length;
+  }
+  boxes.forEach(function(b){ b.addEventListener('change', upd); });
+  all.addEventListener('change', function(){ boxes.forEach(function(b){ b.checked = all.checked; }); upd(); });
+})();
+</script>
 
 <h2>Your private chats</h2>
 <div class="card">
@@ -12,21 +42,12 @@
   <table>
     {% for c in chats %}
     <tr>
-      <td style="width:30%"><a href="{{ url_for('.chat_private_thread', other_id=c.id) }}"><b>{{ c.name }}</b></a>{% if c.unread %} <span style="background:#d9534f;color:#fff;border-radius:10px;padding:1px 8px;font-size:.8rem">{{ c.unread }} new</span>{% endif %}</td>
-      <td class="muted">{{ 'You: ' if c.last.from_id == my_id else '' }}{{ c.last.body[:90] }}{% if c.last.body|length > 90 %}&hellip;{% endif %}</td>
-      <td class="muted" style="text-align:right;white-space:nowrap">{{ c.last.created_at[5:16] }}</td>
+      <td style="width:32%"><a href="{{ url_for('.chat_private_thread', convo_id=c.id) }}"><b>{{ c.names }}</b></a>{% if c.group %} <span class="muted">(group)</span>{% endif %}{% if c.unread %} <span style="background:#d9534f;color:#fff;border-radius:10px;padding:1px 8px;font-size:.8rem">{{ c.unread }} new</span>{% endif %}</td>
+      <td class="muted">{% if c.last %}{{ 'You' if c.last.from_id == my_id else c.last.who }}: {{ c.last.body[:90] }}{% if c.last.body|length > 90 %}&hellip;{% endif %}{% else %}No messages yet{% endif %}</td>
+      <td class="muted" style="text-align:right;white-space:nowrap">{% if c.last %}{{ c.last.created_at[5:16] }}{% endif %}</td>
     </tr>
     {% endfor %}
   </table>
-  {% else %}<p class="muted" style="margin:0">No private chats yet. Pick a person below to start one.</p>{% endif %}
-</div>
-
-<h2>Start a private chat with</h2>
-<div class="card">
-  {% if others %}
-  <div style="display:flex;flex-wrap:wrap;gap:8px">
-    {% for p in others %}<a class="btn secondary" href="{{ url_for('.chat_private_thread', other_id=p.id) }}">{{ p.name }}</a>{% endfor %}
-  </div>
-  {% else %}<p class="muted" style="margin:0">Everyone you can chat with is already listed above.</p>{% endif %}
+  {% else %}<p class="muted" style="margin:0">No private chats yet.</p>{% endif %}
 </div>
 {% endblock %}
