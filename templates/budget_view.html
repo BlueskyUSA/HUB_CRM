@@ -19,7 +19,7 @@
 <h1>Budget &mdash; {{ label }}</h1>
 <p class="muted">{% if updated_at %}Last saved {{ updated_at }} by {{ updated_by }}{% else %}Starting template, not yet saved{% endif %}</p>
 
-<div class="card" style="position:sticky;top:62px;z-index:60;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15)">
+<div class="card" style="position:sticky;top:62px;z-index:60;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15);display:flow-root">
   {% if is_owner %}
     {% if editing %}<b>Editing.</b> <button class="btn" type="submit" form="budgetform">Save budget</button>
       <a class="btn secondary" href="{{ url_for('.budget_view', key=key) }}">Cancel</a>
@@ -142,6 +142,27 @@
 </div>
 </details>
 {% endfor %}
+
+{% if kind == 'training' %}
+<details class="bsec" {% if editing %}open{% endif %}><summary>One-time expenses (equipment, banners, insurance, nonprofit setup) <span class="sum">{{ money(totals.onetime_total) }}</span></summary>
+<div class="card">
+  <p class="muted" style="margin:0 0 6px">These are shared by all trainings, so they are kept in one place and counted once.
+    {% if is_owner %}<a href="{{ url_for('.budget_view', key='fixed', edit=1) }}">Change them in the one-time budget</a>.{% else %}The Owner can change them in the one-time budget.{% endif %}</p>
+  <table>
+    <tr><th>Item</th><th style="text-align:right">Quantity</th><th style="text-align:right">Unit cost</th><th style="text-align:right">Times</th><th style="text-align:right">Budget</th><th>Notes</th></tr>
+    {% for r in onetime_rows %}
+    <tr><td>{{ r.label }}</td><td style="text-align:right">{{ '{:,.0f}'.format(r.qv) }}</td><td style="text-align:right">{{ '{:,.2f}'.format(r.uv) }}</td><td style="text-align:right">{{ '{:,.0f}'.format(r.tv) }}</td>
+        <td style="text-align:right"><b>{{ money(r.amount) }}</b></td><td class="muted">{{ r.note }}</td></tr>
+    {% endfor %}
+    <tr><td colspan="4"><b>Total for one-time expenses</b></td><td style="text-align:right"><b>{{ money(totals.onetime_total) }}</b></td><td></td></tr>
+    <tr><td colspan="4"><b>Total operating &amp; one-time expenses</b></td><td style="text-align:right"><b>{{ money(totals.all_expenses) }}</b></td><td></td></tr>
+    <tr><td colspan="4">Net before one-time expenses</td><td style="text-align:right">{{ money(totals.net) }}</td><td></td></tr>
+    <tr><td colspan="4"><b>Net operating income</b></td><td style="text-align:right"><b>{{ money(totals.net_after_onetime) }}</b></td><td></td></tr>
+    <tr style="background:#ffff99"><td colspan="4"><b>Break even, counting everything (couples)</b></td><td style="text-align:right"><b>{{ totals.breakeven_all if totals.breakeven_all else '—' }}</b></td><td></td></tr>
+  </table>
+</div>
+</details>
+{% endif %}
 
 {% if editing %}<p><button class="btn" type="submit">Save budget</button> <a href="{{ url_for('.budget_view', key=key) }}">Cancel</a></p></form>{% endif %}
 
