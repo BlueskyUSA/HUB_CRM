@@ -5,7 +5,7 @@
 {% set chat_tab = 'private' %}
 {% include "_chat_tabs.html" %}
 <p><a href="{{ url_for('.chat_private_home') }}">&larr; All private chats</a></p>
-<p class="muted">Only you, {{ person.name }} and the Owner can read this. Other team members cannot. It is not on the Correspondence page, and nothing is emailed or texted. You can delete a message you sent.</p>
+<p class="muted">Only you and {{ person.name }} can read this. It is not shown to anyone else, is not on the Correspondence page, and nothing is emailed or texted. You can delete a message you sent.</p>
 <div class="card" style="padding:0">
   <div id="msgs" style="height:55vh; min-height:260px; overflow-y:auto; padding:12px"></div>
   <form id="sendForm" style="display:flex; gap:8px; padding:10px; border-top:1px solid #ddd">

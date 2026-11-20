@@ -1,4 +1,5 @@
 <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap">
   <a class="btn {% if chat_tab != 'board' %}secondary{% endif %}" href="{{ url_for('.chat_home') }}">Discussion Board{% if chat_new_board %} <span style="color:#d9534f">&#9679;</span>{% endif %}</a>
   <a class="btn {% if chat_tab != 'room' %}secondary{% endif %}" href="{{ url_for('.chat_room') }}">Live Chat{% if chat_new_room %} <span style="color:#d9534f">&#9679;</span>{% endif %}</a>
+  <a class="btn {% if chat_tab != 'private' %}secondary{% endif %}" href="{{ url_for('.chat_private_home') }}">Private Messages{% if chat_new_private %} <span style="color:#d9534f">&#9679;</span>{% endif %}</a>
 </div>
