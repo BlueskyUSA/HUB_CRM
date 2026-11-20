@@ -282,7 +282,16 @@ def require_staff_login():
             msg = "Your access was changed, so please sign in again."
             try:
                 flag = me["is_owner"]
-                if (me["role"] != session.get("staff_role") or bool(flag) != bool(session.get("is_owner"))
+                if flag == 2:
+                    _c = get_db()
+                    try:
+                        lim = _admin_is_limited(_c, me["id"])
+                    finally:
+                        _c.close()
+                    eff_owner = not lim
+                else:
+                    eff_owner = bool(flag)
+                if (me["role"] != session.get("staff_role") or eff_owner != bool(session.get("is_owner"))
                         or (flag == 2) != bool(session.get("is_admin"))):
                     changed = True
             except (KeyError, IndexError):
@@ -587,6 +596,17 @@ def _split_program_grants_by_heading(conn):
     conn.commit()
 
 
+ADMIN_LIMITED_KEY = "admin_limited"   # marker row in access_grants: this Administrator only sees the areas the Owner ticks
+
+
+def _admin_is_limited(conn, staff_id):
+    try:
+        return bool(conn.execute("SELECT 1 FROM access_grants WHERE area_key = ? AND staff_id = ?",
+                                 (ADMIN_LIMITED_KEY, staff_id)).fetchone())
+    except Exception:
+        return False
+
+
 def _has_area_access(area_key):
     if session.get("is_owner"):
         return True
@@ -795,6 +815,13 @@ def _attempt_login(next_url, door="team"):
             session["must_change"] = False
         try:
             session["is_owner"] = bool(staff["is_owner"])
+            if staff["is_owner"] == 2:
+                _c = get_db()
+                try:
+                    if _admin_is_limited(_c, staff["id"]):
+                        session["is_owner"] = False     # limited Administrator: sees only the areas ticked for them
+                finally:
+                    _c.close()
             session["is_admin"] = (staff["is_owner"] == 2)   # 2 = Administrator: Owner powers, but not ownership itself
         except (KeyError, IndexError):
             # is_owner column doesn't exist yet -- migrate_add_owner.py hasn't
@@ -977,6 +1004,8 @@ def staff_list():
     conn.close()
     access_by_staff = {}
     granted_keys_by_staff = {}
+    limited_ids = {g["staff_id"] for g in grants if g["area_key"] == ADMIN_LIMITED_KEY}
+    grants = [g for g in grants if g["area_key"] != ADMIN_LIMITED_KEY]
     for g in grants:
         access_by_staff.setdefault(g["staff_id"], []).append(area_labels.get(g["area_key"], g["area_key"]))
         granted_keys_by_staff.setdefault(g["staff_id"], set()).add(g["area_key"])
@@ -999,7 +1028,7 @@ def staff_list():
         sid: sorted(((h, sorted(v)) for h, v in d.items()), key=lambda t: (_order.get(t[0], 2), t[0]))
         for sid, d in access_groups_by_staff.items()}
     return render_template(
-        "staff_list.html", staff=rows, last_in=last_in, last_active=last_active, can_assign_logins=_has_area_access("assign_logins"), access_by_staff=access_by_staff,
+        "staff_list.html", staff=rows, limited_ids=limited_ids, last_in=last_in, last_active=last_active, can_assign_logins=_has_area_access("assign_logins"), access_by_staff=access_by_staff,
         access_groups_by_staff=access_groups_by_staff,
         all_areas=all_areas, granted_keys_by_staff=granted_keys_by_staff,
         accounting_areas=[a for a in all_areas if a[0] in ACCOUNTING_AREAS],
@@ -1692,6 +1721,32 @@ def staff_special_access(staff_id):
     conn.commit()
     conn.close()
     flash(f"{staff['name']} " + (" and ".join(changes) + "." if changes else "already had exactly those choices. Nothing changed."))
+    return redirect(url_for(".staff_list", open=staff_id))
+
+
+@crm.route("/staff/<int:staff_id>/admin-limit", methods=["POST"])
+@true_owner_required
+def staff_admin_limit(staff_id):
+    """The real Owner limits an Administrator to the areas ticked for them (or gives back full Administrator access)."""
+    conn = get_db()
+    st = conn.execute("SELECT * FROM staff WHERE id = ?", (staff_id,)).fetchone()
+    if not st or st["is_owner"] != 2:
+        conn.close()
+        flash("That account is not an Administrator. Nothing was changed.")
+        return redirect(url_for(".staff_list"))
+    has = _admin_is_limited(conn, staff_id)
+    if request.form.get("mode") == "limit" and not has:
+        conn.execute("INSERT INTO access_grants (area_key, staff_id) VALUES (?, ?)", (ADMIN_LIMITED_KEY, staff_id))
+        conn.execute("UPDATE staff SET role = 'Leadership' WHERE id = ? AND role <> ?", (staff_id, ACCOUNTING_ROLE))
+        flash(f"{st['name']} is now a limited Administrator. Under Modify access, tick the areas you want them to see. "
+              "They will be asked to sign in again.")
+    elif request.form.get("mode") == "full" and has:
+        conn.execute("DELETE FROM access_grants WHERE area_key = ? AND staff_id = ?", (ADMIN_LIMITED_KEY, staff_id))
+        flash(f"{st['name']} is a full Administrator again. They will be asked to sign in again.")
+    else:
+        flash("No change.")
+    conn.commit()
+    conn.close()
     return redirect(url_for(".staff_list", open=staff_id))
 
 
