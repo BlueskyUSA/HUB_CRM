@@ -2090,6 +2090,27 @@ def _swap_program_name(resp):
     return resp
 
 
+_ISO_DATE = re.compile(r"(?<![\d-])(20\d\d)-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(?![\d-])")
+_HTML_SKIP = re.compile(r"(<script\b.*?</script>|<style\b.*?</style>|<textarea\b.*?</textarea>|<!--.*?-->|<[^>]+>)", re.S | re.I)
+
+
+@app.after_request
+def _show_dates_month_first(resp):
+    """Every date shown on a page reads month/day/year (11/20/2026) instead of 2026-11-20. Only the visible text is
+    changed: form boxes, links, scripts and downloads keep the year-first form they need to work."""
+    try:
+        if resp.mimetype == "text/html" and not resp.direct_passthrough and resp.status_code != 304:
+            html = resp.get_data(as_text=True)
+            if "20" in html:
+                parts = _HTML_SKIP.split(html)
+                for i in range(0, len(parts), 2):          # even pieces are visible text; odd pieces are tags/scripts
+                    parts[i] = _ISO_DATE.sub(lambda m: f"{m.group(2)}/{m.group(3)}/{m.group(1)}", parts[i])
+                resp.set_data("".join(parts))
+    except Exception as e:
+        print(f"date format skipped: {e!r}", flush=True)
+    return resp
+
+
 @app.template_filter("bang")
 def bang_filter(text):
     """Escape text, then put the red exclamation point after the word Sojourn."""
