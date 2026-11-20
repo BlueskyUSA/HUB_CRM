@@ -8703,6 +8703,8 @@ def _ensure_chat_tables(conn):
     conn.execute(f"""CREATE TABLE IF NOT EXISTS chat_convo_msgs (
         id SERIAL PRIMARY KEY, convo_id INTEGER NOT NULL, from_id INTEGER NOT NULL, body TEXT NOT NULL,
         created_at TEXT NOT NULL DEFAULT {CHAT_NOW})""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS chat_notify (
+        staff_id INTEGER PRIMARY KEY, email_on INTEGER NOT NULL DEFAULT 1, text_on INTEGER NOT NULL DEFAULT 0, last_sent TEXT)""")
     conn.execute("""CREATE TABLE IF NOT EXISTS chat_seen (
         staff_id INTEGER PRIMARY KEY, board_seen TEXT NOT NULL DEFAULT '',
         room_seen_id INTEGER NOT NULL DEFAULT 0)""")
@@ -8958,6 +8960,110 @@ def _chat_convo_for(conn, convo_id, me):
         abort(404)
 
 
+def _chat_phone(conn, staff):
+    """The cell number on the person's linked Contact record, as +1XXXXXXXXXX (or None)."""
+    try:
+        if not staff["contact_id"]:
+            return None
+        c = conn.execute("SELECT cell_phone FROM contacts WHERE id = ?", (staff["contact_id"],)).fetchone()
+    except Exception:
+        return None
+    d = re.sub(r"\D", "", (c["cell_phone"] if c else "") or "")
+    if len(d) == 11 and d.startswith("1"):
+        d = d[1:]
+    return "+1" + d if len(d) == 10 else None
+
+
+def _texting_ready():
+    return all((os.environ.get(k) or "").strip() for k in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"))
+
+
+def _send_text(to_number, body):
+    """One text through Twilio. Returns True if Twilio accepted it. Does nothing until the three Twilio settings exist."""
+    if not _texting_ready():
+        return False
+    import base64, urllib.request, urllib.parse
+    sid = os.environ["TWILIO_ACCOUNT_SID"].strip()
+    tok = os.environ["TWILIO_AUTH_TOKEN"].strip()
+    data = urllib.parse.urlencode({"To": to_number, "From": os.environ["TWILIO_FROM_NUMBER"].strip(), "Body": body}).encode()
+    req = urllib.request.Request(f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json", data=data)
+    req.add_header("Authorization", "Basic " + base64.b64encode(f"{sid}:{tok}".encode()).decode())
+    try:
+        with urllib.request.urlopen(req, timeout=8) as r:
+            return 200 <= r.status < 300
+    except Exception as e:
+        print(f"private-message text not sent: {e!r}", flush=True)
+        return False
+
+
+def _chat_private_alert(conn, recipient_id):
+    """Tell one person (email and/or text, as they chose) that they have a new private message. Never includes the message,
+    sends at most one an hour per person, and never raises."""
+    try:
+        import correspondence
+        import email_templates as _T
+        if not correspondence.live():
+            return
+        st = conn.execute("SELECT * FROM staff WHERE id = ? AND active = 1", (recipient_id,)).fetchone()
+        if not st:
+            return
+        pref = conn.execute("SELECT * FROM chat_notify WHERE staff_id = ?", (recipient_id,)).fetchone()
+        email_on = True if not pref else bool(pref["email_on"])
+        text_on = bool(pref and pref["text_on"])
+        if not (email_on or text_on):
+            return
+        recent = conn.execute(
+            f"SELECT 1 FROM chat_notify WHERE staff_id = ? AND last_sent IS NOT NULL AND last_sent > "
+            f"to_char((now() AT TIME ZONE 'America/Chicago') - interval '60 minutes', 'YYYY-MM-DD HH24:MI:SS')", (recipient_id,)).fetchone()
+        if recent:
+            return
+        link = url_for(".chat_private_home", _external=True)
+        first = (st["name"] or "").split(" ")[0] or "there"
+        sent = False
+        if email_on and st["email"]:
+            subject, html, text = _T.guide_letter_content("chat_private_alert", first, "", "", "", link=link)
+            try:
+                send_email(to_email=st["email"], to_name=st["name"], subject=subject, html_content=html, text_content=text)
+                sent = True
+            except Exception as e:
+                print(f"private-message email alert not sent: {e!r}", flush=True)
+        if text_on:
+            phone = _chat_phone(conn, st)
+            if phone:
+                spec = _T.spec_with_edit("chat_private_alert_text", _T.saved_edit("chat_private_alert_text"))
+                fill = {"first": first, "link": link}
+                body = (f"{spec.get('greeting', 'Hi')} {first}, " + " ".join(x.format(**fill) for x in spec["paras"][:1])).strip()
+                sent = _send_text(phone, body) or sent
+        if sent:
+            conn.execute("INSERT INTO chat_notify (staff_id, last_sent) VALUES (?, "
+                         "to_char(now() AT TIME ZONE 'America/Chicago', 'YYYY-MM-DD HH24:MI:SS')) "
+                         "ON CONFLICT (staff_id) DO UPDATE SET last_sent = EXCLUDED.last_sent", (recipient_id,))
+            conn.commit()
+    except Exception as e:
+        print(f"private-message alert skipped: {e!r}", flush=True)
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+
+
+@crm.route("/chat/private/alerts", methods=["POST"])
+@chat_required
+def chat_private_alerts():
+    """Each person chooses whether a new private message is announced by email and/or text."""
+    conn = get_db()
+    _ensure_chat_tables(conn)
+    me = session["staff_id"]
+    email_on = 1 if request.form.get("email_on") else 0
+    text_on = 1 if request.form.get("text_on") else 0
+    conn.execute("INSERT INTO chat_notify (staff_id, email_on, text_on) VALUES (?, ?, ?) "
+                 "ON CONFLICT (staff_id) DO UPDATE SET email_on = EXCLUDED.email_on, text_on = EXCLUDED.text_on", (me, email_on, text_on))
+    conn.commit()
+    conn.close()
+    flash("Your private message alerts were saved.")
+    return redirect(url_for(".chat_private_home"))
+
+
 @crm.route("/chat/private")
 @chat_required
 def chat_private_home():
@@ -8976,8 +9082,14 @@ def chat_private_home():
         unread = conn.execute("SELECT COUNT(*) AS n FROM chat_convo_msgs WHERE convo_id = ? AND id > ? AND from_id <> ?",
                               (c["id"], c["last_read_id"], me)).fetchone()["n"]
         chats.append(dict(id=c["id"], names=", ".join(names), group=len(names) > 1, last=last, unread=unread))
+    import correspondence
+    pref = conn.execute("SELECT * FROM chat_notify WHERE staff_id = ?", (me,)).fetchone()
+    mine = conn.execute("SELECT * FROM staff WHERE id = ?", (me,)).fetchone()
+    phone = _chat_phone(conn, mine) if mine else None
     conn.close()
-    return render_template("chat_private.html", chats=chats, people=people, my_id=me)
+    return render_template("chat_private.html", chats=chats, people=people, my_id=me,
+                           email_on=(True if not pref else bool(pref["email_on"])), text_on=bool(pref and pref["text_on"]),
+                           phone_last4=(phone[-4:] if phone else ""), texting_ready=_texting_ready(), alerts_live=correspondence.live())
 
 
 @crm.route("/chat/private/start", methods=["POST"])
@@ -9073,6 +9185,8 @@ def chat_private_send(convo_id):
     _chat_convo_for(conn, convo_id, session["staff_id"])
     conn.execute("INSERT INTO chat_convo_msgs (convo_id, from_id, body) VALUES (?, ?, ?)", (convo_id, session["staff_id"], body))
     conn.commit()
+    for mb in conn.execute("SELECT staff_id FROM chat_convo_members WHERE convo_id = ? AND staff_id <> ?", (convo_id, session["staff_id"])).fetchall():
+        _chat_private_alert(conn, mb["staff_id"])
     conn.close()
     return jsonify({"ok": True})
 

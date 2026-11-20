@@ -946,6 +946,31 @@ GUIDE_LETTERS = {
         "signoff": "Thanks so much,",
         "signer": "The Sojourn Team",
     },
+    "chat_private_alert": {
+        "title": "Private message alert (email)",
+        "audience": "Team members who have a new private message",
+        "greeting": "Hi",
+        "subject": "You have a new private message in the Hub",
+        "paras": [
+            "Someone on the team sent you a private message in the Hub. For privacy, the message itself is not in this email.",
+            "Sign in to read it:",
+            "{link}",
+            "You will get at most one of these an hour. You can turn these emails off on the Private Messages page.",
+        ],
+        "signoff": "Thank you,",
+        "signer": "The Sojourn Team",
+    },
+    "chat_private_alert_text": {
+        "title": "Private message alert (text message)",
+        "audience": "Team members who chose to get texts",
+        "greeting": "Hi",
+        "subject": "Text message",
+        "paras": [
+            "you have a new private message in the Hub. Sign in to read it: {link}",
+        ],
+        "signoff": "",
+        "signer": "",
+    },
     "video_call": {
         "title": "Video call link (Google Meet)",
         "audience": "Any contact",

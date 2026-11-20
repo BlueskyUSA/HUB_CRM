@@ -278,6 +278,8 @@ def catalog():
             E("backup_confirm", sl["backup_confirm"]["title"], "By hand from the session's letters page.", "Back-up TA's"),
             dict(kind="link", name="Team notes", when="Written by you each time, to Facilitators, TA's, Support Team or Leadership.",
                  who="The group you choose", url="correspondence_team", label="Team Correspondence"),
+            E("chat_private_alert", "Private message alert (email)", "Automatically, when someone gets a private message in the Hub (at most one an hour per person; the message itself is never included).", "Team members"),
+            E("chat_private_alert_text", "Private message alert (text message)", "Automatically, only for people who ticked the text box, when texting is set up (at most one an hour per person). Only the first paragraph is used.", "Team members"),
             C("Welcome to a new login", "Automatically, when a login is created or a password is reset.", "New team members"),
          ]),
         ("guides", "Volunteers", "What the people who make the calls receive.", [
@@ -827,7 +829,7 @@ def register(app, crm, get_db, h):
             used = [f for f in fields if "{" + f + "}" in blob and f not in (("first",) if _own_greeting else ("first", "First name"))]
             versions = conn.execute("SELECT * FROM letter_versions WHERE letter_key = ? ORDER BY version DESC", (key,)).fetchall()
             return render_template("correspondence_letter_edit.html", key=key, can_edit=can_edit, is_owner=bool(session.get("is_owner")),
-                                   entry=_with_purpose(next((e for _i, _t, _d, es in catalog() for e in es if e.get("key") == key), {})), guide_note=(GUIDE_EXPLAINER if key in et.GUIDE_LETTERS and key not in ("sponsor_welcome", "sponsor_page", "profile_request", "video_call", "needs_request", "testimonial_request") else None), guides=(guides_by_group(conn) if key in et.GUIDE_LETTERS else []), orig=orig, form=form, error=error,
+                                   entry=_with_purpose(next((e for _i, _t, _d, es in catalog() for e in es if e.get("key") == key), {})), guide_note=(GUIDE_EXPLAINER if key in et.GUIDE_LETTERS and key not in ("sponsor_welcome", "sponsor_page", "profile_request", "video_call", "needs_request", "testimonial_request", "chat_private_alert", "chat_private_alert_text") else None), guides=(guides_by_group(conn) if key in et.GUIDE_LETTERS else []), orig=orig, form=form, error=error,
                                    saved=saved, preview_subject=subject, preview_html=html, used=used, help=FIELD_HELP,
                                    versions=versions, note=note, current_version=(versions[0]["version"] if versions and saved else None),
                                    back=("correspondence_all" if key in et.GUIDE_LETTERS else
