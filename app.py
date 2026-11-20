@@ -821,10 +821,9 @@ LOGIN_PAGES = [
 
 
 def _clean_next(n):
-    """Never send someone back to the logout page after they sign in (it would sign them straight out)."""
-    if n and n.rstrip("/").endswith("/logout"):
-        return None
-    return n
+    """Signing in always lands on the Hub dashboard (Kent's choice, Nov 2026): the page that happened to ask for the
+    sign-in is no longer remembered, so nobody is dropped onto an old or unexpected page."""
+    return None
 
 
 def _login_page(kind):
@@ -8332,7 +8331,12 @@ def budget_view(key):
     if session.get("is_owner"):
         requests_ = conn.execute(
             "SELECT * FROM budget_requests WHERE budget_key = ? ORDER BY id DESC LIMIT 20", (key,)).fetchall()
-    fixed_total = _budget_totals(conn, "fixed", "Fixed", "fixed")["onetime"] if kind == "training" else None
+    fixed_total, onetime_rows, onetime_saved = None, [], None
+    if kind == "training":
+        fdata, onetime_saved, _ = _load_budget(conn, "fixed", "Fixed and one-time expenses", "fixed")
+        frows, ftot = budget_model.compute(fdata)
+        fixed_total = ftot["onetime"]
+        onetime_rows = [r for r in frows if r["section"] == "onetime"]
     recipients = []
     if session.get("is_owner"):
         recipients = conn.execute(
@@ -8350,6 +8354,7 @@ def budget_view(key):
                            sections=budget_model.sections_for(kind), key_vars=budget_model.KEY_VARS,
                            updated_at=updated_at, updated_by=updated_by, is_owner=bool(session.get("is_owner")),
                            change_requests=requests_, fixed_total=fixed_total, recipients=recipients,
+                           onetime_rows=onetime_rows, onetime_saved=onetime_saved,
                            editing=bool(session.get("is_owner") and request.args.get("edit")))
 
 
