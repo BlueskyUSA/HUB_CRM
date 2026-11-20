@@ -68,9 +68,10 @@
     {% set v = data.vars[k] %}
     <tr>
       <td>{{ vlabel }}</td>
-      <td>{% if editing %}<input type="number" step="any" name="var_{{ k }}" value="{{ (v * 100)|round(4) if vkind == 'pct' else v }}" style="width:110px;color:#0000ff"> {% if vkind == 'pct' %}%{% endif %}
-          {% else %}{% if vkind == 'pct' %}{{ '%g'|format(v * 100) }}%{% elif vkind == 'money2' %}${{ '%.2f'|format(v) }}{% else %}{{ '%g'|format(v) }}{% endif %}{% endif %}</td>
-      <td class="muted">{{ note }}</td>
+      <td>{% if editing and vkind == 'choice12' %}<label style="display:inline;margin-right:12px"><input type="radio" name="var_{{ k }}" value="1" {% if v < 1.5 %}checked{% endif %}> 1</label><label style="display:inline"><input type="radio" name="var_{{ k }}" value="2" {% if v >= 1.5 %}checked{% endif %}> 2</label>
+          {% elif editing %}<input type="number" step="any" name="var_{{ k }}" value="{{ (v * 100)|round(4) if vkind == 'pct' else v }}" style="width:110px;color:#0000ff"> {% if vkind == 'pct' %}%{% endif %}
+          {% else %}{% if vkind == 'pct' %}{{ '%g'|format(v * 100) }}%{% elif vkind == 'money2' %}${{ '%.2f'|format(v) }}{% elif vkind == 'choice12' %}{{ '%g'|format(v) }} per room{% else %}{{ '%g'|format(v) }}{% endif %}{% endif %}</td>
+      <td class="muted">{{ note }}{% if k.endswith('_per_room') %}{% set g = k[:-9] %} <b>Now: {{ '%g'|format(derived[g ~ '_people']) }} {{ 'trainees' if g == 'trainee' else 'people' }}{% if g == 'trainee' %} ({{ '%g'|format(derived.couples) }} couples){% endif %} &rarr; {{ '%g'|format(derived[g ~ '_rooms']) }} rooms.</b>{% endif %}</td>
     </tr>
     {% endfor %}
     <tr><td><b>Room Rate (After Discount)</b></td><td><b>${{ '%.2f'|format(derived.after_discount) }}</b></td><td class="muted">Calculated</td></tr>
