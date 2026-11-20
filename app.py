@@ -8991,37 +8991,6 @@ def chat_private_delete(msg_id):
     return redirect(url_for(".chat_private_thread", other_id=m["to_id"]))
 
 
-@crm.route("/owner/chat-review")
-@true_owner_required
-def chat_review():
-    """Owner only: read every chat in one place (private, live room, discussion board). Read-only."""
-    kind = request.args.get("kind", "private")
-    conn = get_db()
-    _ensure_chat_tables(conn)
-    names = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM staff").fetchall()}
-    convos, room, topics = [], [], []
-    if kind == "private":
-        rows = conn.execute("SELECT * FROM chat_private ORDER BY id DESC LIMIT 2000").fetchall()
-        pairs = {}
-        for m in rows:
-            key = tuple(sorted((m["from_id"], m["to_id"])))
-            pairs.setdefault(key, []).append(m)
-        for key, ms in pairs.items():
-            ms = list(reversed(ms[:300]))
-            convos.append(dict(a=names.get(key[0], "?"), b=names.get(key[1], "?"), last=ms[-1]["created_at"], n=len(ms),
-                               msgs=[dict(who=names.get(m["from_id"], "?"), body=m["body"], at=m["created_at"]) for m in ms]))
-        convos.sort(key=lambda c: c["last"], reverse=True)
-    elif kind == "room":
-        room = list(reversed(conn.execute("SELECT * FROM chat_messages ORDER BY id DESC LIMIT 500").fetchall()))
-    else:
-        kind = "board"
-        for t in conn.execute("SELECT * FROM chat_topics ORDER BY last_activity DESC LIMIT 100").fetchall():
-            reps = conn.execute("SELECT * FROM chat_replies WHERE topic_id = ? ORDER BY id", (t["id"],)).fetchall()
-            topics.append(dict(t=t, replies=reps))
-    conn.close()
-    return render_template("chat_review.html", kind=kind, convos=convos, room=room, topics=topics)
-
-
 # ---------- Website Team: who appears on the public Meet the Team page ----------
 
 @crm.route("/website-team")
