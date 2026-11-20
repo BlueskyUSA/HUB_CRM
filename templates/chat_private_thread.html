@@ -20,7 +20,7 @@
     if (m.id <= last) return; last = m.id;
     var d = document.createElement('div'); d.style.cssText = 'margin-bottom:10px';
     var h = document.createElement('div'); h.className = 'muted'; h.style.fontSize = '.85rem';
-    h.textContent = (m.mine ? 'You' : m.who) + ' · ' + (m.at || '').slice(5,16);
+    h.textContent = (m.mine ? 'You' : m.who) + ' · ' + (m.at || '').slice(5,16).replace('-', '/');
     if (m.mine) {
       var f = document.createElement('form'); f.method = 'post'; f.action = '{{ url_for(".chat_private_home") }}/message/' + m.id + '/delete';
       f.style.display = 'inline'; f.onsubmit = function(){ return confirm('Delete this message for everyone in this chat?'); };

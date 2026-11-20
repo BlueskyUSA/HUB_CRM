@@ -12,15 +12,15 @@
 {% if kind == 'private' %}
   {% for c in convos %}
   <details class="card" style="margin-bottom:10px">
-    <summary><b>{{ c.a }} &harr; {{ c.b }}</b> <span class="muted">&middot; {{ c.n }} messages &middot; last {{ c.last[5:16] }}</span></summary>
+    <summary><b>{{ c.a }} &harr; {{ c.b }}</b> <span class="muted">&middot; {{ c.n }} messages &middot; last {{ c.last[5:16]|replace('-', '/') }}</span></summary>
     <div style="margin-top:10px">
-      {% for m in c.msgs %}<div style="margin-bottom:8px"><span class="muted" style="font-size:.85rem">{{ m.who }} &middot; {{ m.at[5:16] }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ m.body }}</div></div>{% endfor %}
+      {% for m in c.msgs %}<div style="margin-bottom:8px"><span class="muted" style="font-size:.85rem">{{ m.who }} &middot; {{ m.at[5:16]|replace('-', '/') }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ m.body }}</div></div>{% endfor %}
     </div>
   </details>
   {% else %}<p class="muted">No private messages yet.</p>{% endfor %}
 {% elif kind == 'room' %}
   <div class="card">
-    {% for m in room %}<div style="margin-bottom:8px"><span class="muted" style="font-size:.85rem">{{ m.author_name }} &middot; {{ m.created_at[5:16] }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ m.body }}</div></div>
+    {% for m in room %}<div style="margin-bottom:8px"><span class="muted" style="font-size:.85rem">{{ m.author_name }} &middot; {{ m.created_at[5:16]|replace('-', '/') }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ m.body }}</div></div>
     {% else %}<p class="muted">No live room messages yet.</p>{% endfor %}
   </div>
 {% else %}
@@ -28,7 +28,7 @@
   <details class="card" style="margin-bottom:10px">
     <summary><b>{{ x.t.title }}</b> <span class="muted">&middot; {{ x.t.author_name }} &middot; {{ x.replies|length }} replies</span></summary>
     <div style="margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere">{{ x.t.body }}</div>
-    {% for r in x.replies %}<div style="margin:8px 0 0 16px"><span class="muted" style="font-size:.85rem">{{ r.author_name }} &middot; {{ r.created_at[5:16] }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ r.body }}</div></div>{% endfor %}
+    {% for r in x.replies %}<div style="margin:8px 0 0 16px"><span class="muted" style="font-size:.85rem">{{ r.author_name }} &middot; {{ r.created_at[5:16]|replace('-', '/') }}</span><div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ r.body }}</div></div>{% endfor %}
   </details>
   {% else %}<p class="muted">No discussion topics yet.</p>{% endfor %}
 {% endif %}

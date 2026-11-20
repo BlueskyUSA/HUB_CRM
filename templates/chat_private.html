@@ -55,7 +55,7 @@
     <tr>
       <td style="width:32%"><a href="{{ url_for('.chat_private_thread', convo_id=c.id) }}"><b>{{ c.names }}</b></a>{% if c.group %} <span class="muted">(group)</span>{% endif %}{% if c.unread %} <span style="background:#d9534f;color:#fff;border-radius:10px;padding:1px 8px;font-size:.8rem">{{ c.unread }} new</span>{% endif %}</td>
       <td class="muted">{% if c.last %}{{ 'You' if c.last.from_id == my_id else c.last.who }}: {{ c.last.body[:90] }}{% if c.last.body|length > 90 %}&hellip;{% endif %}{% else %}No messages yet{% endif %}</td>
-      <td class="muted" style="text-align:right;white-space:nowrap">{% if c.last %}{{ c.last.created_at[5:16] }}{% endif %}</td>
+      <td class="muted" style="text-align:right;white-space:nowrap">{% if c.last %}{{ c.last.created_at[5:16]|replace('-', '/') }}{% endif %}</td>
     </tr>
     {% endfor %}
   </table>

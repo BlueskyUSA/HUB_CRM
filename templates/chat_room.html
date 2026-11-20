@@ -19,7 +19,7 @@
     if (m.id <= last) return; last = m.id;
     var d = document.createElement('div'); d.style.cssText = 'margin-bottom:10px';
     var h = document.createElement('div'); h.className = 'muted'; h.style.fontSize = '.85rem';
-    h.textContent = m.author + ' · ' + (m.at || '').slice(5,16);
+    h.textContent = m.author + ' · ' + (m.at || '').slice(5,16).replace('-', '/');
     if (canMod || m.author_id === myId) {
       var f = document.createElement('form'); f.method = 'post'; f.action = '{{ url_for(".chat_room") }}/' + m.id + '/delete';
       f.style.display = 'inline'; f.onsubmit = function(){ return confirm('Delete this message?'); };
