@@ -11,6 +11,15 @@
 .bv details.bsec[open]>summary::before{content:"\25BE"}
 .bv details.bsec>summary .sum{margin-left:auto;color:#0c4561}
 .bv details.bsec>.card{margin:0;border:0;box-shadow:none;border-top:1px solid #eee;border-radius:0}
+.bv h3.kvh{background:#0c4561;color:#fff;margin:16px 0 4px;padding:6px 10px;border-radius:6px;font-size:.95rem}
+.bv h3.kvh:first-child{margin-top:2px}
+.bv tr.calc td{background:#f4f4ee}
+.bv tr.total td{font-weight:700;border-top:2px solid #0c4561}
+.bv tr.g-trainee td{background:#e7f1fb}.bv tr.g-trainee td:first-child{border-left:6px solid #2f6fb5}
+.bv tr.g-fac td{background:#efedff}.bv tr.g-fac td:first-child{border-left:6px solid #6b4fc4}
+.bv tr.g-ta td{background:#e5f4e4}.bv tr.g-ta td:first-child{border-left:6px solid #2e8b4a}
+.bv tr.g-av td{background:#f9ece7}.bv tr.g-av td:first-child{border-left:6px solid #d9692b}
+.bv tr.g-staff td{background:#f0efec}.bv tr.g-staff td:first-child{border-left:6px solid #777}
 .bv .editbtn{font-size:1.1rem;padding:10px 24px;background:#1b7a3d;color:#fff;font-weight:700}
 </style>
 <div class="bv">
@@ -62,24 +71,48 @@
 {% if kind == 'training' %}
 <details class="bsec" {% if editing %}open{% endif %}><summary>Key variables <span class="sum">room rate ${{ '%.2f'|format(derived.roomrate) }} &middot; {{ '%g'|format(derived.team) }} on the team</span></summary>
 <div class="card">
-  <table>
-    <tr><th>Variable</th><th>Value</th><th>Note</th></tr>
-    {% for k, vlabel, default, vkind, note in key_vars %}
-    {% set v = data.vars[k] %}
-    <tr>
-      <td>{{ vlabel }}</td>
-      <td>{% if editing and vkind == 'choice12' %}<label style="display:inline;margin-right:12px"><input type="radio" name="var_{{ k }}" value="1" {% if v < 1.5 %}checked{% endif %}> 1</label><label style="display:inline"><input type="radio" name="var_{{ k }}" value="2" {% if v >= 1.5 %}checked{% endif %}> 2</label>
-          {% elif editing %}<input type="number" step="any" name="var_{{ k }}" value="{{ (v * 100)|round(4) if vkind == 'pct' else v }}" style="width:110px;color:#0000ff"> {% if vkind == 'pct' %}%{% endif %}
-          {% else %}{% if vkind == 'pct' %}{{ '%g'|format(v * 100) }}%{% elif vkind == 'money2' %}${{ '%.2f'|format(v) }}{% elif vkind == 'choice12' %}{{ '%g'|format(v) }} per room{% else %}{{ '%g'|format(v) }}{% endif %}{% endif %}</td>
-      <td class="muted">{{ note }}{% if k.endswith('_per_room') %}{% set g = k[:-9] %} <b>Now: {{ '%g'|format(derived[g ~ '_people']) }} {{ 'trainees' if g == 'trainee' else 'people' }}{% if g == 'trainee' %} ({{ '%g'|format(derived.couples) }} couples){% endif %} &rarr; {{ '%g'|format(derived[g ~ '_rooms']) }} rooms.</b>{% endif %}</td>
-    </tr>
-    {% endfor %}
-    <tr><td><b>Room Rate (After Discount)</b></td><td><b>${{ '%.2f'|format(derived.after_discount) }}</b></td><td class="muted">Calculated</td></tr>
-    <tr><td><b>Rate with Room Tax</b></td><td><b>${{ '%.2f'|format(derived.with_tax) }}</b></td><td class="muted">Calculated</td></tr>
-    <tr><td><b>Total Rm Rate with Credit Card Processing Fee</b></td><td><b>${{ '%.2f'|format(derived.roomrate) }}</b></td><td class="muted">Calculated; this is the room rate used below</td></tr>
-    <tr><td><b>Total team (people)</b></td><td><b>{{ '%g'|format(derived.team) }}</b></td><td class="muted">Calculated; used for team meals</td></tr>
-    <tr><td><b>Lunch / Dinner / d'oeuvres / Dinner-Dance with service</b></td><td colspan="2"><b>${{ '%.2f'|format(derived.lunch) }} / ${{ '%.2f'|format(derived.dinner) }} / ${{ '%.2f'|format(derived.hors) }} / ${{ '%.2f'|format(derived.dance) }}</b> <span class="muted">Calculated (rate plus banquet service charge)</span></td></tr>
-  </table>
+{% set N = {} %}{% for kk, kl, kd, kt, kn in key_vars %}{% set _ = N.update({kk: kn}) %}{% endfor %}
+{% macro vnum(k, step='any', w='110px') %}{% if editing %}<input type="number" step="{{ step }}" name="var_{{ k }}" value="{{ data.vars[k] }}" style="width:{{ w }};color:#0000ff">{% else %}{{ '%g'|format(data.vars[k]) }}{% endif %}{% endmacro %}
+{% macro vmoney(k) %}{% if editing %}$ <input type="number" step="any" name="var_{{ k }}" value="{{ data.vars[k] }}" style="width:110px;color:#0000ff">{% else %}${{ '%.2f'|format(data.vars[k]) }}{% endif %}{% endmacro %}
+{% macro vpct(k) %}{% if editing %}<input type="number" step="any" name="var_{{ k }}" value="{{ (data.vars[k] * 100)|round(4) }}" style="width:90px;color:#0000ff"> %{% else %}{{ '%g'|format(data.vars[k] * 100) }}%{% endif %}{% endmacro %}
+{% macro vper(k) %}{% if editing %}<label style="display:inline;margin-right:10px"><input type="radio" name="var_{{ k }}" value="1" {% if data.vars[k] < 1.5 %}checked{% endif %}> 1</label><label style="display:inline"><input type="radio" name="var_{{ k }}" value="2" {% if data.vars[k] >= 1.5 %}checked{% endif %}> 2</label>{% else %}{{ 1 if data.vars[k] < 1.5 else 2 }}{% endif %}{% endmacro %}
+
+<h3 class="kvh">1. Hotel room rate (per room, per night)</h3>
+<table>
+  <tr><th style="width:42%">Item</th><th style="width:20%">Value</th><th>Note</th></tr>
+  <tr><td>Hotel rack rate</td><td>{{ vmoney('rack') }}</td><td class="muted">{{ N.rack }}</td></tr>
+  <tr><td>Negotiated discount off the rate</td><td>{{ vpct('room_discount') }}</td><td class="muted">{{ N.room_discount }}</td></tr>
+  <tr class="calc"><td>Room rate after discount</td><td>${{ '%.2f'|format(derived.after_discount) }}</td><td class="muted">Calculated</td></tr>
+  <tr><td>Hotel tax on rooms</td><td>{{ vpct('room_tax') }}</td><td class="muted">{{ N.room_tax }}</td></tr>
+  <tr class="calc"><td>Rate with room tax</td><td>${{ '%.2f'|format(derived.with_tax) }}</td><td class="muted">Calculated</td></tr>
+  <tr><td>Credit card processing fee on the hotel bill</td><td>{{ vpct('room_cc') }}</td><td class="muted">{{ N.room_cc }}</td></tr>
+  <tr class="calc total"><td>Room rate used in this budget</td><td>${{ '%.2f'|format(derived.roomrate) }}</td><td class="muted">Rate with tax and card fee; used for every room below</td></tr>
+</table>
+
+<h3 class="kvh">2. Room count (who needs a room)</h3>
+<table>
+  <tr><th style="width:26%">Group</th><th style="width:16%;text-align:right">People</th><th style="width:20%;text-align:center">People per room (1 or 2)</th><th style="width:12%;text-align:right">Rooms</th><th>Note</th></tr>
+  <tr class="g-trainee"><td><b>Trainees</b></td><td style="text-align:right">{{ '%g'|format(derived.trainee_people) }}</td><td style="text-align:center">{{ vper('trainee_per_room') }}</td><td style="text-align:right"><b>{{ '%g'|format(derived.trainee_rooms) }}</b></td><td class="muted">{{ '%g'|format(derived.couples) }} couples &times; 2. Set the couples in Income. 2 = each couple shares a room.</td></tr>
+  <tr class="g-fac"><td><b>Facilitators</b></td><td style="text-align:right">{{ vnum('fac_people', '1', '80px') }}</td><td style="text-align:center">{{ vper('fac_per_room') }}</td><td style="text-align:right"><b>{{ '%g'|format(derived.fac_rooms) }}</b></td><td class="muted">Rooms round up (3 people at 2 per room = 2 rooms)</td></tr>
+  <tr class="g-ta"><td><b>TA's</b></td><td style="text-align:right">{{ vnum('ta_people', '1', '80px') }}</td><td style="text-align:center">{{ vper('ta_per_room') }}</td><td style="text-align:right"><b>{{ '%g'|format(derived.ta_rooms) }}</b></td><td class="muted"></td></tr>
+  <tr class="g-av"><td><b>Audio/Visual</b></td><td style="text-align:right">{{ vnum('av_people', '1', '80px') }}</td><td style="text-align:center">{{ vper('av_per_room') }}</td><td style="text-align:right"><b>{{ '%g'|format(derived.av_rooms) }}</b></td><td class="muted"></td></tr>
+  <tr class="g-staff"><td><b>Staff</b></td><td style="text-align:right">{{ vnum('staff_people', '1', '80px') }}</td><td style="text-align:center">{{ vper('staff_per_room') }}</td><td style="text-align:right"><b>{{ '%g'|format(derived.staff_rooms) }}</b></td><td class="muted"></td></tr>
+  <tr class="calc total"><td>Total rooms</td><td style="text-align:right">{{ '%g'|format(derived.trainee_people + derived.team) }} people</td><td></td><td style="text-align:right">{{ '%g'|format(derived.trainee_rooms + derived.fac_rooms + derived.ta_rooms + derived.av_rooms + derived.staff_rooms) }}</td><td class="muted">The team (everyone but trainees) is {{ '%g'|format(derived.team) }} people</td></tr>
+</table>
+
+<h3 class="kvh">3. Food service rates (hotel banquet prices)</h3>
+<table>
+  <tr><th style="width:26%">Meal</th><th style="width:16%;text-align:right">Rate</th><th style="width:20%;text-align:right">Banquet service charge</th><th style="width:16%;text-align:right">Rate with service</th><th>Note</th></tr>
+  <tr><td>Lunch (per person)</td><td style="text-align:right">{{ vmoney('lunch_rate') }}</td><td style="text-align:right">{{ vpct('lunch_svc') }}</td><td style="text-align:right"><b>${{ '%.2f'|format(derived.lunch) }}</b></td><td class="muted">{{ N.lunch_svc }}</td></tr>
+  <tr><td>Dinner (per person)</td><td style="text-align:right">{{ vmoney('dinner_rate') }}</td><td style="text-align:right">{{ vpct('dinner_svc') }}</td><td style="text-align:right"><b>${{ '%.2f'|format(derived.dinner) }}</b></td><td class="muted"></td></tr>
+  <tr><td>d'oeuvres (flat)</td><td style="text-align:right">{{ vmoney('hors_rate') }}</td><td style="text-align:right">{{ vpct('hors_svc') }}</td><td style="text-align:right"><b>${{ '%.2f'|format(derived.hors) }}</b></td><td class="muted"></td></tr>
+  <tr><td>Dinner/Dance (per person)</td><td style="text-align:right">{{ vmoney('dance_rate') }}</td><td style="text-align:right">{{ vpct('dance_svc') }}</td><td style="text-align:right"><b>${{ '%.2f'|format(derived.dance) }}</b></td><td class="muted"></td></tr>
+</table>
+
+<h3 class="kvh">4. Budget contingency</h3>
+<table>
+  <tr><td style="width:42%">Percent of operating expenses held in reserve</td><td style="width:20%">{{ vpct('contingency') }}</td><td class="muted">{{ N.contingency }}</td></tr>
+</table>
 </div>
 </details>
 
