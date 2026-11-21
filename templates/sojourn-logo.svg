@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 85 1000 345" width="1000" height="345" role="img" aria-label="Sojourn! A Journey of Curiosity and Possibility">
-  <text x="600" y="215" text-anchor="middle" font-family="'Times New Roman', Times, 'Liberation Serif', serif" font-size="170" font-weight="bold" font-style="italic" fill="#003B49">Sojourn<tspan fill="#FF0000">!</tspan></text>
-  <path d="M 330 268 C 420 228, 500 308, 600 268 S 780 228, 870 268" fill="none" stroke="#003B49" stroke-width="11" stroke-linecap="round"/>
-  <path d="M 330 298 C 420 338, 500 258, 600 298 S 780 338, 870 298" fill="none" stroke="#27C4C0" stroke-width="11" stroke-linecap="round"/>
-  <text x="600" y="402" text-anchor="middle" font-family="'Times New Roman', Times, 'Liberation Serif', serif" font-size="62" font-style="italic" fill="#003B49">A Journey of Curiosity and Possibility</text>
-</svg>
