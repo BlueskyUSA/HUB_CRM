@@ -55,36 +55,23 @@
 {% endif %}
 <div class="card" style="max-width:860px; line-height:1.55">
   <h2 style="margin-top:0">How to use this program</h2>
-  <p class="muted" style="margin-top:0">You see only the steps for the areas your login can open. The top bar is your menu.</p>
-  <ol style="padding-left:20px">
-    {% if session.is_owner %}
-    <li><strong>Control who has access.</strong> <em>HUB Access</em> is where you add logins, choose which areas each person can open, and reset passwords.</li>
-    {% endif %}
+  <p class="muted" style="margin-top:0">The top bar is your menu. You see only the areas your login can open.</p>
+  <ul style="padding-left:20px; margin:6px 0">
     {% if can_contacts %}
-    <li><strong>Admin menu</strong>
-      <ol type="a" style="padding-left:20px; margin:4px 0">
-        <li><strong>Contacts</strong> &ndash; Find, Edit, and Add Contacts to the database.</li>
-        <li><strong>Send Emails or Text Messages</strong> from contacts page, including:
-          <ol type="i" style="padding-left:24px; margin:4px 0">
-            <li><strong>Excitement Letter</strong> &ndash; opening Sojourn<span style="color:#FF0000">!</span>;</li>
-            <li><strong>Generate Link</strong> &ndash; requesting completion of Contact form;</li>
-            <li><strong>Business Plan</strong> &ndash; Sent to those who are interested;</li>
-            <li><strong>Contract Information Request</strong> &ndash; Automatic email updating contact form.</li>
-          </ol>
-        </li>
-        <li><strong>Contact Requests</strong> &ndash; reach out to interested parties who want to be contacted by leadership.</li>
-        <li><strong>Sponsor Pipeline</strong> &ndash; track sponsorships.</li>
-        {% if session.staff_role == 'Leadership' %}<li><strong>Data Sources</strong> &ndash; tracks data downloads for custom emails.</li>{% endif %}
-      </ol>
-    </li>
+    <li><strong>Contacts</strong> &ndash; find, add and edit people, and send emails or texts from a contact&rsquo;s page.</li>
+    <li><strong>Contact Requests</strong> and <strong>Sponsor Pipeline</strong> &ndash; follow up with people who asked to hear from us, and track sponsors.</li>
     {% endif %}
-    {% if session.staff_role == 'Leadership' or has_donations_access %}
-    <li><strong>Donations</strong> &ndash; Under Development &ndash; link to Accounting software.</li>
+    {% if session.is_owner or has_budgets_access %}
+    <li><strong>Budgets</strong> &ndash; see each program&rsquo;s budget.</li>
     {% endif %}
-    <li><strong>Marketing</strong> &ndash; Under Development &ndash; link to Marketing software.</li>
-    <li><strong>Public Site</strong> &ndash; Under Development &ndash; link to URL.</li>
-  </ol>
-  <p><strong>Please keep your login safe.</strong> Use <em>Change password</em> at the top right, and <em>Log out</em> when you finish. You are logged out automatically after 30 minutes of inactivity.</p>
+    {% if chat_ok %}
+    <li><strong>Chat Room</strong> &ndash; the team board, live chat and private messages.</li>
+    {% endif %}
+    {% if session.is_owner %}
+    <li><strong>HUB Access</strong> &ndash; add logins, choose what each person can open, and reset passwords.</li>
+    {% endif %}
+  </ul>
+  <p><strong>Keep your login safe.</strong> Use <em>Change password</em> at the top right and <em>Log out</em> when you finish. You are logged out automatically after 30 minutes of inactivity.</p>
   {% if session.staff_role == 'Accounting' %}
   <p>Your login is <strong>view-only</strong>. You can read everything you have been given, but nothing you do here changes the records.</p>
   {% endif %}
