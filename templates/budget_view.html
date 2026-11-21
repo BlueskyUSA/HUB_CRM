@@ -200,7 +200,16 @@
 {% if editing %}<p><button class="btn" type="submit">Save budget</button> <a href="{{ url_for('.budget_view', key=key) }}">Cancel</a></p></form>{% endif %}
 
 {% if is_owner and recipients %}
-<h2 id="email">Email this budget</h2>
+<style>
+details#email{margin:10px 0;border:1px solid #d8d8d0;border-radius:8px;background:#fff}
+details#email>summary{cursor:pointer;padding:10px 14px;font-weight:700;list-style:none}
+details#email>summary::-webkit-details-marker{display:none}
+details#email>summary::before{content:"\25B8";margin-right:8px;color:#0c4561}
+details#email[open]>summary::before{content:"\25BE"}
+details#email>.card{margin:0;border:0;box-shadow:none;border-top:1px solid #eee;border-radius:0}
+</style>
+<details id="email">
+<summary>Email this budget</summary>
 <div class="card">
   <p>Sends the budget as an Excel file to the people you tick. It is a copy of what is saved now.</p>
   <form method="post" action="{{ url_for('.budget_email', key=key) }}">
@@ -216,6 +225,8 @@
     <p><button class="btn" type="submit">Email the budget</button></p>
   </form>
 </div>
+</details>
+<script>if (location.hash === '#email') { var e = document.getElementById('email'); if (e) e.open = true; }</script>
 {% endif %}
 
 {% if not is_owner %}<h2 id="request">Request a budget change</h2>
