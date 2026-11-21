@@ -8325,8 +8325,10 @@ import budget_xlsx
 import budget_pdf
 import json as _json
 BUDGET_KEYS = [
-    ("prog_D1", "The Beginning / Awakening / Vision weekend", "training"),
     ("prog_D4", "The Art of Us", "training"),
+    ("prog_D1", "The Beginning", "training"),
+    ("prog_D2", "Awakening", "training"),
+    ("prog_D3", "Vision", "training"),
     ("prog_D5", "Renew", "training"),
     ("prog_D6", "Spiritual", "training"),
     ("fixed", "Fixed and one-time expenses", "fixed"),
