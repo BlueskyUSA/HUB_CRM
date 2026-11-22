@@ -2162,16 +2162,7 @@ def inject_program_name():
 def inject_free_resources_visible():
     """True when at least one link is ticked 'Show on our public website', so the footer and home page only point
     to the Free Resources page once it has something on it."""
-    try:
-        conn = get_db()
-        try:
-            _ensure_resources_table(conn)
-            row = conn.execute("SELECT 1 FROM program_resources WHERE share_public = 1 AND url IS NOT NULL AND url <> '' LIMIT 1").fetchone()
-        finally:
-            conn.close()
-        return {"free_resources_visible": bool(row)}
-    except Exception:
-        return {"free_resources_visible": False}
+    return {"free_resources_visible": _free_resources_status()[0]}
 
 
 @app.context_processor
@@ -8743,6 +8734,26 @@ def _save_resource_programs(conn, resource_id, ids):
         conn.execute("INSERT INTO resource_programs (resource_id, program_id) VALUES (?, ?)", (resource_id, i))
 
 
+# Words that sound like therapy or a promised result. Our public site avoids them (the same rule as for testimonials).
+_THERAPEUTIC_RE = re.compile(r"\b(heal\w*|therap\w*|treat\w*|cure\w*|diagnos\w*|recover\w*)\b", re.I)
+
+
+def _therapeutic_warning(public_on, *texts):
+    """A reminder message when something going on the public site uses therapeutic wording; empty otherwise."""
+    if not public_on:
+        return ""
+    found = []
+    for t in texts:
+        for m in _THERAPEUTIC_RE.finditer(t or ""):
+            w = m.group(0).lower()
+            if w not in found:
+                found.append(w)
+    if not found:
+        return ""
+    return ("Reminder: this item is on the public website, and it uses therapeutic wording (" + ", ".join(found[:6]) +
+            "). Please reword it, or untick \u201cShow on our public website\u201d.")
+
+
 def _topic_list(conn):
     return [{"id": r["id"], "name": r["name"]} for r in
             sorted(conn.execute("SELECT id, name FROM resource_topics").fetchall(), key=lambda r: r["name"].lower())]
@@ -8803,6 +8814,22 @@ def _group_resource_rows(rows):
     if leftovers:
         groups.append({"kind": "Other", "heading": RESOURCE_KIND_HEADINGS["Other"], "rows": leftovers})
     return groups
+
+
+def _free_resources_status():
+    """(showing, problem). showing is True when at least one link is ticked 'Show on our public website', which is when
+    the footer link and home page section appear. problem holds the error text if the check itself failed."""
+    try:
+        conn = get_db()
+        try:
+            _ensure_resources_table(conn)
+            row = conn.execute("SELECT 1 FROM program_resources WHERE share_public = 1 AND url IS NOT NULL AND url <> '' LIMIT 1").fetchone()
+        finally:
+            conn.close()
+        return bool(row), ""
+    except Exception as e:
+        print(f"free resources check failed: {e!r}", flush=True)
+        return False, repr(e)[:300]
 
 
 def _all_program_labels(conn):
@@ -8894,6 +8921,7 @@ def resources():
         "resources.html", groups=groups, programs=programs, labels=labels, sel=sel,
         kinds=RESOURCE_KINDS, can_edit=can_edit, edit_item=edit_item, total=len(rows),
         topics=topics, topic_sel=topic_sel, topic_counts=topic_counts, labels_by_id=labels,
+        site_links=_free_resources_status(),
         public_rows=sorted([r for r in allrows if r.get('share_public') and r.get('url')], key=lambda r: r['title'].lower()),
     )
 
@@ -8974,6 +9002,9 @@ def resource_new():
     conn.commit()
     conn.close()
     flash(f"Added “{title}”.")
+    _w = _therapeutic_warning(request.form.get("share_public") and url, title, author, note)
+    if _w:
+        flash(_w)
     return redirect(_resources_back(back))
 
 
@@ -9019,6 +9050,9 @@ def resource_edit(resource_id):
     conn.commit()
     conn.close()
     flash(f"Saved “{title}”.")
+    _w = _therapeutic_warning(request.form.get("share_public") and url, title, author, note)
+    if _w:
+        flash(_w)
     return redirect(_resources_back(back))
 
 
