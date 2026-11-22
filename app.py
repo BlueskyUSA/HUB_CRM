@@ -8583,6 +8583,272 @@ def budget_request_done(req_id):
     return redirect(url_for(".budget_view", key=row["budget_key"]) if row else url_for(".budgets_home"))
 
 
+# ---------- Resources: books, podcasts, PDFs and links for the programs ----------
+# One shared shelf. Each item is tagged to one program, or to "All programs".
+# Everyone who can open the Programs menu can read it; the Owner, Administrators
+# and Leadership accounts add, edit and remove items. PDFs are stored in the
+# database (like training materials), so they survive a Render deploy.
+RESOURCE_KINDS = ["Book", "Podcast", "PDF / document", "Website or video link", "Other"]
+RESOURCE_KIND_HEADINGS = {
+    "Book": "Books", "Podcast": "Podcasts", "PDF / document": "PDFs and documents",
+    "Website or video link": "Websites and videos", "Other": "Other resources",
+}
+RESOURCE_FILE_EXTENSIONS = {"pdf", "doc", "docx", "txt"}
+MAX_RESOURCE_BYTES = 10 * 1024 * 1024   # the database server is small; keep each file modest
+_resources_table_ready = False
+
+
+def _ensure_resources_table(conn):
+    global _resources_table_ready
+    if _resources_table_ready:
+        return
+    conn.execute(f"""CREATE TABLE IF NOT EXISTS program_resources (
+        id SERIAL PRIMARY KEY, program_id INTEGER, kind TEXT NOT NULL, title TEXT NOT NULL,
+        author TEXT, url TEXT, note TEXT, data BYTEA, original_filename TEXT, content_type TEXT,
+        added_by TEXT, created_at TEXT NOT NULL DEFAULT {CHAT_NOW})""")
+    conn.commit()
+    _resources_table_ready = True
+
+
+def _can_view_resources():
+    return bool(session.get("is_owner") or session.get("staff_role") == "Leadership" or _has_any_program_access())
+
+
+def _can_edit_resources():
+    return bool(session.get("is_owner") or session.get("is_admin") or session.get("staff_role") == "Leadership")
+
+
+def resources_view_required(view):
+    @wraps(view)
+    def wrapper(*a, **kw):
+        if not session.get("staff_id"):
+            return redirect(url_for(".login", next=request.path))
+        if not _can_view_resources():
+            flash("Resources are for accounts that can open the Programs menu.")
+            return redirect(url_for(".dashboard"))
+        return view(*a, **kw)
+    return wrapper
+
+
+def resources_edit_required(view):
+    @wraps(view)
+    def wrapper(*a, **kw):
+        if not _can_edit_resources():
+            flash("Only the Owner, Administrators and Leadership accounts can change Resources.")
+            return redirect(url_for(".resources"))
+        return view(*a, **kw)
+    return wrapper
+
+
+def _clean_resource_url(raw):
+    """Returns (url, error). Blank is fine. Only web addresses are kept, so a pasted
+    'javascript:' or similar can never become a clickable link."""
+    raw = (raw or "").strip()
+    if not raw:
+        return "", None
+    if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", raw):
+        raw = "https://" + raw
+    if not re.match(r"^https?://[^\s/$.?#][^\s]*$", raw, re.I) or "." not in raw.split("://", 1)[1].split("/")[0]:
+        return "", "That doesn't look like a web address. Paste the full link, for example https://example.com/podcast."
+    return raw[:500], None
+
+
+def _resource_file_from_form():
+    """(data, content_type, original_filename, error) for an uploaded file; all None when none was chosen."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return None, None, None, None
+    name = f.filename
+    ext = name.rsplit(".", 1)[1].lower() if "." in name else ""
+    if ext not in RESOURCE_FILE_EXTENSIONS:
+        return None, None, None, "That file type isn't supported here. Use a PDF, Word document or text file."
+    data = f.stream.read()
+    if len(data) > MAX_RESOURCE_BYTES:
+        return None, None, None, f"{name} is over 10 MB, so it was not uploaded. Link to it instead, or use a smaller file."
+    ctype = f.mimetype or mimetypes.guess_type(name)[0] or "application/octet-stream"
+    return data, ctype, name, None
+
+
+def _resource_program_id(raw):
+    """None for 'All programs', a program id when it exists, or False when the value is not valid."""
+    raw = (raw or "").strip()
+    if raw in ("", "all"):
+        return None
+    if not raw.isdigit():
+        return False
+    conn = get_db()
+    try:
+        ok = conn.execute("SELECT 1 FROM programs WHERE id = ?", (int(raw),)).fetchone()
+    finally:
+        conn.close()
+    return int(raw) if ok else False
+
+
+@crm.route("/resources")
+@resources_view_required
+def resources():
+    conn = get_db()
+    _ensure_resources_table(conn)
+    programs = _nav_programs()
+    labels = {p["id"]: p["label"] for p in programs}
+    sel = (request.args.get("program") or "").strip()
+    if sel.isdigit() and int(sel) in labels:
+        rows = conn.execute(
+            """SELECT id, program_id, kind, title, author, url, note, original_filename,
+                      (data IS NOT NULL) AS has_file, added_by
+               FROM program_resources WHERE program_id = ? OR program_id IS NULL""", (int(sel),)).fetchall()
+    elif sel == "shared":
+        rows = conn.execute(
+            """SELECT id, program_id, kind, title, author, url, note, original_filename,
+                      (data IS NOT NULL) AS has_file, added_by
+               FROM program_resources WHERE program_id IS NULL""").fetchall()
+    else:
+        sel = ""
+        rows = conn.execute(
+            """SELECT id, program_id, kind, title, author, url, note, original_filename,
+                      (data IS NOT NULL) AS has_file, added_by
+               FROM program_resources""").fetchall()
+    can_edit = _can_edit_resources()
+    edit_item = None
+    edit_id = (request.args.get("edit") or "").strip()
+    if can_edit and edit_id.isdigit():
+        edit_item = conn.execute(
+            """SELECT id, program_id, kind, title, author, url, note, original_filename, (data IS NOT NULL) AS has_file
+               FROM program_resources WHERE id = ?""", (int(edit_id),)).fetchone()
+    conn.close()
+    groups = []
+    for kind in RESOURCE_KINDS:
+        items = sorted([r for r in rows if r["kind"] == kind], key=lambda r: (r["title"] or "").lower())
+        if items:
+            groups.append({"kind": kind, "heading": RESOURCE_KIND_HEADINGS[kind], "rows": items})
+    other_kinds = sorted([r for r in rows if r["kind"] not in RESOURCE_KINDS], key=lambda r: (r["title"] or "").lower())
+    if other_kinds:
+        groups.append({"kind": "Other", "heading": RESOURCE_KIND_HEADINGS["Other"], "rows": other_kinds})
+    return render_template(
+        "resources.html", groups=groups, programs=programs, labels=labels, sel=sel,
+        kinds=RESOURCE_KINDS, can_edit=can_edit, edit_item=edit_item, total=len(rows),
+    )
+
+
+def _resources_back(program_value):
+    sel = (program_value or "").strip()
+    return url_for(".resources", program=sel) if sel else url_for(".resources")
+
+
+@crm.route("/resources/new", methods=["POST"])
+@resources_view_required
+@resources_edit_required
+def resource_new():
+    _ensure_resources_table(get_db())
+    back = request.form.get("back", "")
+    kind = request.form.get("kind", "")
+    if kind not in RESOURCE_KINDS:
+        kind = "Other"
+    title = (request.form.get("title") or "").strip()[:200]
+    author = (request.form.get("author") or "").strip()[:200]
+    note = (request.form.get("note") or "").strip()[:2000]
+    program_id = _resource_program_id(request.form.get("program"))
+    url, url_err = _clean_resource_url(request.form.get("url"))
+    data, ctype, fname, file_err = _resource_file_from_form()
+    problem = (None if title else "Give the resource a title.") or (url_err) or (file_err) \
+        or ("Pick a program, or All programs." if program_id is False else None) \
+        or ("Attach a file for a PDF / document, or switch the type." if kind == "PDF / document" and not data and not url else None)
+    if problem:
+        flash(problem)
+        return redirect(_resources_back(back))
+    conn = get_db()
+    _ensure_resources_table(conn)
+    conn.execute(
+        """INSERT INTO program_resources (program_id, kind, title, author, url, note, data, original_filename, content_type, added_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (program_id, kind, title, author or None, url or None, note or None, data, fname, ctype, session.get("staff_name") or ""),
+    )
+    conn.commit()
+    conn.close()
+    flash(f"Added “{title}”.")
+    return redirect(_resources_back(back))
+
+
+@crm.route("/resources/<int:resource_id>/edit", methods=["POST"])
+@resources_view_required
+@resources_edit_required
+def resource_edit(resource_id):
+    back = request.form.get("back", "")
+    conn = get_db()
+    _ensure_resources_table(conn)
+    row = conn.execute("SELECT id FROM program_resources WHERE id = ?", (resource_id,)).fetchone()
+    if not row:
+        conn.close()
+        abort(404)
+    kind = request.form.get("kind", "")
+    if kind not in RESOURCE_KINDS:
+        kind = "Other"
+    title = (request.form.get("title") or "").strip()[:200]
+    author = (request.form.get("author") or "").strip()[:200]
+    note = (request.form.get("note") or "").strip()[:2000]
+    program_id = _resource_program_id(request.form.get("program"))
+    url, url_err = _clean_resource_url(request.form.get("url"))
+    data, ctype, fname, file_err = _resource_file_from_form()
+    problem = (None if title else "Give the resource a title.") or url_err or file_err \
+        or ("Pick a program, or All programs." if program_id is False else None)
+    if problem:
+        conn.close()
+        flash(problem)
+        return redirect(_resources_back(back))
+    conn.execute(
+        "UPDATE program_resources SET program_id = ?, kind = ?, title = ?, author = ?, url = ?, note = ? WHERE id = ?",
+        (program_id, kind, title, author or None, url or None, note or None, resource_id),
+    )
+    if data is not None:
+        conn.execute("UPDATE program_resources SET data = ?, original_filename = ?, content_type = ? WHERE id = ?",
+                     (data, fname, ctype, resource_id))
+    elif request.form.get("remove_file"):
+        conn.execute("UPDATE program_resources SET data = NULL, original_filename = NULL, content_type = NULL WHERE id = ?",
+                     (resource_id,))
+    conn.commit()
+    conn.close()
+    flash(f"Saved “{title}”.")
+    return redirect(_resources_back(back))
+
+
+@crm.route("/resources/<int:resource_id>/delete", methods=["POST"])
+@resources_view_required
+@resources_edit_required
+def resource_delete(resource_id):
+    conn = get_db()
+    _ensure_resources_table(conn)
+    row = conn.execute("SELECT title FROM program_resources WHERE id = ?", (resource_id,)).fetchone()
+    if row:
+        conn.execute("DELETE FROM program_resources WHERE id = ?", (resource_id,))
+        conn.commit()
+        flash(f"Removed “{row['title']}”.")
+    conn.close()
+    return redirect(_resources_back(request.form.get("back", "")))
+
+
+@crm.route("/resources/<int:resource_id>/file")
+@resources_view_required
+def resource_file(resource_id):
+    """Serves an attached PDF or document from the database. Only signed-in accounts that can
+    see Resources get it, and it is never reachable through /static/."""
+    conn = get_db()
+    _ensure_resources_table(conn)
+    row = conn.execute(
+        "SELECT data, original_filename, content_type FROM program_resources WHERE id = ?", (resource_id,)
+    ).fetchone()
+    conn.close()
+    if not row or not row["data"]:
+        abort(404)
+    name = (row["original_filename"] or "resource").replace('"', "")
+    is_pdf = name.lower().endswith(".pdf")
+    resp = make_response(bytes(row["data"]))
+    resp.headers["Content-Type"] = "application/pdf" if is_pdf else (row["content_type"] or "application/octet-stream")
+    resp.headers["Content-Disposition"] = f'{"inline" if is_pdf else "attachment"}; filename="{name}"'
+    resp.headers["Cache-Control"] = "no-store, private"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
+
+
 @crm.context_processor
 def inject_area_access():
     if not session.get("staff_id"):
