@@ -5928,6 +5928,13 @@ def enrollment_update(enrollment_id):
             conn.execute("UPDATE enrollments SET payment_completed_at = ? WHERE id = ?",
                          (fields["payment_completed_at"], enr["partner_enrollment_id"]))
         conn.commit()
+        if fields.get("attended") == 1:
+            # Spiritual and Renew: the leader's "completed" click sends the thank-you with the resources link right away.
+            try:
+                if send_completion_letter_now(enrollment_id):
+                    flash("Marked as completed. The thank-you email with the recommended resources was sent.")
+            except Exception as e:  # never let an email problem block recording attendance
+                print(f"completion email on click failed for enrollment {enrollment_id}: {e!r}", flush=True)
     conn.close()
     return redirect(url_for(".cohort_detail", cohort_id=enr["cohort_id"]))
 
@@ -9798,6 +9805,82 @@ def _auto_letters_start():
         return None
 
 
+def _deliver_completion_letter(conn, r):
+    """Sends the after-training email to one person (r is a roster row from the queries below), once.
+    Shared by the hourly check and by the click on a leader's 'completed' button. Returns True if it was sent."""
+    code = (r["program_code"] or "").upper()
+    token = r["profile_token"]
+    if not token:
+        token = secrets.token_urlsafe(24)
+        conn.execute("UPDATE contacts SET profile_token = ? WHERE id = ? AND profile_token IS NULL",
+                     (token, r["contact_id"]))
+        conn.commit()
+        token = conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (r["contact_id"],)).fetchone()["profile_token"]
+    with app.test_request_context(base_url=os.environ.get("PUBLIC_BASE_URL", "https://sojourn.blueskyusa.net")):
+        url = url_for("public_complete_profile", token=token, contracts=1, _external=True)
+        resources_url = _trainee_resources_url(r["contact_id"], token)
+    letter = completion_letter_content(r["first_name"], url, code, r["program_name"], resources_url)
+    if not letter:
+        return False
+    claim = conn.execute(
+        "INSERT INTO completion_letters (enrollment_id, contact_id, program_code) VALUES (?, ?, ?) ON CONFLICT (enrollment_id) DO NOTHING",
+        (r["enrollment_id"], r["contact_id"], code))
+    conn.commit()
+    if claim.rowcount != 1:
+        return False
+    subject, html_content, text_content = letter
+    try:
+        send_email(to_email=r["email"], to_name=r["first_name"], subject=subject,
+                   html_content=html_content, text_content=text_content)
+        print(f"AUTO-SENT {code} completion letter to contact {r['contact_id']} ({r['email']})", flush=True)
+        return True
+    except EmailSendError as e:
+        conn.execute("DELETE FROM completion_letters WHERE enrollment_id = ?", (r["enrollment_id"],))
+        conn.commit()
+        print(f"EmailSendError auto-sending completion letter to {r['email']}: {e}", flush=True)
+        return False
+
+
+COMPLETE_ON_CLICK_CODES = ("D5", "D6")   # Renew (Refocus) and Spiritual
+
+
+def send_completion_letter_now(enrollment_id, today=None):
+    """When a leader marks a Renew or Spiritual attendee as completed, sends the after-training email with the
+    resources link right away, instead of waiting for the hourly check. Only once the session's last day has
+    arrived. Uses the same switch (AUTO_COMPLETION_LETTERS_START) and the same one-send-per-person record as the
+    hourly check, so nobody is emailed twice. Returns True if an email was sent."""
+    start = _auto_letters_start()
+    if not start:
+        return False
+    today = today or date.today()
+    conn = get_db()
+    try:
+        _ensure_completion_letters_table(conn)
+        r = conn.execute(
+            """SELECT e.id AS enrollment_id, c.id AS contact_id, c.first_name, c.email, c.profile_token,
+                      p.code AS program_code, p.name AS program_name, k.session_date, k.end_date, k.status AS cohort_status
+               FROM enrollments e
+               JOIN cohorts k ON k.id = e.cohort_id
+               JOIN programs p ON p.id = k.program_id
+               JOIN contacts c ON c.id = e.contact_id
+               WHERE e.id = ? AND e.attended = 1
+                 AND NOT EXISTS (SELECT 1 FROM completion_letters l WHERE l.enrollment_id = e.id)""",
+            (enrollment_id,)).fetchone()
+        if not r or (r["program_code"] or "").upper() not in COMPLETE_ON_CLICK_CODES:
+            return False
+        if (r["cohort_status"] or "") == "Cancelled" or not (r["email"] or "").strip():
+            return False
+        try:
+            last_day = datetime.strptime((r["end_date"] or r["session_date"])[:10], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            return False
+        if not (start <= last_day <= today):
+            return False
+        return _deliver_completion_letter(conn, r)
+    finally:
+        conn.close()
+
+
 def send_due_completion_letters(today=None):
     """Sends any completion letters that are due. Returns the number sent."""
     start = _auto_letters_start()
@@ -9829,36 +9912,8 @@ def send_due_completion_letters(today=None):
                 continue
             if not (earliest <= last_day < today):
                 continue
-            code = (r["program_code"] or "").upper()
-            token = r["profile_token"]
-            if not token:
-                token = secrets.token_urlsafe(24)
-                conn.execute("UPDATE contacts SET profile_token = ? WHERE id = ? AND profile_token IS NULL",
-                             (token, r["contact_id"]))
-                conn.commit()
-                token = conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (r["contact_id"],)).fetchone()["profile_token"]
-            with app.test_request_context(base_url=os.environ.get("PUBLIC_BASE_URL", "https://sojourn.blueskyusa.net")):
-                url = url_for("public_complete_profile", token=token, contracts=1, _external=True)
-                resources_url = _trainee_resources_url(r["contact_id"], token)
-            letter = completion_letter_content(r["first_name"], url, code, r["program_name"], resources_url)
-            if not letter:
-                continue
-            claim = conn.execute(
-                "INSERT INTO completion_letters (enrollment_id, contact_id, program_code) VALUES (?, ?, ?) ON CONFLICT (enrollment_id) DO NOTHING",
-                (r["enrollment_id"], r["contact_id"], code))
-            conn.commit()
-            if claim.rowcount != 1:
-                continue
-            subject, html_content, text_content = letter
-            try:
-                send_email(to_email=r["email"], to_name=r["first_name"], subject=subject,
-                           html_content=html_content, text_content=text_content)
+            if _deliver_completion_letter(conn, r):
                 sent += 1
-                print(f"AUTO-SENT {code} completion letter to contact {r['contact_id']} ({r['email']})", flush=True)
-            except EmailSendError as e:
-                conn.execute("DELETE FROM completion_letters WHERE enrollment_id = ?", (r["enrollment_id"],))
-                conn.commit()
-                print(f"EmailSendError auto-sending completion letter to {r['email']}: {e}", flush=True)
         return sent
     finally:
         conn.close()

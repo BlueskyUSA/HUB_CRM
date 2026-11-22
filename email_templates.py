@@ -543,13 +543,20 @@ def contract_request_content(first_name, contracts_url, resources_url=None):
     return html_content, text_content
 
 
-# D5 (Refocus) has no contract, so it sends no letter.
+# D5 (Renew / Refocus) has no contract, so it sends only the resources thank-you (see completion_letter_content).
 COMPLETION_LETTER_CODES = ("D1", "D2", "D3", "D4", "D6")
 
 
 def completion_letter_content(first_name, contracts_url, program_code, program_name=None, resources_url=None):
     """(subject, html, text) for the automatic letter after a training, or None if that program sends none."""
-    if (program_code or "").strip().upper() not in COMPLETION_LETTER_CODES:
+    code = (program_code or "").strip().upper()
+    if code == "D5":
+        # Renew (Refocus) has no contract, so its letter is just the thank-you with the resources link,
+        # and it is only sent when something has been shared with trainees.
+        if not resources_url:
+            return None
+        return guide_letter_content("refocus_resources", first_name, "", "", "", link=resources_url)
+    if code not in COMPLETION_LETTER_CODES:
         return None
     html_content, text_content = contract_request_content(first_name, contracts_url, resources_url)
     return CONTRACT_REQUEST_SUBJECT, html_content, text_content
@@ -982,6 +989,21 @@ GUIDE_LETTERS = {
         ],
         "signoff": "",
         "signer": "",
+    },
+    "refocus_resources": {
+        "title": "After Renew: recommended resources",
+        "audience": "People marked as having completed Renew (Refocus)",
+        "greeting": "Dear",
+        "subject": "Thank you for being part of Renew",
+        "paras": [
+            "Congratulations on completing Renew. We are so glad you were part of it.",
+            "We have gathered books, podcasts and readings we recommend as you keep growing. You will find them here, and we will keep adding more.",
+            "{link}",
+            "This page is private to you, so please don't share the link. If you have any questions, just reply to this email.",
+        ],
+        "button": "See our recommended resources",
+        "signoff": "Have a great day,",
+        "signer": "Kent Hafemann",
     },
     "video_call": {
         "title": "Video call link (Google Meet)",
