@@ -37,26 +37,16 @@
 </section>
 <div class="fr-body">
   <div class="fr-note">These resources are for learning and encouragement. They are not a substitute for counseling or medical care. If you are in crisis, call or text <b>988</b> (the Suicide &amp; Crisis Lifeline) anytime.</div>
-  {% if topics %}
-  <div class="fr-chips"><span class="lab">Browse by topic</span>
-    <a class="fr-chip {% if not topic_sel %}on{% endif %}" href="{{ url_for('public_free_resources') }}">All</a>
-    {% for tp in topics %}<a class="fr-chip {% if topic_sel == tp.id|string %}on{% endif %}" href="{{ url_for('public_free_resources', topic=tp.id) }}">{{ tp.name }}</a>{% endfor %}
-  </div>
-  {% endif %}
-  {% if groups %}
-    {% for g in groups %}
-    <h2>{{ g.heading }}</h2>
-    <div class="fr-card">
-      {% for r in g.rows %}
-      <div class="fr-item">
-        <div class="t">{{ r.title }}{% if r.author %} <span class="by">&middot; {{ r.author }}</span>{% endif %}</div>
-        {% if r.topic_names %}<div class="tp">{{ r.topic_names|join(' · ') }}</div>{% endif %}
-        {% if r.note %}<p>{{ r.note }}</p>{% endif %}
-        <a class="fr-btn" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if r.kind == 'Podcast' %}Listen{% elif r.kind == 'Book' %}Find the book{% else %}Open{% endif %}</a>
-      </div>
-      {% endfor %}
+  {% if items %}
+  <div class="fr-card" style="margin-top:6px">
+    {% for r in items %}
+    <div class="fr-item">
+      <div class="t">{{ r.title }}{% if r.author %} <span class="by">&middot; {{ r.author }}</span>{% endif %}</div>
+      {% if r.note %}<p>{{ r.note }}</p>{% endif %}
+      <a class="fr-btn" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if r.kind == 'Podcast' %}Listen{% elif r.kind == 'Book' %}Find the book{% else %}Open{% endif %}</a>
     </div>
     {% endfor %}
+  </div>
   {% else %}
     <div class="fr-card"><p style="padding:14px 0;font-family:Georgia,serif">We are gathering our favorites and will post them here soon.</p></div>
   {% endif %}
