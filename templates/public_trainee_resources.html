@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Recommended resources</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; background:#f6f4ec; color:#222; margin:0; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 18px 48px; }
+  h1 { color:#3f5643; margin:0 0 6px; }
+  h2 { color:#3f5643; border-bottom:2px solid #d9d5c3; padding-bottom:4px; margin-top:28px; }
+  .card { background:#fff; border-radius:8px; padding:6px 16px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .item { padding:12px 0; border-bottom:1px solid #eee; } .item:last-child { border-bottom:0; }
+  .muted { color:#666; } a { color:#2f5d86; }
+  .btn { display:inline-block; background:#3f5643; color:#fff !important; padding:6px 14px; border-radius:6px; text-decoration:none; font-size:.9rem; margin:6px 8px 0 0; }
+  .banner { background:#fff3cd; border:1px solid #e0c36a; padding:8px 12px; border-radius:6px; margin-bottom:14px; }
+</style>
+</head>
+<body><div class="wrap">
+{% if not contact %}
+  <h1>This link isn&rsquo;t working</h1>
+  <p class="muted">We couldn&rsquo;t find a page for this link. Please use the link from your most recent email from us, or reply to that email and we will help.</p>
+{% else %}
+  {% if preview %}<div class="banner">Staff preview: this is what a graduate sees. It shows every resource ticked &ldquo;Show to trainees&rdquo;, for all programs.</div>{% endif %}
+  <h1>Recommended resources</h1>
+  <p class="muted">{% if not preview and contact.first_name %}{{ contact.first_name }}, {% endif %}here are the books, podcasts and readings we recommend to keep your growth going after your training. This page is private to you, so please don&rsquo;t share the link.</p>
+  {% if groups %}
+    {% for g in groups %}
+    <h2>{{ g.heading }}</h2>
+    <div class="card">
+      {% for r in g.rows %}
+      <div class="item">
+        <div><b>{{ r.title }}</b>{% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}
+          {% if preview %}<span class="muted" style="font-size:.8rem"> &middot; {{ labels.get(r.program_id, 'All programs') if r.program_id else 'All programs' }}</span>{% endif %}</div>
+        {% if r.note %}<div style="margin:4px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}
+        <div>
+          {% if r.url %}<a class="btn" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if r.kind == 'Podcast' %}Listen{% else %}Open link{% endif %}</a>{% endif %}
+          {% if r.file_url %}<a class="btn" href="{{ r.file_url }}" target="_blank">Open {{ r.original_filename }}</a>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="card"><p class="muted">Nothing is posted here yet. We will add books, podcasts and readings as we gather them.</p></div>
+  {% endif %}
+{% endif %}
+</div></body></html>

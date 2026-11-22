@@ -9,6 +9,7 @@
   <a class="btn {% if sel != 'shared' %}secondary{% endif %}" href="{{ url_for('.resources', program='shared') }}">All programs</a>
   {% for p in programs %}<a class="btn {% if sel != p.id|string %}secondary{% endif %}" href="{{ url_for('.resources', program=p.id) }}">{{ p.label }}</a> {% endfor %}
 </p>
+{% if can_edit %}<p style="margin:0 0 8px"><a href="{{ url_for('.resources_trainee_preview') }}">See what trainees see</a> <span class="muted">(only items ticked &ldquo;Show to trainees&rdquo;)</span></p>{% endif %}
 {% if sel and sel != 'shared' %}<p class="muted" style="margin-top:0">Showing this program's resources, plus the ones shared with every program.</p>{% endif %}
 
 {% if can_edit %}
@@ -32,6 +33,7 @@
     <p style="margin:6px 0"><label>Attach a file (PDF, Word or text, up to 10 MB)<br><input type="file" name="file" accept=".pdf,.doc,.docx,.txt"></label>
       {% if edit_item and edit_item.has_file %}<br><span class="muted">Now attached: {{ edit_item.original_filename }}. Choosing a new file replaces it.</span>
       <br><label><input type="checkbox" name="remove_file"> Remove the attached file</label>{% endif %}</p>
+    <p style="margin:6px 0"><label><input type="checkbox" name="share_trainees" {% if edit_item and edit_item.share_trainees %}checked{% endif %}> Show this to trainees, on the page we email after a training</label></p>
     <p style="margin:6px 0"><label>Why we recommend it (optional)<br><textarea name="note" rows="3" maxlength="2000" style="width:100%;max-width:520px">{{ edit_item.note if edit_item and edit_item.note else '' }}</textarea></label></p>
     <button class="btn" type="submit">{% if edit_item %}Save changes{% else %}Add{% endif %}</button>
     {% if edit_item %}<a class="btn secondary" href="{{ url_for('.resources', program=sel) if sel else url_for('.resources') }}">Cancel</a>{% endif %}
@@ -60,6 +62,7 @@
         {% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener noreferrer"><b>{{ r.title }}</b></a>{% elif r.has_file %}<a href="{{ url_for('.resource_file', resource_id=r.id) }}" target="_blank"><b>{{ r.title }}</b></a>{% else %}<b>{{ r.title }}</b>{% endif %}
         {% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}
         <span style="background:#eef2f0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:6px">{{ labels.get(r.program_id, 'All programs') if r.program_id else 'All programs' }}</span>
+        {% if r.share_trainees %}<span style="background:#e3efe0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:4px">Shown to trainees</span>{% endif %}
       </div>
       {% if r.note %}<div style="margin:4px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}
       <div style="margin-top:4px;font-size:.9rem">
