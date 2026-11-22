@@ -8599,6 +8599,13 @@ RESOURCE_KIND_HEADINGS = {
 }
 RESOURCE_FILE_EXTENSIONS = {"pdf", "doc", "docx", "txt"}
 MAX_RESOURCE_BYTES = 10 * 1024 * 1024   # the database server is small; keep each file modest
+# The starting list of topics. After the first load an Owner, Administrator or Leadership account can add, rename and remove topics on the Resources page.
+DEFAULT_RESOURCE_TOPICS = [
+    "Anger and conflict", "Attachment styles", "Boundaries", "Codependency", "Communication",
+    "Dysregulation (emotional regulation)", "Faith and spirituality", "Family of origin",
+    "Forgiveness and repair", "Grief and loss", "Intimacy and connection", "Self-compassion",
+    "Self-worth and shame", "Trauma and the body", "Triangulation",
+]
 _resources_table_ready = False
 
 
@@ -8620,6 +8627,14 @@ def _ensure_resources_table(conn):
                     WHERE r.program_id IS NOT NULL
                       AND NOT EXISTS (SELECT 1 FROM resource_programs x WHERE x.resource_id = r.id)""")
     conn.execute("UPDATE program_resources SET program_id = NULL WHERE program_id IS NOT NULL")
+    # Topics (dysregulation, attachment styles, ...): a shared list, and which resources carry which topics.
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_topics (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE)")
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_topic_links (resource_id INTEGER NOT NULL, topic_id INTEGER NOT NULL, PRIMARY KEY (resource_id, topic_id))")
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_topics_seeded (done INTEGER)")
+    if not conn.execute("SELECT 1 FROM resource_topics_seeded").fetchone():
+        for name in DEFAULT_RESOURCE_TOPICS:
+            conn.execute("INSERT INTO resource_topics (name) VALUES (?) ON CONFLICT (name) DO NOTHING", (name,))
+        conn.execute("INSERT INTO resource_topics_seeded (done) VALUES (1)")
     conn.commit()
     _resources_table_ready = True
 
@@ -8710,14 +8725,48 @@ def _save_resource_programs(conn, resource_id, ids):
         conn.execute("INSERT INTO resource_programs (resource_id, program_id) VALUES (?, ?)", (resource_id, i))
 
 
+def _topic_list(conn):
+    return [{"id": r["id"], "name": r["name"]} for r in
+            sorted(conn.execute("SELECT id, name FROM resource_topics").fetchall(), key=lambda r: r["name"].lower())]
+
+
+def _apply_topics(conn, resource_id, form):
+    """Saves the ticked topics, plus any new ones typed in the 'add a topic' box (comma or line separated)."""
+    existing = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM resource_topics").fetchall()}
+    by_lower = {n.lower(): i for i, n in existing.items()}
+    ids = []
+    for v in form.getlist("topic"):
+        if v.strip().isdigit() and int(v) in existing and int(v) not in ids:
+            ids.append(int(v))
+    typed = [t.strip()[:60] for t in re.split(r"[,\n]", form.get("new_topics") or "") if t.strip()][:10]
+    for name in typed:
+        i = by_lower.get(name.lower())
+        if i is None:
+            conn.execute("INSERT INTO resource_topics (name) VALUES (?)", (name,))
+            i = conn.execute("SELECT id FROM resource_topics WHERE name = ?", (name,)).fetchone()["id"]
+            by_lower[name.lower()] = i
+        if i not in ids:
+            ids.append(i)
+    conn.execute("DELETE FROM resource_topic_links WHERE resource_id = ?", (resource_id,))
+    for i in ids:
+        conn.execute("INSERT INTO resource_topic_links (resource_id, topic_id) VALUES (?, ?)", (resource_id, i))
+
+
 def _load_resources(conn, where="", params=()):
-    """Resources as dicts, each with program_ids (empty = All programs)."""
+    """Resources as dicts, each with program_ids (empty = All programs) and topic_ids / topic_names."""
     rows = [dict(r) for r in conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources {where}", params).fetchall()]
     pmap = {}
     for x in conn.execute("SELECT resource_id, program_id FROM resource_programs").fetchall():
         pmap.setdefault(x["resource_id"], []).append(x["program_id"])
+    tnames = {t["id"]: t["name"] for t in _topic_list(conn)}
+    tmap = {}
+    for x in conn.execute("SELECT resource_id, topic_id FROM resource_topic_links").fetchall():
+        if x["topic_id"] in tnames:
+            tmap.setdefault(x["resource_id"], []).append(x["topic_id"])
     for r in rows:
         r["program_ids"] = sorted(pmap.get(r["id"], []))
+        r["topic_ids"] = sorted(tmap.get(r["id"], []), key=lambda i: tnames[i].lower())
+        r["topic_names"] = [tnames[i] for i in r["topic_ids"]]
     return rows
 
 
@@ -8790,6 +8839,12 @@ def resources():
     else:
         sel = ""
         rows = allrows
+    topics = _topic_list(conn)
+    topic_sel = (request.args.get("topic") or "").strip()
+    if topic_sel.isdigit() and int(topic_sel) in {t["id"] for t in topics}:
+        rows = [r for r in rows if int(topic_sel) in r["topic_ids"]]
+    else:
+        topic_sel = ""
     can_edit = _can_edit_resources()
     edit_item = None
     edit_id = (request.args.get("edit") or "").strip()
@@ -8797,10 +8852,48 @@ def resources():
         edit_item = next((r for r in allrows if r["id"] == int(edit_id)), None)
     conn.close()
     groups = _group_resource_rows(rows)
+    topic_counts = {t["id"]: sum(1 for r in allrows if t["id"] in r["topic_ids"]) for t in topics}
     return render_template(
         "resources.html", groups=groups, programs=programs, labels=labels, sel=sel,
         kinds=RESOURCE_KINDS, can_edit=can_edit, edit_item=edit_item, total=len(rows),
+        topics=topics, topic_sel=topic_sel, topic_counts=topic_counts,
     )
+
+
+@crm.route("/resources/topics", methods=["POST"])
+@resources_view_required
+@resources_edit_required
+def resource_topics_manage():
+    """Add, rename or remove a topic. Removing a topic only takes the tag off; no resource is deleted."""
+    conn = get_db()
+    _ensure_resources_table(conn)
+    action = request.form.get("action", "")
+    name = (request.form.get("name") or "").strip()[:60]
+    tid = (request.form.get("id") or "").strip()
+    others = {r["name"].lower(): r["id"] for r in conn.execute("SELECT id, name FROM resource_topics").fetchall()}
+    if action == "add":
+        if not name:
+            flash("Type a topic name.")
+        elif name.lower() in others:
+            flash(f"“{name}” is already a topic.")
+        else:
+            conn.execute("INSERT INTO resource_topics (name) VALUES (?)", (name,))
+            flash(f"Added the topic “{name}”.")
+    elif action == "rename" and tid.isdigit():
+        if not name:
+            flash("Type the new name.")
+        elif others.get(name.lower(), int(tid)) != int(tid):
+            flash(f"There is already a topic called “{name}”.")
+        else:
+            conn.execute("UPDATE resource_topics SET name = ? WHERE id = ?", (name, int(tid)))
+            flash("Topic renamed.")
+    elif action == "delete" and tid.isdigit():
+        conn.execute("DELETE FROM resource_topic_links WHERE topic_id = ?", (int(tid),))
+        conn.execute("DELETE FROM resource_topics WHERE id = ?", (int(tid),))
+        flash("Topic removed. Resources that had it were kept.")
+    conn.commit()
+    conn.close()
+    return redirect(url_for(".resources") + "#topics")
 
 
 def _resources_back(program_value):
@@ -8838,6 +8931,7 @@ def resource_new():
     )
     new_id = cur.fetchone()["id"]
     _save_resource_programs(conn, new_id, program_ids)
+    _apply_topics(conn, new_id, request.form)
     conn.commit()
     conn.close()
     flash(f"Added “{title}”.")
@@ -8875,6 +8969,7 @@ def resource_edit(resource_id):
         (kind, title, author or None, url or None, note or None, share, resource_id),
     )
     _save_resource_programs(conn, resource_id, program_ids)
+    _apply_topics(conn, resource_id, request.form)
     if data is not None:
         conn.execute("UPDATE program_resources SET data = ?, original_filename = ?, content_type = ? WHERE id = ?",
                      (data, fname, ctype, resource_id))
@@ -8897,6 +8992,7 @@ def resource_delete(resource_id):
     if row:
         conn.execute("DELETE FROM program_resources WHERE id = ?", (resource_id,))
         conn.execute("DELETE FROM resource_programs WHERE resource_id = ?", (resource_id,))
+        conn.execute("DELETE FROM resource_topic_links WHERE resource_id = ?", (resource_id,))
         conn.commit()
         flash(f"Removed “{row['title']}”.")
     conn.close()
