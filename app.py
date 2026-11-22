@@ -8805,6 +8805,25 @@ def _group_resource_rows(rows):
     return groups
 
 
+def _all_program_labels(conn):
+    """[{id, label}] for every program, with the public names (The Beginning, The Art of Us...). Unlike _nav_programs it
+    needs no staff login, so a graduate's page can use it."""
+    try:
+        from public_programs_data import PROGRAM_PAGES
+        titles = {pg["code"]: pg["title"] for pg in PROGRAM_PAGES.values()}
+    except Exception:
+        titles = {}
+    titles.update({"D5": "Refocus", "D6": "Spiritual"})
+    out = []
+    for r in conn.execute("SELECT id, code, name FROM programs ORDER BY id").fetchall():
+        nm = (r["name"] or "").strip()
+        code = r["code"] or ""
+        if nm.startswith(code + "-"):
+            nm = nm[len(code) + 1:].strip()
+        out.append({"id": r["id"], "label": titles.get(code) or nm or code})
+    return out
+
+
 def _trainee_resource_rows(conn, contact_id):
     """The resources ticked 'show to trainees' that this graduate may see: the ones for programs they
     paid for or attended, plus the ones for All programs. Someone with no attended training sees only All programs."""
@@ -9090,13 +9109,25 @@ def public_trainee_resources(token):
         resp = make_response(render_template("public_trainee_resources.html", contact=None, groups=[], labels={}, preview=False, total=0), 404)
         resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resp
-    rows = _trainee_resource_rows(conn, contact["id"])
-    labels = {p["id"]: p["label"] for p in _nav_programs()}
+    plist = _all_program_labels(conn)
+    labels = {p["id"]: p["label"] for p in plist}
+    shared = _load_resources(conn, "WHERE share_trainees = 1")
+    # Which program buttons to offer: only programs that have something of their own posted.
+    with_items = {pid for r in shared for pid in r["program_ids"]}
+    by_program = [p for p in plist if p["id"] in with_items]
+    view = (request.args.get("program") or "").strip()
+    if view == "all":
+        rows = shared
+    elif view.isdigit() and int(view) in labels:
+        rows = [r for r in shared if not r["program_ids"] or int(view) in r["program_ids"]]
+    else:
+        view = ""
+        rows = _trainee_resource_rows(conn, contact["id"])
     conn.close()
     for r in rows:
         r["file_url"] = url_for("public_trainee_resource_file", token=token, resource_id=r["id"]) if r["has_file"] else None
     resp = make_response(render_template("public_trainee_resources.html", contact=contact, groups=_group_resource_rows(rows),
-                                         labels=labels, preview=False, total=len(rows)))
+                                         labels=labels, preview=False, total=len(rows), by_program=by_program, view=view, token=token))
     resp.headers["X-Robots-Tag"] = "noindex, nofollow"
     resp.headers["Cache-Control"] = "no-store, private"
     return resp
@@ -9107,7 +9138,8 @@ def public_trainee_resource_file(token, resource_id):
     conn = get_db()
     _ensure_resources_table(conn)
     contact = conn.execute("SELECT id FROM contacts WHERE profile_token = ?", (token,)).fetchone()
-    if not contact or resource_id not in {r["id"] for r in _trainee_resource_rows(conn, contact["id"])}:
+    # Any graduate may open any file that is ticked "Show to trainees" (the page lets them browse every program's resources).
+    if not contact or not conn.execute("SELECT 1 FROM program_resources WHERE id = ? AND share_trainees = 1", (resource_id,)).fetchone():
         conn.close()
         abort(404)
     row = conn.execute("SELECT data, original_filename, content_type FROM program_resources WHERE id = ?", (resource_id,)).fetchone()
