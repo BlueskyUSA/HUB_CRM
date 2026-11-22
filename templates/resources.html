@@ -1,0 +1,85 @@
+{% extends "crm_base.html" %}
+{% block title %}Resources — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Resources</h1>
+<p class="muted">Books, podcasts, PDFs and links we recommend for each program, on relationships, healing and growth.{% if not can_edit %} Ask the Owner, an Administrator or a Leadership account to add something.{% endif %}</p>
+
+<p style="margin:10px 0">
+  <a class="btn {% if sel != '' %}secondary{% endif %}" href="{{ url_for('.resources') }}">Everything</a>
+  <a class="btn {% if sel != 'shared' %}secondary{% endif %}" href="{{ url_for('.resources', program='shared') }}">All programs</a>
+  {% for p in programs %}<a class="btn {% if sel != p.id|string %}secondary{% endif %}" href="{{ url_for('.resources', program=p.id) }}">{{ p.label }}</a> {% endfor %}
+</p>
+{% if sel and sel != 'shared' %}<p class="muted" style="margin-top:0">Showing this program's resources, plus the ones shared with every program.</p>{% endif %}
+
+{% if can_edit %}
+<details class="card" id="form" {% if edit_item %}open{% endif %} style="margin-bottom:16px">
+  <summary class="btn" style="display:inline-block;cursor:pointer">{% if edit_item %}Edit this resource{% else %}Add a resource &#9662;{% endif %}</summary>
+  <form method="post" enctype="multipart/form-data" style="margin-top:12px"
+        action="{% if edit_item %}{{ url_for('.resource_edit', resource_id=edit_item.id) }}{% else %}{{ url_for('.resource_new') }}{% endif %}">
+    <input type="hidden" name="back" value="{{ sel }}">
+    <p style="margin:6px 0"><label>Type<br>
+      <select name="kind" id="rkind">
+        {% for k in kinds %}<option value="{{ k }}" {% if edit_item and edit_item.kind == k %}selected{% endif %}>{{ k }}</option>{% endfor %}
+      </select></label></p>
+    <p style="margin:6px 0"><label>For which program<br>
+      <select name="program">
+        <option value="all" {% if edit_item and not edit_item.program_id %}selected{% elif not edit_item and sel in ('', 'shared') %}selected{% endif %}>All programs</option>
+        {% for p in programs %}<option value="{{ p.id }}" {% if edit_item and edit_item.program_id == p.id %}selected{% elif not edit_item and sel == p.id|string %}selected{% endif %}>{{ p.label }}</option>{% endfor %}
+      </select></label></p>
+    <p style="margin:6px 0"><label>Title<br><input type="text" name="title" maxlength="200" required style="width:100%;max-width:520px" value="{{ edit_item.title if edit_item else '' }}"></label></p>
+    <p style="margin:6px 0"><label><span id="rauthor">Author or source</span><br><input type="text" name="author" maxlength="200" style="width:100%;max-width:520px" value="{{ edit_item.author if edit_item and edit_item.author else '' }}"></label></p>
+    <p style="margin:6px 0"><label><span id="rurl">Link (optional)</span><br><input type="text" name="url" maxlength="500" placeholder="https://" style="width:100%;max-width:520px" value="{{ edit_item.url if edit_item and edit_item.url else '' }}"></label></p>
+    <p style="margin:6px 0"><label>Attach a file (PDF, Word or text, up to 10 MB)<br><input type="file" name="file" accept=".pdf,.doc,.docx,.txt"></label>
+      {% if edit_item and edit_item.has_file %}<br><span class="muted">Now attached: {{ edit_item.original_filename }}. Choosing a new file replaces it.</span>
+      <br><label><input type="checkbox" name="remove_file"> Remove the attached file</label>{% endif %}</p>
+    <p style="margin:6px 0"><label>Why we recommend it (optional)<br><textarea name="note" rows="3" maxlength="2000" style="width:100%;max-width:520px">{{ edit_item.note if edit_item and edit_item.note else '' }}</textarea></label></p>
+    <button class="btn" type="submit">{% if edit_item %}Save changes{% else %}Add{% endif %}</button>
+    {% if edit_item %}<a class="btn secondary" href="{{ url_for('.resources', program=sel) if sel else url_for('.resources') }}">Cancel</a>{% endif %}
+  </form>
+</details>
+<script>
+(function(){
+  var k = document.getElementById('rkind'), a = document.getElementById('rauthor'), u = document.getElementById('rurl');
+  function upd(){
+    var v = k.value;
+    a.textContent = v === 'Book' ? 'Author' : v === 'Podcast' ? 'Host or show' : 'Author or source';
+    u.textContent = v === 'Podcast' ? 'Link to the podcast or episode' : v === 'Book' ? 'Link to the book (optional)' : 'Link (optional)';
+  }
+  k.addEventListener('change', upd); upd();
+})();
+</script>
+{% endif %}
+
+{% if groups %}
+  {% for g in groups %}
+  <h2>{{ g.heading }}</h2>
+  <div class="card">
+    {% for r in g.rows %}
+    <div style="padding:10px 0;{% if not loop.last %}border-bottom:1px solid #eee{% endif %}">
+      <div>
+        {% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener noreferrer"><b>{{ r.title }}</b></a>{% elif r.has_file %}<a href="{{ url_for('.resource_file', resource_id=r.id) }}" target="_blank"><b>{{ r.title }}</b></a>{% else %}<b>{{ r.title }}</b>{% endif %}
+        {% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}
+        <span style="background:#eef2f0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:6px">{{ labels.get(r.program_id, 'All programs') if r.program_id else 'All programs' }}</span>
+      </div>
+      {% if r.note %}<div style="margin:4px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}
+      <div style="margin-top:4px;font-size:.9rem">
+        {% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">Open link</a>{% endif %}
+        {% if r.url and r.has_file %} &nbsp;|&nbsp; {% endif %}
+        {% if r.has_file %}<a href="{{ url_for('.resource_file', resource_id=r.id) }}" target="_blank">Open {{ r.original_filename }}</a>{% endif %}
+        {% if can_edit %}
+        &nbsp;|&nbsp; <a href="{{ url_for('.resources', program=sel, edit=r.id) if sel else url_for('.resources', edit=r.id) }}#form">Edit</a>
+        &nbsp;|&nbsp;
+        <form method="post" action="{{ url_for('.resource_delete', resource_id=r.id) }}" style="display:inline" onsubmit="return confirm('Remove this resource?');">
+          <input type="hidden" name="back" value="{{ sel }}">
+          <button type="submit" style="background:none;border:0;padding:0;color:#b33;cursor:pointer;font:inherit">Delete</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card"><p class="muted" style="margin:0">Nothing here yet.{% if can_edit %} Use &ldquo;Add a resource&rdquo; above for the first book, podcast or PDF.{% endif %}</p></div>
+{% endif %}
+{% endblock %}

@@ -125,12 +125,14 @@
               <a href="{{ url_for('.program_playlists', program_id=np.id) }}" style="padding-left:44px">Music</a>
               <a href="{{ url_for('.program_materials', program_id=np.id, category='Handouts') }}" style="padding-left:44px">Handouts</a>
               <a href="{{ url_for('.program_materials', program_id=np.id, category='Other') }}" style="padding-left:44px">Other</a>
+              <a href="{{ url_for('.resources', program=np.id) }}" style="padding-left:44px">Resources</a>
             </details>
             {% endfor %}
           </details>
           {% else %}
           <a href="{{ url_for('.programs_list') }}">Training Materials</a>
           {% endif %}
+          <a href="{{ url_for('.resources') }}">Resources</a>
           <a href="{{ url_for('.calendar_view') }}">Calendar &amp; Quick Schedule</a>
           {% if session.is_owner or has_checkin_access %}<a href="{{ url_for('.checkin_home') }}">Check-in</a>{% endif %}
           <div style="padding:8px 16px 2px; color:#cfc9b0; font-size:0.78rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap">Upcoming sessions</div>
@@ -138,7 +140,7 @@
         </div>
       </details>
       {% elif session.is_owner or has_checkin_access %}
-      <details class="navmenu"><summary>Programs &#9662;</summary><div class="navmenu-items"><a href="{{ url_for('.programs_list') }}">Training Materials</a><a href="{{ url_for('.checkin_home') }}">Check-in</a></div></details>
+      <details class="navmenu"><summary>Programs &#9662;</summary><div class="navmenu-items"><a href="{{ url_for('.programs_list') }}">Training Materials</a><a href="{{ url_for('.resources') }}">Resources</a><a href="{{ url_for('.checkin_home') }}">Check-in</a></div></details>
       {% else %}
       <a href="{{ url_for('.programs_list') }}">Programs</a>
       {% endif %}
