@@ -9039,16 +9039,25 @@ def resource_file(resource_id):
 @crm.route("/resources/trainee-preview")
 @resources_view_required
 def resources_trainee_preview():
-    """Shows staff the page graduates get: every resource ticked 'show to trainees', with PDFs opened through the staff route."""
+    """Shows staff the page graduates get. With ?program=<id> it shows exactly what someone who took that program sees
+    (the resources for All programs plus the ones for that program); without it, every resource ticked 'show to trainees'.
+    PDFs open through the staff route."""
     conn = get_db()
     _ensure_resources_table(conn)
     rows = _load_resources(conn, "WHERE share_trainees = 1")
-    labels = {p["id"]: p["label"] for p in _nav_programs()}
+    programs = _nav_programs()
+    labels = {p["id"]: p["label"] for p in programs}
     conn.close()
+    sel = (request.args.get("program") or "").strip()
+    if sel.isdigit() and int(sel) in labels:
+        pid = int(sel)
+        rows = [r for r in rows if not r["program_ids"] or pid in r["program_ids"]]
+    else:
+        sel = ""
     for r in rows:
         r["file_url"] = url_for(".resource_file", resource_id=r["id"]) if r["has_file"] else None
     return render_template("public_trainee_resources.html", contact={"first_name": "(preview)"}, groups=_group_resource_rows(rows),
-                           labels=labels, preview=True, total=len(rows))
+                           labels=labels, preview=True, total=len(rows), programs=programs, sel=sel)
 
 
 @app.route("/free-resources")
