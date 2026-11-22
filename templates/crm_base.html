@@ -96,6 +96,7 @@
             <summary>Administrator &#9662;</summary>
             <a href="{{ url_for('.owner_instructions') }}" style="padding-left:30px">Software &amp; go-live</a>
             <a href="{{ url_for('.hub_ownership') }}" style="padding-left:30px">Hub Ownership</a>
+            <a href="{{ url_for('.program_end_times') }}" style="padding-left:30px">Program end times</a>
             <a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports (Finances)</a>
             {% if (session.is_owner and not session.is_admin) or has_change_history_view %}<a href="{{ url_for('.change_history') }}" style="padding-left:30px">Change/Access History</a>{% endif %}
             {% if not session.is_admin %}<a href="{{ url_for('.chat_review') }}" style="padding-left:30px">Chat Review</a>{% endif %}

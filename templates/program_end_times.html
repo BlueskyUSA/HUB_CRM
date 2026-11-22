@@ -1,0 +1,18 @@
+{% extends "crm_base.html" %}
+{% block title %}Program end times{% endblock %}
+{% block content %}
+<h1>Program end times</h1>
+<p class="muted">Set this once for each program: the time of day a training ends on its last day (times are {{ tz }}). Paid trainees are automatically emailed the link to our recommended resources at that time, within about 15 minutes. Leave a program blank to send nothing for it.</p>
+{% if not start %}<p class="flash" style="padding:10px;border:1px solid #c9b27c;background:#fbf5e6;border-radius:8px"><strong>Not switched on yet.</strong> The emails start when the setting <code>AUTO_RESOURCES_EMAIL_START</code> (a date such as 2026-12-01) is added in Render. Only trainings whose last day is on or after that date are sent.</p>
+{% else %}<p class="muted">Switched on for trainings ending {{ start.strftime("%m/%d/%Y") }} or later.</p>{% endif %}
+<form method="post">
+  <table style="border-collapse:collapse">
+    <tr><th style="text-align:left;padding:6px 14px 6px 0">Program</th><th style="text-align:left">Ends at</th></tr>
+    {% for i in items %}
+    <tr><td style="padding:6px 14px 6px 0">{{ i.label }}</td><td><input type="time" name="end_{{ i.id }}" value="{{ i.value }}"> {% if i.pretty %}<span class="muted">{{ i.pretty }}</span>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  <p style="margin-top:14px"><button class="btn" type="submit">Save</button></p>
+</form>
+<p class="muted">You can read and edit the email itself on the Correspondence page (&ldquo;After the training: recommended resources&rdquo;).</p>
+{% endblock %}
