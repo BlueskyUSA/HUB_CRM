@@ -8612,6 +8612,14 @@ def _ensure_resources_table(conn):
         added_by TEXT, created_at TEXT NOT NULL DEFAULT {CHAT_NOW}, share_trainees INTEGER NOT NULL DEFAULT 0)""")
     # The page was first built without the "show to trainees" tick box, so older databases need the column added.
     conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS share_trainees INTEGER NOT NULL DEFAULT 0")
+    # A resource can belong to several programs: one row here per program. No rows = All programs.
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_programs (resource_id INTEGER NOT NULL, program_id INTEGER NOT NULL, PRIMARY KEY (resource_id, program_id))")
+    # Resources saved when each could have only one program: copy that program across, once (program_id is cleared on every save after this).
+    conn.execute("""INSERT INTO resource_programs (resource_id, program_id)
+                    SELECT r.id, r.program_id FROM program_resources r
+                    WHERE r.program_id IS NOT NULL
+                      AND NOT EXISTS (SELECT 1 FROM resource_programs x WHERE x.resource_id = r.id)""")
+    conn.execute("UPDATE program_resources SET program_id = NULL WHERE program_id IS NOT NULL")
     conn.commit()
     _resources_table_ready = True
 
@@ -8675,19 +8683,42 @@ def _resource_file_from_form():
     return data, ctype, name, None
 
 
-def _resource_program_id(raw):
-    """None for 'All programs', a program id when it exists, or False when the value is not valid."""
-    raw = (raw or "").strip()
-    if raw in ("", "all"):
-        return None
-    if not raw.isdigit():
-        return False
+def _resource_program_ids(raw_values):
+    """([program ids], error). An empty list means All programs. Ticking 'All programs' (or nothing) means all."""
+    vals = [(v or "").strip() for v in raw_values]
+    if not vals or "all" in vals:
+        return [], None
+    ids = []
+    for v in vals:
+        if not v.isdigit():
+            return [], "Pick the programs again."
+        if int(v) not in ids:
+            ids.append(int(v))
     conn = get_db()
     try:
-        ok = conn.execute("SELECT 1 FROM programs WHERE id = ?", (int(raw),)).fetchone()
+        known = {r["id"] for r in conn.execute("SELECT id FROM programs").fetchall()}
     finally:
         conn.close()
-    return int(raw) if ok else False
+    if any(i not in known for i in ids):
+        return [], "Pick the programs again."
+    return ids, None
+
+
+def _save_resource_programs(conn, resource_id, ids):
+    conn.execute("DELETE FROM resource_programs WHERE resource_id = ?", (resource_id,))
+    for i in ids:
+        conn.execute("INSERT INTO resource_programs (resource_id, program_id) VALUES (?, ?)", (resource_id, i))
+
+
+def _load_resources(conn, where="", params=()):
+    """Resources as dicts, each with program_ids (empty = All programs)."""
+    rows = [dict(r) for r in conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources {where}", params).fetchall()]
+    pmap = {}
+    for x in conn.execute("SELECT resource_id, program_id FROM resource_programs").fetchall():
+        pmap.setdefault(x["resource_id"], []).append(x["program_id"])
+    for r in rows:
+        r["program_ids"] = sorted(pmap.get(r["id"], []))
+    return rows
 
 
 _RESOURCE_COLS = """id, program_id, kind, title, author, url, note, original_filename,
@@ -8713,13 +8744,9 @@ def _trainee_resource_rows(conn, contact_id):
     progs = [r["program_id"] for r in conn.execute(
         """SELECT DISTINCT k.program_id FROM enrollments e JOIN cohorts k ON k.id = e.cohort_id
            WHERE e.contact_id = ? AND (e.attended = 1 OR e.payment_completed_at IS NOT NULL)""", (contact_id,)).fetchall()]
-    sql = f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE share_trainees = 1 AND (program_id IS NULL"
-    params = []
-    if progs:
-        sql += " OR program_id IN (" + ",".join("?" * len(progs)) + ")"
-        params = progs
-    sql += ")"
-    return [dict(r) for r in conn.execute(sql, params).fetchall()]
+    mine = set(progs)
+    return [r for r in _load_resources(conn, "WHERE share_trainees = 1")
+            if not r["program_ids"] or mine & set(r["program_ids"])]
 
 
 def _trainee_resources_url(contact_id, token):
@@ -8755,19 +8782,19 @@ def resources():
     programs = _nav_programs()
     labels = {p["id"]: p["label"] for p in programs}
     sel = (request.args.get("program") or "").strip()
+    allrows = _load_resources(conn)
     if sel.isdigit() and int(sel) in labels:
-        rows = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE program_id = ? OR program_id IS NULL",
-                            (int(sel),)).fetchall()
+        rows = [r for r in allrows if not r["program_ids"] or int(sel) in r["program_ids"]]
     elif sel == "shared":
-        rows = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE program_id IS NULL").fetchall()
+        rows = [r for r in allrows if not r["program_ids"]]
     else:
         sel = ""
-        rows = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources").fetchall()
+        rows = allrows
     can_edit = _can_edit_resources()
     edit_item = None
     edit_id = (request.args.get("edit") or "").strip()
     if can_edit and edit_id.isdigit():
-        edit_item = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE id = ?", (int(edit_id),)).fetchone()
+        edit_item = next((r for r in allrows if r["id"] == int(edit_id)), None)
     conn.close()
     groups = _group_resource_rows(rows)
     return render_template(
@@ -8793,23 +8820,24 @@ def resource_new():
     title = (request.form.get("title") or "").strip()[:200]
     author = (request.form.get("author") or "").strip()[:200]
     note = (request.form.get("note") or "").strip()[:2000]
-    program_id = _resource_program_id(request.form.get("program"))
+    program_ids, prog_err = _resource_program_ids(request.form.getlist("program"))
     share = 1 if request.form.get("share_trainees") else 0
     url, url_err = _clean_resource_url(request.form.get("url"))
     data, ctype, fname, file_err = _resource_file_from_form()
-    problem = (None if title else "Give the resource a title.") or (url_err) or (file_err) \
-        or ("Pick a program, or All programs." if program_id is False else None) \
+    problem = (None if title else "Give the resource a title.") or (url_err) or (file_err) or prog_err \
         or ("Attach a file for a PDF / document, or switch the type." if kind == "PDF / document" and not data and not url else None)
     if problem:
         flash(problem)
         return redirect(_resources_back(back))
     conn = get_db()
     _ensure_resources_table(conn)
-    conn.execute(
+    cur = conn.execute(
         """INSERT INTO program_resources (program_id, kind, title, author, url, note, data, original_filename, content_type, added_by, share_trainees)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (program_id, kind, title, author or None, url or None, note or None, data, fname, ctype, session.get("staff_name") or "", share),
+           VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id""",
+        (kind, title, author or None, url or None, note or None, data, fname, ctype, session.get("staff_name") or "", share),
     )
+    new_id = cur.fetchone()["id"]
+    _save_resource_programs(conn, new_id, program_ids)
     conn.commit()
     conn.close()
     flash(f"Added “{title}”.")
@@ -8833,20 +8861,20 @@ def resource_edit(resource_id):
     title = (request.form.get("title") or "").strip()[:200]
     author = (request.form.get("author") or "").strip()[:200]
     note = (request.form.get("note") or "").strip()[:2000]
-    program_id = _resource_program_id(request.form.get("program"))
+    program_ids, prog_err = _resource_program_ids(request.form.getlist("program"))
     share = 1 if request.form.get("share_trainees") else 0
     url, url_err = _clean_resource_url(request.form.get("url"))
     data, ctype, fname, file_err = _resource_file_from_form()
-    problem = (None if title else "Give the resource a title.") or url_err or file_err \
-        or ("Pick a program, or All programs." if program_id is False else None)
+    problem = (None if title else "Give the resource a title.") or url_err or file_err or prog_err
     if problem:
         conn.close()
         flash(problem)
         return redirect(_resources_back(back))
     conn.execute(
-        "UPDATE program_resources SET program_id = ?, kind = ?, title = ?, author = ?, url = ?, note = ?, share_trainees = ? WHERE id = ?",
-        (program_id, kind, title, author or None, url or None, note or None, share, resource_id),
+        "UPDATE program_resources SET program_id = NULL, kind = ?, title = ?, author = ?, url = ?, note = ?, share_trainees = ? WHERE id = ?",
+        (kind, title, author or None, url or None, note or None, share, resource_id),
     )
+    _save_resource_programs(conn, resource_id, program_ids)
     if data is not None:
         conn.execute("UPDATE program_resources SET data = ?, original_filename = ?, content_type = ? WHERE id = ?",
                      (data, fname, ctype, resource_id))
@@ -8868,6 +8896,7 @@ def resource_delete(resource_id):
     row = conn.execute("SELECT title FROM program_resources WHERE id = ?", (resource_id,)).fetchone()
     if row:
         conn.execute("DELETE FROM program_resources WHERE id = ?", (resource_id,))
+        conn.execute("DELETE FROM resource_programs WHERE resource_id = ?", (resource_id,))
         conn.commit()
         flash(f"Removed “{row['title']}”.")
     conn.close()
@@ -8897,7 +8926,7 @@ def resources_trainee_preview():
     """Shows staff the page graduates get: every resource ticked 'show to trainees', with PDFs opened through the staff route."""
     conn = get_db()
     _ensure_resources_table(conn)
-    rows = [dict(r) for r in conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE share_trainees = 1").fetchall()]
+    rows = _load_resources(conn, "WHERE share_trainees = 1")
     labels = {p["id"]: p["label"] for p in _nav_programs()}
     conn.close()
     for r in rows:
