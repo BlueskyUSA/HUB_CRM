@@ -14,6 +14,8 @@
   .item { padding:12px 0; border-bottom:1px solid #eee; } .item:last-child { border-bottom:0; }
   .muted { color:#666; } a { color:#2f5d86; }
   .btn { display:inline-block; background:#3f5643; color:#fff !important; padding:6px 14px; border-radius:6px; text-decoration:none; font-size:.9rem; margin:6px 8px 0 0; }
+  .pv { display:inline-block; border:1px solid #3f5643; color:#3f5643; border-radius:16px; padding:3px 11px; margin:2px 3px 2px 0; text-decoration:none; font-size:.85rem; background:#fff; }
+  .pv.on { background:#3f5643; color:#fff; }
   .banner { background:#fff3cd; border:1px solid #e0c36a; padding:8px 12px; border-radius:6px; margin-bottom:14px; }
 </style>
 </head>
@@ -22,9 +24,16 @@
   <h1>This link isn&rsquo;t working</h1>
   <p class="muted">We couldn&rsquo;t find a page for this link. Please use the link from your most recent email from us, or reply to that email and we will help.</p>
 {% else %}
-  {% if preview %}<div class="banner">Staff preview: this is what a graduate sees. It shows every resource ticked &ldquo;Show to trainees&rdquo;, for all programs.</div>{% endif %}
+  {% if preview %}<div class="banner">Staff preview: this is what a graduate sees.
+    {% if sel %}It shows what someone who took <b>{{ labels[sel|int] }}</b> receives: the resources for that program plus the ones for All programs ({{ total }} item{{ '' if total == 1 else 's' }}).
+    {% else %}It shows every resource ticked &ldquo;Show to trainees&rdquo;, for all programs ({{ total }} item{{ '' if total == 1 else 's' }}). Pick a program to see what that program&rsquo;s graduates get.{% endif %}
+    <div style="margin-top:8px">
+      <a class="pv{% if not sel %} on{% endif %}" href="{{ url_for('.resources_trainee_preview') }}">Everything</a>
+      {% for pr in programs %}<a class="pv{% if sel == pr.id|string %} on{% endif %}" href="{{ url_for('.resources_trainee_preview', program=pr.id) }}">{{ pr.label }}</a>{% endfor %}
+      <a href="{{ url_for('.resources', program=sel) if sel else url_for('.resources') }}" style="margin-left:8px">&larr; Back to Resources</a>
+    </div></div>{% endif %}
   <h1>Recommended resources</h1>
-  <p class="muted">{% if not preview and contact.first_name %}{{ contact.first_name }}, {% endif %}here are the books, podcasts and readings we recommend to keep your growth going after your training. This page is private to you, so please don&rsquo;t share the link.</p>
+  <p class="muted">{% if not preview and contact.first_name %}{{ contact.first_name }}, here{% else %}Here{% endif %} are the books, podcasts and readings we recommend to keep your growth going after your training. This page is private to you, so please don&rsquo;t share the link.</p>
   {% if groups %}
     {% for g in groups %}
     <h2>{{ g.heading }}</h2>
