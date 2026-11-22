@@ -8893,7 +8893,7 @@ def resources():
     return render_template(
         "resources.html", groups=groups, programs=programs, labels=labels, sel=sel,
         kinds=RESOURCE_KINDS, can_edit=can_edit, edit_item=edit_item, total=len(rows),
-        topics=topics, topic_sel=topic_sel, topic_counts=topic_counts,
+        topics=topics, topic_sel=topic_sel, topic_counts=topic_counts, labels_by_id=labels,
     )
 
 
