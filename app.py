@@ -9764,6 +9764,79 @@ import dbmap
 dbmap.register(app, crm, owner_required, get_db)
 import feature_guide
 feature_guide.register(app, crm, owner_required, PROGRAM_NAME)
+# ---- Program end times (Administrator page) ----
+_program_times_ready = False
+
+
+def _ensure_resource_email_tables(conn):
+    global _program_times_ready
+    if _program_times_ready:
+        return
+    conn.execute("CREATE TABLE IF NOT EXISTS program_end_times (program_id INTEGER PRIMARY KEY, end_time TEXT NOT NULL)")
+    conn.execute(f"""CREATE TABLE IF NOT EXISTS resource_emails (
+        id SERIAL PRIMARY KEY, enrollment_id INTEGER NOT NULL UNIQUE, contact_id INTEGER NOT NULL,
+        sent_at TEXT NOT NULL DEFAULT {CHAT_NOW})""")
+    conn.commit()
+    _program_times_ready = True
+
+
+def _resource_emails_start():
+    raw = (os.environ.get("AUTO_RESOURCES_EMAIL_START") or "").strip()
+    try:
+        return datetime.strptime(raw, "%Y-%m-%d").date() if raw else None
+    except ValueError:
+        return None
+
+
+def _local_now():
+    """Current time in the Hub's local time zone (Central by default; set HUB_TIMEZONE to change)."""
+    name = os.environ.get("HUB_TIMEZONE") or "America/Chicago"
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo(name)).replace(tzinfo=None)
+    except Exception:
+        return datetime.utcnow() - timedelta(hours=6)
+
+
+def _parse_hhmm(raw):
+    try:
+        return datetime.strptime((raw or "").strip(), "%H:%M").time()
+    except ValueError:
+        return None
+
+
+@crm.route("/admin/program-times", methods=["GET", "POST"])
+@owner_required
+def program_end_times():
+    """Administrator page: the time of day each program ends on its last day. The automatic resources email
+    goes to paid trainees at that time. Set once per program."""
+    conn = get_db()
+    _ensure_resource_email_tables(conn)
+    if request.method == "POST":
+        for p in conn.execute("SELECT id FROM programs").fetchall():
+            raw = (request.form.get(f"end_{p['id']}") or "").strip()
+            if not raw:
+                conn.execute("DELETE FROM program_end_times WHERE program_id = ?", (p["id"],))
+            elif _parse_hhmm(raw):
+                conn.execute("DELETE FROM program_end_times WHERE program_id = ?", (p["id"],))
+                conn.execute("INSERT INTO program_end_times (program_id, end_time) VALUES (?, ?)", (p["id"], _parse_hhmm(raw).strftime("%H:%M")))
+        conn.commit()
+        flash("Program end times saved.")
+        conn.close()
+        return redirect(url_for(".program_end_times"))
+    rows = conn.execute(
+        "SELECT p.id, p.code, p.name, t.end_time FROM programs p LEFT JOIN program_end_times t ON t.program_id = p.id ORDER BY p.code").fetchall()
+    conn.close()
+    items = []
+    for r in rows:
+        t = _parse_hhmm(r["end_time"])
+        items.append({"id": r["id"], "label": f"{r['name']}", "value": t.strftime("%H:%M") if t else "",
+                      "pretty": (t.strftime("%I:%M %p").lstrip("0") if t else "")})
+    return render_template("program_end_times.html", items=items, start=_resource_emails_start(),
+                           tz=os.environ.get("HUB_TIMEZONE") or "America/Chicago")
+
+
+
 app.register_blueprint(crm)
 
 
@@ -9873,77 +9946,6 @@ def send_due_completion_letters(today=None):
 
 
 # ---- Automatic resources email: paid trainees, at the program's end time (set by an Administrator) ----
-_program_times_ready = False
-
-
-def _ensure_resource_email_tables(conn):
-    global _program_times_ready
-    if _program_times_ready:
-        return
-    conn.execute("CREATE TABLE IF NOT EXISTS program_end_times (program_id INTEGER PRIMARY KEY, end_time TEXT NOT NULL)")
-    conn.execute(f"""CREATE TABLE IF NOT EXISTS resource_emails (
-        id SERIAL PRIMARY KEY, enrollment_id INTEGER NOT NULL UNIQUE, contact_id INTEGER NOT NULL,
-        sent_at TEXT NOT NULL DEFAULT {CHAT_NOW})""")
-    conn.commit()
-    _program_times_ready = True
-
-
-def _resource_emails_start():
-    raw = (os.environ.get("AUTO_RESOURCES_EMAIL_START") or "").strip()
-    try:
-        return datetime.strptime(raw, "%Y-%m-%d").date() if raw else None
-    except ValueError:
-        return None
-
-
-def _local_now():
-    """Current time in the Hub's local time zone (Central by default; set HUB_TIMEZONE to change)."""
-    name = os.environ.get("HUB_TIMEZONE") or "America/Chicago"
-    try:
-        from zoneinfo import ZoneInfo
-        return datetime.now(ZoneInfo(name)).replace(tzinfo=None)
-    except Exception:
-        return datetime.utcnow() - timedelta(hours=6)
-
-
-def _parse_hhmm(raw):
-    try:
-        return datetime.strptime((raw or "").strip(), "%H:%M").time()
-    except ValueError:
-        return None
-
-
-@crm.route("/admin/program-times", methods=["GET", "POST"])
-@owner_required
-def program_end_times():
-    """Administrator page: the time of day each program ends on its last day. The automatic resources email
-    goes to paid trainees at that time. Set once per program."""
-    conn = get_db()
-    _ensure_resource_email_tables(conn)
-    if request.method == "POST":
-        for p in conn.execute("SELECT id FROM programs").fetchall():
-            raw = (request.form.get(f"end_{p['id']}") or "").strip()
-            if not raw:
-                conn.execute("DELETE FROM program_end_times WHERE program_id = ?", (p["id"],))
-            elif _parse_hhmm(raw):
-                conn.execute("DELETE FROM program_end_times WHERE program_id = ?", (p["id"],))
-                conn.execute("INSERT INTO program_end_times (program_id, end_time) VALUES (?, ?)", (p["id"], _parse_hhmm(raw).strftime("%H:%M")))
-        conn.commit()
-        flash("Program end times saved.")
-        conn.close()
-        return redirect(url_for(".program_end_times"))
-    rows = conn.execute(
-        "SELECT p.id, p.code, p.name, t.end_time FROM programs p LEFT JOIN program_end_times t ON t.program_id = p.id ORDER BY p.code").fetchall()
-    conn.close()
-    items = []
-    for r in rows:
-        t = _parse_hhmm(r["end_time"])
-        items.append({"id": r["id"], "label": f"{r['name']}", "value": t.strftime("%H:%M") if t else "",
-                      "pretty": (t.strftime("%I:%M %p").lstrip("0") if t else "")})
-    return render_template("program_end_times.html", items=items, start=_resource_emails_start(),
-                           tz=os.environ.get("HUB_TIMEZONE") or "America/Chicago")
-
-
 def send_due_resource_emails(now=None):
     """Emails the recommended-resources link to each paid trainee once the program's last day reaches its end time
     (set on the Administrator page). Sent within the hour the check runs; never twice to the same person; nothing is
