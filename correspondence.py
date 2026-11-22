@@ -164,8 +164,8 @@ def _preview_map():
         "connect": lambda: (T.CONNECT_REQUEST_SUBJECT, T.connect_request_confirmation_content(P, "call")[0]),
         "plan": lambda: (T.PRELIMINARY_PLAN_SUBJECT, T.preliminary_plan_content(P)[0]),
         "excitement": lambda: (T.EXCITEMENT_BLAST_SUBJECT, T.excitement_blast_content(P)[0]),
-        "contract": lambda: (T.CONTRACT_REQUEST_SUBJECT, T.contract_request_content(P, "#", "#")[0]),
-        "completion": lambda: (lambda r: (r[0], r[1]))(T.completion_letter_content(P, "#", "D4", "The Art of Us", "#")),
+        "contract": lambda: (T.CONTRACT_REQUEST_SUBJECT, T.contract_request_content(P, "#")[0]),
+        "completion": lambda: (lambda r: (r[0], r[1]))(T.completion_letter_content(P, "#", "D4", "The Art of Us")),
         "helper_welcome": lambda: (lambda r: (r[0], r[1]))(C.letter_helper_welcome(P, "#", "#")),
     }
 
@@ -267,9 +267,9 @@ def catalog():
             C("Questionnaire: other programs", "Sent as a private link from the session page.", "Each person", "Awakening, Vision, Renew and Spiritual use a short standard set: first time attending, goals, food and access needs, injuries, anything else."),
             E("what_to_bring_aou", sl["what_to_bring_aou"]["title"], "Automatically 7 days before The Art of Us for people who have paid (reserved through a Guide); also by hand from the session's letters page.", "Trainees (The Art of Us)"),
             E("what_to_bring", "What to Bring \u2013 Other Trainings", "Automatically 7 days before the training for people who have paid (reserved through a Guide); also by hand.", "Trainees (The Beginning and every other training)"),
-            V("completion", "After the training", "Automatically, a short time after the training ends. For Spiritual, right away when a leader marks the person as completed (once the last day has arrived).", "Trainees who completed"),
+            V("completion", "After the training", "Automatically, a short time after the training ends.", "Trainees who completed"),
             V("contract", "Contract information request", "By hand, from a contact's record.", "Trainees who completed"),
-            E("refocus_resources", "After Renew: recommended resources", "Automatically after Renew ends, or right away when a leader marks the person as completed (once the last day has arrived). Only sent when something is shared with trainees on the Resources page.", "People who completed Renew"),
+            E("trainee_resources", "After the training: recommended resources", "Automatically on the last day of each training, at the end time an Administrator sets for that program (Administrator menu, Program end times). Sent once to each trainee who has paid. Only sent when something is shared with trainees on the Resources page.", "Trainees who have paid"),
          ]),
         ("team", "Team (Facilitators, TA's, Support Team, Leadership)",
          "Letters to the people who run a session.", [
@@ -830,7 +830,7 @@ def register(app, crm, get_db, h):
             used = [f for f in fields if "{" + f + "}" in blob and f not in (("first",) if _own_greeting else ("first", "First name"))]
             versions = conn.execute("SELECT * FROM letter_versions WHERE letter_key = ? ORDER BY version DESC", (key,)).fetchall()
             return render_template("correspondence_letter_edit.html", key=key, can_edit=can_edit, is_owner=bool(session.get("is_owner")),
-                                   entry=_with_purpose(next((e for _i, _t, _d, es in catalog() for e in es if e.get("key") == key), {})), guide_note=(GUIDE_EXPLAINER if key in et.GUIDE_LETTERS and key not in ("sponsor_welcome", "sponsor_page", "profile_request", "video_call", "needs_request", "testimonial_request", "chat_private_alert", "chat_private_alert_text", "refocus_resources") else None), guides=(guides_by_group(conn) if key in et.GUIDE_LETTERS else []), orig=orig, form=form, error=error,
+                                   entry=_with_purpose(next((e for _i, _t, _d, es in catalog() for e in es if e.get("key") == key), {})), guide_note=(GUIDE_EXPLAINER if key in et.GUIDE_LETTERS and key not in ("sponsor_welcome", "sponsor_page", "profile_request", "video_call", "needs_request", "testimonial_request", "chat_private_alert", "chat_private_alert_text", "trainee_resources") else None), guides=(guides_by_group(conn) if key in et.GUIDE_LETTERS else []), orig=orig, form=form, error=error,
                                    saved=saved, preview_subject=subject, preview_html=html, used=used, help=FIELD_HELP,
                                    versions=versions, note=note, current_version=(versions[0]["version"] if versions and saved else None),
                                    back=("correspondence_all" if key in et.GUIDE_LETTERS else

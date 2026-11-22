@@ -3349,7 +3349,7 @@ def contact_preview_contract_request(contact_id):
     _conn = get_db()
     _c = _conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (contact_id,)).fetchone()
     _conn.close()
-    _res_url = _trainee_resources_url(contact_id, _c["profile_token"]) if _c and _c["profile_token"] else None
+    _res_url = None
     html_content, _t = contract_request_content(_first_name_of(contact_id), _contract_link_for(contact_id), _res_url)
     return _render_letter_preview(contact_id, "Contract Information Request", CONTRACT_REQUEST_SUBJECT, html_content,
                                   ".contact_send_contract_request", "Send Contract Information Request")
@@ -3397,7 +3397,7 @@ def contact_send_contract_request(contact_id):
         conn.commit()
     conn.close()
     contracts_url = url_for("public_complete_profile", token=token, contracts=1, _external=True)
-    html_content, text_content = contract_request_content(contact["first_name"], contracts_url, _trainee_resources_url(contact_id, token))
+    html_content, text_content = contract_request_content(contact["first_name"], contracts_url)
     try:
         send_email(
             to_email=contact["email"],
@@ -5928,13 +5928,6 @@ def enrollment_update(enrollment_id):
             conn.execute("UPDATE enrollments SET payment_completed_at = ? WHERE id = ?",
                          (fields["payment_completed_at"], enr["partner_enrollment_id"]))
         conn.commit()
-        if fields.get("attended") == 1:
-            # Spiritual and Renew: the leader's "completed" click sends the thank-you with the resources link right away.
-            try:
-                if send_completion_letter_now(enrollment_id):
-                    flash("Marked as completed. The thank-you email with the recommended resources was sent.")
-            except Exception as e:  # never let an email problem block recording attendance
-                print(f"completion email on click failed for enrollment {enrollment_id}: {e!r}", flush=True)
     conn.close()
     return redirect(url_for(".cohort_detail", cohort_id=enr["cohort_id"]))
 
@@ -8716,10 +8709,10 @@ def _group_resource_rows(rows):
 
 def _trainee_resource_rows(conn, contact_id):
     """The resources ticked 'show to trainees' that this graduate may see: the ones for programs they
-    attended, plus the ones for All programs. Someone with no attended training sees only All programs."""
+    paid for or attended, plus the ones for All programs. Someone with no attended training sees only All programs."""
     progs = [r["program_id"] for r in conn.execute(
         """SELECT DISTINCT k.program_id FROM enrollments e JOIN cohorts k ON k.id = e.cohort_id
-           WHERE e.contact_id = ? AND e.attended = 1""", (contact_id,)).fetchall()]
+           WHERE e.contact_id = ? AND (e.attended = 1 OR e.payment_completed_at IS NOT NULL)""", (contact_id,)).fetchall()]
     sql = f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE share_trainees = 1 AND (program_id IS NULL"
     params = []
     if progs:
@@ -9807,7 +9800,7 @@ def _auto_letters_start():
 
 def _deliver_completion_letter(conn, r):
     """Sends the after-training email to one person (r is a roster row from the queries below), once.
-    Shared by the hourly check and by the click on a leader's 'completed' button. Returns True if it was sent."""
+    Returns True if it was sent."""
     code = (r["program_code"] or "").upper()
     token = r["profile_token"]
     if not token:
@@ -9818,7 +9811,7 @@ def _deliver_completion_letter(conn, r):
         token = conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (r["contact_id"],)).fetchone()["profile_token"]
     with app.test_request_context(base_url=os.environ.get("PUBLIC_BASE_URL", "https://sojourn.blueskyusa.net")):
         url = url_for("public_complete_profile", token=token, contracts=1, _external=True)
-        resources_url = _trainee_resources_url(r["contact_id"], token)
+        resources_url = None   # resources now go out in their own automatic email (send_due_resource_emails)
     letter = completion_letter_content(r["first_name"], url, code, r["program_name"], resources_url)
     if not letter:
         return False
@@ -9839,46 +9832,6 @@ def _deliver_completion_letter(conn, r):
         conn.commit()
         print(f"EmailSendError auto-sending completion letter to {r['email']}: {e}", flush=True)
         return False
-
-
-COMPLETE_ON_CLICK_CODES = ("D5", "D6")   # Renew (Refocus) and Spiritual
-
-
-def send_completion_letter_now(enrollment_id, today=None):
-    """When a leader marks a Renew or Spiritual attendee as completed, sends the after-training email with the
-    resources link right away, instead of waiting for the hourly check. Only once the session's last day has
-    arrived. Uses the same switch (AUTO_COMPLETION_LETTERS_START) and the same one-send-per-person record as the
-    hourly check, so nobody is emailed twice. Returns True if an email was sent."""
-    start = _auto_letters_start()
-    if not start:
-        return False
-    today = today or date.today()
-    conn = get_db()
-    try:
-        _ensure_completion_letters_table(conn)
-        r = conn.execute(
-            """SELECT e.id AS enrollment_id, c.id AS contact_id, c.first_name, c.email, c.profile_token,
-                      p.code AS program_code, p.name AS program_name, k.session_date, k.end_date, k.status AS cohort_status
-               FROM enrollments e
-               JOIN cohorts k ON k.id = e.cohort_id
-               JOIN programs p ON p.id = k.program_id
-               JOIN contacts c ON c.id = e.contact_id
-               WHERE e.id = ? AND e.attended = 1
-                 AND NOT EXISTS (SELECT 1 FROM completion_letters l WHERE l.enrollment_id = e.id)""",
-            (enrollment_id,)).fetchone()
-        if not r or (r["program_code"] or "").upper() not in COMPLETE_ON_CLICK_CODES:
-            return False
-        if (r["cohort_status"] or "") == "Cancelled" or not (r["email"] or "").strip():
-            return False
-        try:
-            last_day = datetime.strptime((r["end_date"] or r["session_date"])[:10], "%Y-%m-%d").date()
-        except (ValueError, TypeError):
-            return False
-        if not (start <= last_day <= today):
-            return False
-        return _deliver_completion_letter(conn, r)
-    finally:
-        conn.close()
 
 
 def send_due_completion_letters(today=None):
@@ -9919,6 +9872,146 @@ def send_due_completion_letters(today=None):
         conn.close()
 
 
+# ---- Automatic resources email: paid trainees, at the program's end time (set by an Administrator) ----
+_program_times_ready = False
+
+
+def _ensure_resource_email_tables(conn):
+    global _program_times_ready
+    if _program_times_ready:
+        return
+    conn.execute("CREATE TABLE IF NOT EXISTS program_end_times (program_id INTEGER PRIMARY KEY, end_time TEXT NOT NULL)")
+    conn.execute(f"""CREATE TABLE IF NOT EXISTS resource_emails (
+        id SERIAL PRIMARY KEY, enrollment_id INTEGER NOT NULL UNIQUE, contact_id INTEGER NOT NULL,
+        sent_at TEXT NOT NULL DEFAULT {CHAT_NOW})""")
+    conn.commit()
+    _program_times_ready = True
+
+
+def _resource_emails_start():
+    raw = (os.environ.get("AUTO_RESOURCES_EMAIL_START") or "").strip()
+    try:
+        return datetime.strptime(raw, "%Y-%m-%d").date() if raw else None
+    except ValueError:
+        return None
+
+
+def _local_now():
+    """Current time in the Hub's local time zone (Central by default; set HUB_TIMEZONE to change)."""
+    name = os.environ.get("HUB_TIMEZONE") or "America/Chicago"
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo(name)).replace(tzinfo=None)
+    except Exception:
+        return datetime.utcnow() - timedelta(hours=6)
+
+
+def _parse_hhmm(raw):
+    try:
+        return datetime.strptime((raw or "").strip(), "%H:%M").time()
+    except ValueError:
+        return None
+
+
+@crm.route("/admin/program-times", methods=["GET", "POST"])
+@owner_required
+def program_end_times():
+    """Administrator page: the time of day each program ends on its last day. The automatic resources email
+    goes to paid trainees at that time. Set once per program."""
+    conn = get_db()
+    _ensure_resource_email_tables(conn)
+    if request.method == "POST":
+        for p in conn.execute("SELECT id FROM programs").fetchall():
+            raw = (request.form.get(f"end_{p['id']}") or "").strip()
+            if not raw:
+                conn.execute("DELETE FROM program_end_times WHERE program_id = ?", (p["id"],))
+            elif _parse_hhmm(raw):
+                conn.execute("DELETE FROM program_end_times WHERE program_id = ?", (p["id"],))
+                conn.execute("INSERT INTO program_end_times (program_id, end_time) VALUES (?, ?)", (p["id"], _parse_hhmm(raw).strftime("%H:%M")))
+        conn.commit()
+        flash("Program end times saved.")
+        conn.close()
+        return redirect(url_for(".program_end_times"))
+    rows = conn.execute(
+        "SELECT p.id, p.code, p.name, t.end_time FROM programs p LEFT JOIN program_end_times t ON t.program_id = p.id ORDER BY p.code").fetchall()
+    conn.close()
+    items = []
+    for r in rows:
+        t = _parse_hhmm(r["end_time"])
+        items.append({"id": r["id"], "label": f"{r['name']}", "value": t.strftime("%H:%M") if t else "",
+                      "pretty": (t.strftime("%I:%M %p").lstrip("0") if t else "")})
+    return render_template("program_end_times.html", items=items, start=_resource_emails_start(),
+                           tz=os.environ.get("HUB_TIMEZONE") or "America/Chicago")
+
+
+def send_due_resource_emails(now=None):
+    """Emails the recommended-resources link to each paid trainee once the program's last day reaches its end time
+    (set on the Administrator page). Sent within the hour the check runs; never twice to the same person; nothing is
+    sent for a program with no end time set, or when nothing is shared with trainees. Returns the number sent."""
+    start = _resource_emails_start()
+    if not start:
+        return 0
+    now = now or _local_now()
+    conn = get_db()
+    try:
+        _ensure_resource_email_tables(conn)
+        _ensure_resources_table(conn)
+        rows = conn.execute(
+            """SELECT e.id AS enrollment_id, c.id AS contact_id, c.first_name, c.email, c.profile_token,
+                      p.name AS program_name, k.session_date, k.end_date, t.end_time
+               FROM enrollments e
+               JOIN cohorts k ON k.id = e.cohort_id
+               JOIN programs p ON p.id = k.program_id
+               JOIN program_end_times t ON t.program_id = p.id
+               JOIN contacts c ON c.id = e.contact_id
+               WHERE e.payment_completed_at IS NOT NULL
+                 AND COALESCE(k.status, '') <> 'Cancelled'
+                 AND c.email IS NOT NULL AND c.email <> ''
+                 AND NOT EXISTS (SELECT 1 FROM resource_emails x WHERE x.enrollment_id = e.id)""").fetchall()
+        sent = 0
+        for r in rows:
+            try:
+                last_day = datetime.strptime((r["end_date"] or r["session_date"])[:10], "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                continue
+            tm = _parse_hhmm(r["end_time"])
+            if not tm or last_day < start:
+                continue
+            end_dt = datetime.combine(last_day, tm)
+            if not (end_dt <= now < end_dt + timedelta(hours=24)):
+                continue
+            token = r["profile_token"]
+            if not token:
+                token = secrets.token_urlsafe(24)
+                conn.execute("UPDATE contacts SET profile_token = ? WHERE id = ? AND profile_token IS NULL", (token, r["contact_id"]))
+                conn.commit()
+                token = conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (r["contact_id"],)).fetchone()["profile_token"]
+            with app.test_request_context(base_url=os.environ.get("PUBLIC_BASE_URL", "https://sojourn.blueskyusa.net")):
+                link = _trainee_resources_url(r["contact_id"], token)
+            if not link:
+                continue   # nothing shared yet: not recorded, so a later check can still send it
+            claim = conn.execute(
+                "INSERT INTO resource_emails (enrollment_id, contact_id) VALUES (?, ?) ON CONFLICT (enrollment_id) DO NOTHING",
+                (r["enrollment_id"], r["contact_id"]))
+            conn.commit()
+            if claim.rowcount != 1:
+                continue
+            subject, html_content, text_content = _et.guide_letter_content(
+                "trainee_resources", r["first_name"], r["program_name"], "", "", link=link)
+            try:
+                send_email(to_email=r["email"], to_name=r["first_name"], subject=subject,
+                           html_content=html_content, text_content=text_content)
+                sent += 1
+                print(f"AUTO-SENT resources email to contact {r['contact_id']} ({r['email']})", flush=True)
+            except EmailSendError as e:
+                conn.execute("DELETE FROM resource_emails WHERE enrollment_id = ?", (r["enrollment_id"],))
+                conn.commit()
+                print(f"EmailSendError auto-sending resources email to {r['email']}: {e}", flush=True)
+        return sent
+    finally:
+        conn.close()
+
+
 def _completion_letter_loop():
     import time
     time.sleep(60)
@@ -9927,10 +10020,14 @@ def _completion_letter_loop():
             send_due_completion_letters()
         except Exception as e:  # never let the loop die
             print(f"completion letter check failed: {e}", flush=True)
-        time.sleep(3600)
+        try:
+            send_due_resource_emails()
+        except Exception as e:
+            print(f"resources email check failed: {e}", flush=True)
+        time.sleep(900)
 
 
-if _auto_letters_start() and not os.environ.get("DISABLE_BACKGROUND_THREADS"):
+if (_auto_letters_start() or _resource_emails_start()) and not os.environ.get("DISABLE_BACKGROUND_THREADS"):
     import threading
     threading.Thread(target=_completion_letter_loop, daemon=True).start()
 
