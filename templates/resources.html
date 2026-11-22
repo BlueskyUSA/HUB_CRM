@@ -12,7 +12,19 @@
   <div style="margin-top:10px"><span class="muted">Or preview one program:</span>
     {% for p in programs %}<a class="btn secondary" style="padding:5px 12px" href="{{ url_for('.resources_trainee_preview', program=p.id) }}">{{ p.label }}</a> {% endfor %}
   </div>
-  <div class="muted" style="margin-top:8px"><a href="{{ url_for('public_free_resources') }}" target="_blank">See the public Free Resources page</a> (the one visitors see, only items ticked &ldquo;Show on our public website&rdquo;)</div>
+</div>
+
+<div style="margin:0 0 18px;padding:16px 18px;border:2px solid #1f5f7a;border-radius:10px;background:#e8f3f7">
+  <div style="font-size:1.15rem;font-weight:700;color:#164a5f;margin-bottom:4px">Check what the public sees</div>
+  <div style="margin-bottom:10px">Anyone visiting our website can read the Free Resources page, so it is part of our marketing. Only <b>links</b> ticked &ldquo;Show on our public website&rdquo; appear there. Uploaded PDFs and files never do. Before you tick an item, check its title and note: no promises to treat, heal or cure, the same rule we use for testimonials.</div>
+  <a class="btn" style="font-size:1.05rem;padding:11px 24px;background:#1f5f7a" href="{{ url_for('public_free_resources') }}" target="_blank">See the public Free Resources page</a>
+  <div style="margin-top:12px">
+    {% if public_rows %}<b>On the public site now ({{ public_rows|length }}):</b>
+      <ul style="margin:6px 0 0 18px;padding:0">
+      {% for r in public_rows %}<li>{{ r.title }}{% if r.author %} <span class="muted">&middot; {{ r.author }}</span>{% endif %} &nbsp;<a href="{{ url_for('.resources', edit=r.id) }}">Edit</a></li>{% endfor %}
+      </ul>
+    {% else %}<b>Nothing is on the public site yet.</b> <span class="muted">The &ldquo;Free Resources&rdquo; link in the website footer and the home page section stay hidden until you tick an item.</span>{% endif %}
+  </div>
 </div>
 {% endif %}
 
