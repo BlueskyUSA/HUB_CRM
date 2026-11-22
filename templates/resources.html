@@ -15,7 +15,7 @@
   {% for tp in topics %}<a class="btn {% if topic_sel != tp.id|string %}secondary{% endif %}" style="padding:4px 10px;font-size:.85rem" href="{{ url_for('.resources', program=sel, topic=tp.id) if sel else url_for('.resources', topic=tp.id) }}">{{ tp.name }}{% if topic_counts[tp.id] %} <span class="muted">({{ topic_counts[tp.id] }})</span>{% endif %}</a> {% endfor %}
 </p>
 {% endif %}
-{% if can_edit %}<p style="margin:0 0 8px"><a href="{{ url_for('.resources_trainee_preview') }}">See what trainees see</a> <span class="muted">(only items ticked &ldquo;Show to trainees&rdquo;)</span></p>{% endif %}
+{% if can_edit %}<p style="margin:0 0 8px"><a href="{{ url_for('.resources_trainee_preview') }}">See what trainees see</a> <span class="muted">(only items ticked &ldquo;Show to trainees&rdquo;) &nbsp;|&nbsp; <a href="{{ url_for('public_free_resources') }}" target="_blank">See the public Free Resources page</a></span></p>{% endif %}
 {% if sel and sel != 'shared' %}<p class="muted" style="margin-top:0">Showing this program's resources, plus the ones shared with every program.</p>{% endif %}
 
 {% if can_edit %}
@@ -44,6 +44,7 @@
     <p style="margin:6px 0"><label>Attach a file (PDF, Word or text, up to 10 MB)<br><input type="file" name="file" accept=".pdf,.doc,.docx,.txt"></label>
       {% if edit_item and edit_item.has_file %}<br><span class="muted">Now attached: {{ edit_item.original_filename }}. Choosing a new file replaces it.</span>
       <br><label><input type="checkbox" name="remove_file"> Remove the attached file</label>{% endif %}</p>
+    <p style="margin:6px 0"><label><input type="checkbox" name="share_public" {% if edit_item and edit_item.share_public %}checked{% endif %}> Show on our public website, on the Free Resources page <span class="muted">(needs a link; uploaded files are never shown publicly)</span></label></p>
     <p style="margin:6px 0"><label><input type="checkbox" name="share_trainees" {% if edit_item and edit_item.share_trainees %}checked{% endif %}> Show this to trainees, on the page we email after a training</label></p>
     <p style="margin:6px 0"><label>Why we recommend it (optional)<br><textarea name="note" rows="3" maxlength="2000" style="width:100%;max-width:520px">{{ edit_item.note if edit_item and edit_item.note else '' }}</textarea></label></p>
     <button class="btn" type="submit">{% if edit_item %}Save changes{% else %}Add{% endif %}</button>
@@ -103,6 +104,7 @@
         {% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}
         <span style="background:#eef2f0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:6px">{% if r.program_ids %}{% for pid in r.program_ids %}{{ labels.get(pid, '') }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}All programs{% endif %}</span>
         {% for tn in r.topic_names %}<span style="background:#f3ead7;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:4px">{{ tn }}</span>{% endfor %}
+        {% if r.share_public %}<span style="background:#e0e8f3;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:4px">On public site</span>{% endif %}
         {% if r.share_trainees %}<span style="background:#e3efe0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:4px">Shown to trainees</span>{% endif %}
       </div>
       {% if r.note %}<div style="margin:4px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}

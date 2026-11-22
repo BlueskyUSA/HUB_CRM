@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Resources | Discovery!</title>
+<meta name="description" content="Books, podcasts and websites we recommend on relationships, healing and growth.">
+<style>
+  body { font-family: Georgia, "Times New Roman", serif; background:#f6f4ec; color:#2b2b2b; margin:0; line-height:1.55; }
+  .top { background:#3f5643; color:#fff; padding:14px 18px; }
+  .top a { color:#fff; text-decoration:none; margin-right:18px; font-family: Arial, Helvetica, sans-serif; font-size:.95rem; }
+  .top .brand { font-weight:bold; font-size:1.1rem; }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 28px 18px 56px; }
+  h1 { color:#3f5643; margin:0 0 8px; font-size:2rem; }
+  h2 { color:#3f5643; border-bottom:2px solid #d9c9a0; padding-bottom:4px; margin-top:34px; }
+  .lead { font-size:1.1rem; color:#444; }
+  .safety { background:#fbf5e6; border:1px solid #e0cfa0; border-radius:8px; padding:12px 16px; margin:18px 0; font-size:.95rem; font-family: Arial, Helvetica, sans-serif; }
+  .chips { margin:18px 0 6px; font-family: Arial, Helvetica, sans-serif; }
+  .chip { display:inline-block; border:1px solid #3f5643; color:#3f5643; border-radius:18px; padding:4px 12px; margin:3px 4px 3px 0; text-decoration:none; font-size:.88rem; background:#fff; }
+  .chip.on { background:#3f5643; color:#fff; }
+  .card { background:#fff; border-radius:10px; padding:4px 20px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .item { padding:14px 0; border-bottom:1px solid #eee; } .item:last-child { border-bottom:0; }
+  .item .t { font-size:1.08rem; } .muted { color:#666; font-family: Arial, Helvetica, sans-serif; font-size:.85rem; }
+  .btn { display:inline-block; background:#3f5643; color:#fff !important; padding:7px 16px; border-radius:6px; text-decoration:none; font-family: Arial, Helvetica, sans-serif; font-size:.9rem; margin-top:8px; }
+  .cta { background:#3f5643; color:#fff; border-radius:10px; padding:22px 24px; margin-top:40px; }
+  .cta h2 { color:#fff; border:0; margin:0 0 6px; } .cta .btn { background:#fff; color:#3f5643 !important; }
+  footer { text-align:center; color:#777; font-family: Arial, Helvetica, sans-serif; font-size:.85rem; padding:20px; }
+</style>
+</head>
+<body>
+<div class="top"><a class="brand" href="{{ url_for('public_home') }}">Discovery!</a><a href="{{ url_for('public_programs') }}">Our trainings</a><a href="{{ url_for('public_free_resources') }}">Free Resources</a></div>
+<div class="wrap">
+  <h1>Free Resources</h1>
+  <p class="lead">Books, podcasts and websites we recommend on relationships, healing and growth. Take what helps.</p>
+  <div class="safety">These resources are for learning and encouragement. They are not a substitute for counseling or medical care. If you are in crisis, call or text <b>988</b> (the Suicide &amp; Crisis Lifeline) anytime.</div>
+  {% if topics %}
+  <div class="chips"><span class="muted">Browse by topic:</span><br>
+    <a class="chip {% if not topic_sel %}on{% endif %}" href="{{ url_for('public_free_resources') }}">All</a>
+    {% for tp in topics %}<a class="chip {% if topic_sel == tp.id|string %}on{% endif %}" href="{{ url_for('public_free_resources', topic=tp.id) }}">{{ tp.name }}</a>{% endfor %}
+  </div>
+  {% endif %}
+  {% if groups %}
+    {% for g in groups %}
+    <h2>{{ g.heading }}</h2>
+    <div class="card">
+      {% for r in g.rows %}
+      <div class="item">
+        <div class="t"><b>{{ r.title }}</b>{% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}</div>
+        {% if r.topic_names %}<div class="muted">{{ r.topic_names|join(' · ') }}</div>{% endif %}
+        {% if r.note %}<div style="margin:6px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}
+        <a class="btn" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if r.kind == 'Podcast' %}Listen{% elif r.kind == 'Book' %}Find the book{% else %}Open{% endif %}</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="card"><p class="muted" style="padding:10px 0">We are gathering our favorites and will post them here soon.</p></div>
+  {% endif %}
+  <div class="cta">
+    <h2>Ready for more than reading?</h2>
+    <p style="margin:0 0 4px">Our trainings give you a place to practice what you learn, with people who care.</p>
+    <a class="btn" href="{{ url_for('public_programs') }}">See our trainings</a>
+  </div>
+</div>
+<footer>Discovery!</footer>
+</body>
+</html>
