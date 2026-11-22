@@ -22,11 +22,11 @@
       <select name="kind" id="rkind">
         {% for k in kinds %}<option value="{{ k }}" {% if edit_item and edit_item.kind == k %}selected{% endif %}>{{ k }}</option>{% endfor %}
       </select></label></p>
-    <p style="margin:6px 0"><label>For which program<br>
-      <select name="program">
-        <option value="all" {% if edit_item and not edit_item.program_id %}selected{% elif not edit_item and sel in ('', 'shared') %}selected{% endif %}>All programs</option>
-        {% for p in programs %}<option value="{{ p.id }}" {% if edit_item and edit_item.program_id == p.id %}selected{% elif not edit_item and sel == p.id|string %}selected{% endif %}>{{ p.label }}</option>{% endfor %}
-      </select></label></p>
+    <div style="margin:6px 0">For which programs <span class="muted">(tick as many as apply)</span><br>
+      {% set chosen = edit_item.program_ids if edit_item else ([sel|int] if sel and sel.isdigit() else []) %}
+      <label style="display:inline-block;margin:3px 14px 3px 0"><input type="checkbox" name="program" value="all" id="pall" {% if not chosen %}checked{% endif %}> All programs</label>
+      {% for p in programs %}<label style="display:inline-block;margin:3px 14px 3px 0"><input type="checkbox" name="program" value="{{ p.id }}" class="pone" {% if p.id in chosen %}checked{% endif %}> {{ p.label }}</label>{% endfor %}
+    </div>
     <p style="margin:6px 0"><label>Title<br><input type="text" name="title" maxlength="200" required style="width:100%;max-width:520px" value="{{ edit_item.title if edit_item else '' }}"></label></p>
     <p style="margin:6px 0"><label><span id="rauthor">Author or source</span><br><input type="text" name="author" maxlength="200" style="width:100%;max-width:520px" value="{{ edit_item.author if edit_item and edit_item.author else '' }}"></label></p>
     <p style="margin:6px 0"><label><span id="rurl">Link (optional)</span><br><input type="text" name="url" maxlength="500" placeholder="https://" style="width:100%;max-width:520px" value="{{ edit_item.url if edit_item and edit_item.url else '' }}"></label></p>
@@ -48,6 +48,12 @@
     u.textContent = v === 'Podcast' ? 'Link to the podcast or episode' : v === 'Book' ? 'Link to the book (optional)' : 'Link (optional)';
   }
   k.addEventListener('change', upd); upd();
+  var all = document.getElementById('pall'), ones = document.querySelectorAll('.pone');
+  all.addEventListener('change', function(){ if (all.checked) ones.forEach(function(o){ o.checked = false; }); });
+  ones.forEach(function(o){ o.addEventListener('change', function(){
+    if (o.checked) all.checked = false;
+    else if (!Array.prototype.some.call(ones, function(x){ return x.checked; })) all.checked = true;
+  }); });
 })();
 </script>
 {% endif %}
@@ -61,7 +67,7 @@
       <div>
         {% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener noreferrer"><b>{{ r.title }}</b></a>{% elif r.has_file %}<a href="{{ url_for('.resource_file', resource_id=r.id) }}" target="_blank"><b>{{ r.title }}</b></a>{% else %}<b>{{ r.title }}</b>{% endif %}
         {% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}
-        <span style="background:#eef2f0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:6px">{{ labels.get(r.program_id, 'All programs') if r.program_id else 'All programs' }}</span>
+        <span style="background:#eef2f0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:6px">{% if r.program_ids %}{% for pid in r.program_ids %}{{ labels.get(pid, '') }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}All programs{% endif %}</span>
         {% if r.share_trainees %}<span style="background:#e3efe0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:4px">Shown to trainees</span>{% endif %}
       </div>
       {% if r.note %}<div style="margin:4px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}
