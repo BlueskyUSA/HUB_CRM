@@ -12,7 +12,7 @@
 {% if topics %}
 <p style="margin:10px 0"><span class="muted">Topic:</span>
   <a class="btn {% if topic_sel %}secondary{% endif %}" style="padding:4px 10px;font-size:.85rem" href="{{ url_for('.resources', program=sel) if sel else url_for('.resources') }}">All topics</a>
-  {% for tp in topics %}<a class="btn {% if topic_sel != tp.id|string %}secondary{% endif %}" style="padding:4px 10px;font-size:.85rem" href="{{ url_for('.resources', program=sel, topic=tp.id) if sel else url_for('.resources', topic=tp.id) }}">{{ tp.name }}{% if topic_counts[tp.id] %} <span class="muted">({{ topic_counts[tp.id] }})</span>{% endif %}</a> {% endfor %}
+  {% for tp in topics %}<a class="btn {% if topic_sel != tp.id|string %}secondary{% endif %}" style="padding:4px 10px;font-size:.85rem" href="{{ url_for('.resources', program=sel, topic=tp.id) if sel else url_for('.resources', topic=tp.id) }}">{{ tp.name }}</a> {% endfor %}
 </p>
 {% endif %}
 {% if can_edit %}<p style="margin:0 0 8px"><a href="{{ url_for('.resources_trainee_preview') }}">See what trainees see</a> <span class="muted">(only items ticked &ldquo;Show to trainees&rdquo;) &nbsp;|&nbsp; <a href="{{ url_for('public_free_resources') }}" target="_blank">See the public Free Resources page</a></span></p>{% endif %}
