@@ -8894,6 +8894,7 @@ def resources():
         "resources.html", groups=groups, programs=programs, labels=labels, sel=sel,
         kinds=RESOURCE_KINDS, can_edit=can_edit, edit_item=edit_item, total=len(rows),
         topics=topics, topic_sel=topic_sel, topic_counts=topic_counts, labels_by_id=labels,
+        public_rows=sorted([r for r in allrows if r.get('share_public') and r.get('url')], key=lambda r: r['title'].lower()),
     )
 
 
