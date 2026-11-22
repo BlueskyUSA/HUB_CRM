@@ -8616,9 +8616,11 @@ def _ensure_resources_table(conn):
     conn.execute(f"""CREATE TABLE IF NOT EXISTS program_resources (
         id SERIAL PRIMARY KEY, program_id INTEGER, kind TEXT NOT NULL, title TEXT NOT NULL,
         author TEXT, url TEXT, note TEXT, data BYTEA, original_filename TEXT, content_type TEXT,
-        added_by TEXT, created_at TEXT NOT NULL DEFAULT {CHAT_NOW}, share_trainees INTEGER NOT NULL DEFAULT 0)""")
+        added_by TEXT, created_at TEXT NOT NULL DEFAULT {CHAT_NOW}, share_trainees INTEGER NOT NULL DEFAULT 0,
+        share_public INTEGER NOT NULL DEFAULT 0)""")
     # The page was first built without the "show to trainees" tick box, so older databases need the column added.
     conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS share_trainees INTEGER NOT NULL DEFAULT 0")
+    conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS share_public INTEGER NOT NULL DEFAULT 0")
     # A resource can belong to several programs: one row here per program. No rows = All programs.
     conn.execute("CREATE TABLE IF NOT EXISTS resource_programs (resource_id INTEGER NOT NULL, program_id INTEGER NOT NULL, PRIMARY KEY (resource_id, program_id))")
     # Resources saved when each could have only one program: copy that program across, once (program_id is cleared on every save after this).
@@ -8771,7 +8773,7 @@ def _load_resources(conn, where="", params=()):
 
 
 _RESOURCE_COLS = """id, program_id, kind, title, author, url, note, original_filename,
-                      (data IS NOT NULL) AS has_file, added_by, share_trainees"""
+                      (data IS NOT NULL) AS has_file, added_by, share_trainees, share_public"""
 
 
 def _group_resource_rows(rows):
@@ -8930,6 +8932,7 @@ def resource_new():
         (kind, title, author or None, url or None, note or None, data, fname, ctype, session.get("staff_name") or "", share),
     )
     new_id = cur.fetchone()["id"]
+    conn.execute("UPDATE program_resources SET share_public = ? WHERE id = ?", (1 if (request.form.get("share_public") and url) else 0, new_id))
     _save_resource_programs(conn, new_id, program_ids)
     _apply_topics(conn, new_id, request.form)
     conn.commit()
@@ -8970,6 +8973,7 @@ def resource_edit(resource_id):
     )
     _save_resource_programs(conn, resource_id, program_ids)
     _apply_topics(conn, resource_id, request.form)
+    conn.execute("UPDATE program_resources SET share_public = ? WHERE id = ?", (1 if (request.form.get("share_public") and url) else 0, resource_id))
     if data is not None:
         conn.execute("UPDATE program_resources SET data = ?, original_filename = ?, content_type = ? WHERE id = ?",
                      (data, fname, ctype, resource_id))
@@ -9029,6 +9033,24 @@ def resources_trainee_preview():
         r["file_url"] = url_for(".resource_file", resource_id=r["id"]) if r["has_file"] else None
     return render_template("public_trainee_resources.html", contact={"first_name": "(preview)"}, groups=_group_resource_rows(rows),
                            labels=labels, preview=True, total=len(rows))
+
+
+@app.route("/free-resources")
+def public_free_resources():
+    """Public page for visitors: only links (books, podcasts, websites) that staff ticked 'Show on our public website'.
+    Uploaded files are never listed here, and nothing appears unless it was ticked."""
+    conn = get_db()
+    _ensure_resources_table(conn)
+    rows = [r for r in _load_resources(conn, "WHERE share_public = 1") if r["url"]]
+    topics = [t for t in _topic_list(conn) if any(t["id"] in r["topic_ids"] for r in rows)]
+    conn.close()
+    sel = (request.args.get("topic") or "").strip()
+    if sel.isdigit() and int(sel) in {t["id"] for t in topics}:
+        shown = [r for r in rows if int(sel) in r["topic_ids"]]
+    else:
+        sel, shown = "", rows
+    return render_template("public_free_resources.html", groups=_group_resource_rows(shown), topics=topics, topic_sel=sel,
+                           total=len(rows))
 
 
 @app.route("/my-resources/<token>")
