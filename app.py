@@ -9117,19 +9117,13 @@ def resources_trainee_preview():
 @app.route("/free-resources")
 def public_free_resources():
     """Public page for visitors: only links (books, podcasts, websites) that staff ticked 'Show on our public website'.
-    Uploaded files are never listed here, and nothing appears unless it was ticked."""
+    Shown as one short list, in the order they were added. Uploaded files are never listed here, and nothing appears
+    unless it was ticked."""
     conn = get_db()
     _ensure_resources_table(conn)
-    rows = [r for r in _load_resources(conn, "WHERE share_public = 1") if r["url"]]
-    topics = [t for t in _topic_list(conn) if any(t["id"] in r["topic_ids"] for r in rows)]
+    items = sorted([r for r in _load_resources(conn, "WHERE share_public = 1") if r["url"]], key=lambda r: r["id"])
     conn.close()
-    sel = (request.args.get("topic") or "").strip()
-    if sel.isdigit() and int(sel) in {t["id"] for t in topics}:
-        shown = [r for r in rows if int(sel) in r["topic_ids"]]
-    else:
-        sel, shown = "", rows
-    return render_template("public_free_resources.html", groups=_group_resource_rows(shown), topics=topics, topic_sel=sel,
-                           total=len(rows))
+    return render_template("public_free_resources.html", items=items, total=len(items))
 
 
 @app.route("/my-resources/<token>")
