@@ -19,6 +19,10 @@
   <div style="margin-bottom:10px">Anyone visiting our website can read the Free Resources page, so it is part of our marketing. Only <b>links</b> ticked &ldquo;Show on our public website&rdquo; appear there. Uploaded PDFs and files never do. Before you tick an item, check its title and note: no promises to treat, heal or cure, the same rule we use for testimonials.</div>
   <a class="btn" style="font-size:1.05rem;padding:11px 24px;background:#1f5f7a" href="{{ url_for('public_free_resources') }}" target="_blank">See the public Free Resources page</a>
   <div style="margin-top:12px">
+    <div style="margin-bottom:8px;padding:6px 10px;background:#fff;border:1px solid #bddde3;border-radius:6px"><b>Website links:</b>
+      {% if site_links[0] %}the &ldquo;Free Resources&rdquo; link in the footer and the &ldquo;Not Ready to Sign Up Yet?&rdquo; section on the home page are <b>showing</b>.
+      {% elif site_links[1] %}<b>hidden because of an error:</b> <code>{{ site_links[1] }}</code> (please send this to Claude).
+      {% else %}<b>hidden</b>, because no item with a link is ticked &ldquo;Show on our public website&rdquo; yet.{% endif %}</div>
     {% if public_rows %}<b>On the public site now ({{ public_rows|length }}):</b>
       <ul style="margin:6px 0 0 18px;padding:0">
       {% for r in public_rows %}<li>{{ r.title }}{% if r.author %} <span class="muted">&middot; {{ r.author }}</span>{% endif %} &nbsp;<a href="{{ url_for('.resources', edit=r.id) }}">Edit</a></li>{% endfor %}
@@ -68,6 +72,7 @@
       {% if edit_item and edit_item.has_file %}<br><span class="muted">Now attached: {{ edit_item.original_filename }}. Choosing a new file replaces it.</span>
       <br><label><input type="checkbox" name="remove_file"> Remove the attached file</label>{% endif %}</p>
     <p style="margin:6px 0"><label><input type="checkbox" name="share_public" {% if edit_item and edit_item.share_public %}checked{% endif %}> Show on our public website, on the Free Resources page <span class="muted">(needs a link; uploaded files are never shown publicly)</span></label></p>
+    <p style="margin:2px 0 8px;padding:8px 12px;background:#fff3cd;border:1px solid #e0c36a;border-radius:6px;font-size:.92rem"><b>For the public site, avoid therapeutic words</b> such as <i>heal, healing, therapy, treatment, cure, recover</i>. We don&rsquo;t promise results. Describe what the book or podcast offers (&ldquo;helps you understand&hellip;&rdquo;, &ldquo;explores&hellip;&rdquo;). We will remind you if we spot one.</p>
     <p style="margin:6px 0"><label><input type="checkbox" name="share_trainees" {% if edit_item and edit_item.share_trainees %}checked{% endif %}> Show this to trainees, on the page we email after a training</label></p>
     <p style="margin:6px 0"><label>Why we recommend it (optional)<br><textarea name="note" rows="3" maxlength="2000" style="width:100%;max-width:520px">{{ edit_item.note if edit_item and edit_item.note else '' }}</textarea></label></p>
     <button class="btn" type="submit">{% if edit_item %}Save changes{% else %}Add{% endif %}</button>
