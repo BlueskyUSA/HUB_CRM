@@ -1,0 +1,10 @@
+{% if free_resources_visible %}
+<style>
+.frb{background:linear-gradient(#e3f1f4,#eef7f9);text-align:center;padding:46px 20px;font-family:Inter,Arial,sans-serif}
+.frb h2{border:0!important;font:italic clamp(26px,3.6vw,38px)/1.2 Georgia,'Times New Roman',serif;margin:0 0 8px;color:#006c86}
+.frb p{margin:0 auto 20px;max-width:640px;font-size:1.08rem;color:#1d3d4d}
+.frb a.frb-btn{display:inline-block;background:#007b8b;color:#fff;font-weight:700;letter-spacing:.04em;padding:13px 30px;border-radius:30px;text-decoration:none}
+.frb a.frb-btn:hover{background:#006c86}
+</style>
+<section class="frb"><h2>Not Ready to Sign Up Yet?</h2><p>Start with our free resources: books, podcasts and websites on relationships, healing and growth.</p><a class="frb-btn" href="{{ url_for('public_free_resources') }}">BROWSE FREE RESOURCES</a></section>
+{% endif %}

@@ -35,7 +35,7 @@
   </style>
 </head>
 <body>
-{% set _sticky_pages = ['public_home','public_relationship_training','public_our_story','public_meet_team','public_about_program','public_programs','public_program_page','public_whats_included','public_register','public_contact','public_discovery','public_donate','public_stories'] %}
+{% set _sticky_pages = ['public_home','public_relationship_training','public_our_story','public_meet_team','public_about_program','public_programs','public_program_page','public_whats_included','public_register','public_contact','public_discovery','public_donate','public_stories','public_free_resources'] %}
 {% if request.endpoint in _sticky_pages %}{% include '_sticky_nav.html' %}{% endif %}
 {% block site_header %}
   <header class="pub-topbar">
