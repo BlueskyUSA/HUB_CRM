@@ -4,6 +4,18 @@
 <h1>Resources</h1>
 <p class="muted">Books, podcasts, PDFs and links we recommend for each program, on relationships, healing and growth.{% if not can_edit %} Ask the Owner, an Administrator or a Leadership account to add something.{% endif %}</p>
 
+{% if can_edit %}
+<div style="margin:16px 0 18px;padding:16px 18px;border:2px solid #3f5643;border-radius:10px;background:#eef4ea">
+  <div style="font-size:1.15rem;font-weight:700;color:#2d4331;margin-bottom:4px">Check what trainees will receive</div>
+  <div style="margin-bottom:10px">This page is the heart of the system: every graduate is emailed a link to what you set up here. Before you rely on it, look at the page exactly as a trainee sees it. Only items ticked &ldquo;Show to trainees&rdquo; appear.</div>
+  <a class="btn" style="font-size:1.05rem;padding:11px 24px" href="{{ url_for('.resources_trainee_preview', program=(sel if sel and sel.isdigit() else '')) }}">See what trainees see{% if sel and sel.isdigit() %} ({{ labels_by_id.get(sel|int, '') }}){% endif %}</a>
+  <div style="margin-top:10px"><span class="muted">Or preview one program:</span>
+    {% for p in programs %}<a class="btn secondary" style="padding:5px 12px" href="{{ url_for('.resources_trainee_preview', program=p.id) }}">{{ p.label }}</a> {% endfor %}
+  </div>
+  <div class="muted" style="margin-top:8px"><a href="{{ url_for('public_free_resources') }}" target="_blank">See the public Free Resources page</a> (the one visitors see, only items ticked &ldquo;Show on our public website&rdquo;)</div>
+</div>
+{% endif %}
+
 <p style="margin:10px 0">
   <a class="btn {% if sel != '' %}secondary{% endif %}" href="{{ url_for('.resources', topic=topic_sel) }}">Everything</a>
   <a class="btn {% if sel != 'shared' %}secondary{% endif %}" href="{{ url_for('.resources', program='shared', topic=topic_sel) }}">All programs</a>
@@ -15,7 +27,6 @@
   {% for tp in topics %}<a class="btn {% if topic_sel != tp.id|string %}secondary{% endif %}" style="padding:4px 10px;font-size:.85rem" href="{{ url_for('.resources', program=sel, topic=tp.id) if sel else url_for('.resources', topic=tp.id) }}">{{ tp.name }}</a> {% endfor %}
 </p>
 {% endif %}
-{% if can_edit %}<p style="margin:0 0 8px"><a href="{{ url_for('.resources_trainee_preview', program=(sel if sel and sel.isdigit() else '')) }}">See what trainees see</a> <span class="muted">(only items ticked &ldquo;Show to trainees&rdquo;) &nbsp;|&nbsp; <a href="{{ url_for('public_free_resources') }}" target="_blank">See the public Free Resources page</a></span></p>{% endif %}
 {% if sel and sel != 'shared' %}<p class="muted" style="margin-top:0">Showing this program's resources, plus the ones shared with every program.</p>{% endif %}
 
 {% if can_edit %}
