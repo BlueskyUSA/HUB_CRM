@@ -32,6 +32,7 @@
       {% for r in g.rows %}
       <div class="item">
         <div><b>{{ r.title }}</b>{% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}
+          {% if r.topic_names %}<span class="muted" style="font-size:.8rem"> &middot; {{ r.topic_names|join(', ') }}</span>{% endif %}
           {% if preview %}<span class="muted" style="font-size:.8rem"> &middot; {% if r.program_ids %}{% for pid in r.program_ids %}{{ labels.get(pid, '') }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}All programs{% endif %}</span>{% endif %}</div>
         {% if r.note %}<div style="margin:4px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}
         <div>

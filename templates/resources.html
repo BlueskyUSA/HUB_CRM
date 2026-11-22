@@ -5,10 +5,16 @@
 <p class="muted">Books, podcasts, PDFs and links we recommend for each program, on relationships, healing and growth.{% if not can_edit %} Ask the Owner, an Administrator or a Leadership account to add something.{% endif %}</p>
 
 <p style="margin:10px 0">
-  <a class="btn {% if sel != '' %}secondary{% endif %}" href="{{ url_for('.resources') }}">Everything</a>
-  <a class="btn {% if sel != 'shared' %}secondary{% endif %}" href="{{ url_for('.resources', program='shared') }}">All programs</a>
-  {% for p in programs %}<a class="btn {% if sel != p.id|string %}secondary{% endif %}" href="{{ url_for('.resources', program=p.id) }}">{{ p.label }}</a> {% endfor %}
+  <a class="btn {% if sel != '' %}secondary{% endif %}" href="{{ url_for('.resources', topic=topic_sel) }}">Everything</a>
+  <a class="btn {% if sel != 'shared' %}secondary{% endif %}" href="{{ url_for('.resources', program='shared', topic=topic_sel) }}">All programs</a>
+  {% for p in programs %}<a class="btn {% if sel != p.id|string %}secondary{% endif %}" href="{{ url_for('.resources', program=p.id, topic=topic_sel) }}">{{ p.label }}</a> {% endfor %}
 </p>
+{% if topics %}
+<p style="margin:10px 0"><span class="muted">Topic:</span>
+  <a class="btn {% if topic_sel %}secondary{% endif %}" style="padding:4px 10px;font-size:.85rem" href="{{ url_for('.resources', program=sel) if sel else url_for('.resources') }}">All topics</a>
+  {% for tp in topics %}<a class="btn {% if topic_sel != tp.id|string %}secondary{% endif %}" style="padding:4px 10px;font-size:.85rem" href="{{ url_for('.resources', program=sel, topic=tp.id) if sel else url_for('.resources', topic=tp.id) }}">{{ tp.name }}{% if topic_counts[tp.id] %} <span class="muted">({{ topic_counts[tp.id] }})</span>{% endif %}</a> {% endfor %}
+</p>
+{% endif %}
 {% if can_edit %}<p style="margin:0 0 8px"><a href="{{ url_for('.resources_trainee_preview') }}">See what trainees see</a> <span class="muted">(only items ticked &ldquo;Show to trainees&rdquo;)</span></p>{% endif %}
 {% if sel and sel != 'shared' %}<p class="muted" style="margin-top:0">Showing this program's resources, plus the ones shared with every program.</p>{% endif %}
 
@@ -26,6 +32,11 @@
       {% set chosen = edit_item.program_ids if edit_item else ([sel|int] if sel and sel.isdigit() else []) %}
       <label style="display:inline-block;margin:3px 14px 3px 0"><input type="checkbox" name="program" value="all" id="pall" {% if not chosen %}checked{% endif %}> All programs</label>
       {% for p in programs %}<label style="display:inline-block;margin:3px 14px 3px 0"><input type="checkbox" name="program" value="{{ p.id }}" class="pone" {% if p.id in chosen %}checked{% endif %}> {{ p.label }}</label>{% endfor %}
+    </div>
+    <div style="margin:6px 0">Topics <span class="muted">(tick any that fit)</span><br>
+      {% set chosen_t = edit_item.topic_ids if edit_item else ([topic_sel|int] if topic_sel else []) %}
+      {% for tp in topics %}<label style="display:inline-block;margin:3px 14px 3px 0"><input type="checkbox" name="topic" value="{{ tp.id }}" {% if tp.id in chosen_t %}checked{% endif %}> {{ tp.name }}</label>{% endfor %}
+      <div style="margin-top:4px"><label class="muted">Or add a new topic<br><input type="text" name="new_topics" maxlength="200" placeholder="e.g. Parenting, Anxiety (separate with commas)" style="width:100%;max-width:520px"></label></div>
     </div>
     <p style="margin:6px 0"><label>Title<br><input type="text" name="title" maxlength="200" required style="width:100%;max-width:520px" value="{{ edit_item.title if edit_item else '' }}"></label></p>
     <p style="margin:6px 0"><label><span id="rauthor">Author or source</span><br><input type="text" name="author" maxlength="200" style="width:100%;max-width:520px" value="{{ edit_item.author if edit_item and edit_item.author else '' }}"></label></p>
@@ -58,6 +69,29 @@
 </script>
 {% endif %}
 
+{% if can_edit %}
+<details class="card" id="topics" style="margin-bottom:16px">
+  <summary style="cursor:pointer"><b>Manage topics</b> <span class="muted">(add, rename or remove)</span></summary>
+  <form method="post" action="{{ url_for('.resource_topics_manage') }}" style="margin:10px 0">
+    <input type="hidden" name="action" value="add">
+    <input type="text" name="name" maxlength="60" placeholder="New topic" required> <button class="btn" type="submit">Add topic</button>
+  </form>
+  {% for tp in topics %}
+  <div style="display:flex;gap:8px;align-items:center;margin:4px 0;flex-wrap:wrap">
+    <form method="post" action="{{ url_for('.resource_topics_manage') }}" style="display:inline">
+      <input type="hidden" name="action" value="rename"><input type="hidden" name="id" value="{{ tp.id }}">
+      <input type="text" name="name" maxlength="60" value="{{ tp.name }}" style="min-width:260px"> <button class="btn secondary" type="submit">Rename</button>
+    </form>
+    <span class="muted">{{ topic_counts[tp.id] }} resource{{ '' if topic_counts[tp.id] == 1 else 's' }}</span>
+    <form method="post" action="{{ url_for('.resource_topics_manage') }}" style="display:inline" onsubmit="return confirm('Remove this topic? Resources that have it are kept.');">
+      <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ tp.id }}">
+      <button type="submit" style="background:none;border:0;padding:0;color:#b33;cursor:pointer;font:inherit">Remove</button>
+    </form>
+  </div>
+  {% endfor %}
+</details>
+{% endif %}
+
 {% if groups %}
   {% for g in groups %}
   <h2>{{ g.heading }}</h2>
@@ -68,6 +102,7 @@
         {% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener noreferrer"><b>{{ r.title }}</b></a>{% elif r.has_file %}<a href="{{ url_for('.resource_file', resource_id=r.id) }}" target="_blank"><b>{{ r.title }}</b></a>{% else %}<b>{{ r.title }}</b>{% endif %}
         {% if r.author %}<span class="muted"> &middot; {{ r.author }}</span>{% endif %}
         <span style="background:#eef2f0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:6px">{% if r.program_ids %}{% for pid in r.program_ids %}{{ labels.get(pid, '') }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}All programs{% endif %}</span>
+        {% for tn in r.topic_names %}<span style="background:#f3ead7;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:4px">{{ tn }}</span>{% endfor %}
         {% if r.share_trainees %}<span style="background:#e3efe0;border-radius:10px;padding:1px 8px;font-size:.78rem;margin-left:4px">Shown to trainees</span>{% endif %}
       </div>
       {% if r.note %}<div style="margin:4px 0;white-space:pre-line">{{ r.note }}</div>{% endif %}
