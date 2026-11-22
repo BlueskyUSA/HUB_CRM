@@ -3346,7 +3346,11 @@ def _first_name_of(contact_id):
 @leadership_required
 def contact_preview_contract_request(contact_id):
     """Shows Leadership exactly what the Contract Information Request email says, without sending anything."""
-    html_content, _t = contract_request_content(_first_name_of(contact_id), _contract_link_for(contact_id))
+    _conn = get_db()
+    _c = _conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+    _conn.close()
+    _res_url = _trainee_resources_url(contact_id, _c["profile_token"]) if _c and _c["profile_token"] else None
+    html_content, _t = contract_request_content(_first_name_of(contact_id), _contract_link_for(contact_id), _res_url)
     return _render_letter_preview(contact_id, "Contract Information Request", CONTRACT_REQUEST_SUBJECT, html_content,
                                   ".contact_send_contract_request", "Send Contract Information Request")
 
@@ -3393,7 +3397,7 @@ def contact_send_contract_request(contact_id):
         conn.commit()
     conn.close()
     contracts_url = url_for("public_complete_profile", token=token, contracts=1, _external=True)
-    html_content, text_content = contract_request_content(contact["first_name"], contracts_url)
+    html_content, text_content = contract_request_content(contact["first_name"], contracts_url, _trainee_resources_url(contact_id, token))
     try:
         send_email(
             to_email=contact["email"],
@@ -8605,7 +8609,9 @@ def _ensure_resources_table(conn):
     conn.execute(f"""CREATE TABLE IF NOT EXISTS program_resources (
         id SERIAL PRIMARY KEY, program_id INTEGER, kind TEXT NOT NULL, title TEXT NOT NULL,
         author TEXT, url TEXT, note TEXT, data BYTEA, original_filename TEXT, content_type TEXT,
-        added_by TEXT, created_at TEXT NOT NULL DEFAULT {CHAT_NOW})""")
+        added_by TEXT, created_at TEXT NOT NULL DEFAULT {CHAT_NOW}, share_trainees INTEGER NOT NULL DEFAULT 0)""")
+    # The page was first built without the "show to trainees" tick box, so older databases need the column added.
+    conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS share_trainees INTEGER NOT NULL DEFAULT 0")
     conn.commit()
     _resources_table_ready = True
 
@@ -8684,6 +8690,63 @@ def _resource_program_id(raw):
     return int(raw) if ok else False
 
 
+_RESOURCE_COLS = """id, program_id, kind, title, author, url, note, original_filename,
+                      (data IS NOT NULL) AS has_file, added_by, share_trainees"""
+
+
+def _group_resource_rows(rows):
+    """Rows -> [{'kind','heading','rows'}] in the order Books, Podcasts, PDFs, Websites, Other; items by title."""
+    groups = []
+    for kind in RESOURCE_KINDS:
+        items = sorted([r for r in rows if r["kind"] == kind], key=lambda r: (r["title"] or "").lower())
+        if items:
+            groups.append({"kind": kind, "heading": RESOURCE_KIND_HEADINGS[kind], "rows": items})
+    leftovers = sorted([r for r in rows if r["kind"] not in RESOURCE_KINDS], key=lambda r: (r["title"] or "").lower())
+    if leftovers:
+        groups.append({"kind": "Other", "heading": RESOURCE_KIND_HEADINGS["Other"], "rows": leftovers})
+    return groups
+
+
+def _trainee_resource_rows(conn, contact_id):
+    """The resources ticked 'show to trainees' that this graduate may see: the ones for programs they
+    attended, plus the ones for All programs. Someone with no attended training sees only All programs."""
+    progs = [r["program_id"] for r in conn.execute(
+        """SELECT DISTINCT k.program_id FROM enrollments e JOIN cohorts k ON k.id = e.cohort_id
+           WHERE e.contact_id = ? AND e.attended = 1""", (contact_id,)).fetchall()]
+    sql = f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE share_trainees = 1 AND (program_id IS NULL"
+    params = []
+    if progs:
+        sql += " OR program_id IN (" + ",".join("?" * len(progs)) + ")"
+        params = progs
+    sql += ")"
+    return [dict(r) for r in conn.execute(sql, params).fetchall()]
+
+
+def _trainee_resources_url(contact_id, token):
+    """The graduate's private resources link, or None when nothing is shared with them yet (so a letter
+    never promises resources that are not there)."""
+    conn = get_db()
+    try:
+        _ensure_resources_table(conn)
+        if not _trainee_resource_rows(conn, contact_id):
+            return None
+    finally:
+        conn.close()
+    return url_for("public_trainee_resources", token=token, _external=True)
+
+
+def _resource_file_response(row):
+    name = (row["original_filename"] or "resource").replace('"', "")
+    is_pdf = name.lower().endswith(".pdf")
+    resp = make_response(bytes(row["data"]))
+    resp.headers["Content-Type"] = "application/pdf" if is_pdf else (row["content_type"] or "application/octet-stream")
+    resp.headers["Content-Disposition"] = f'{"inline" if is_pdf else "attachment"}; filename="{name}"'
+    resp.headers["Cache-Control"] = "no-store, private"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return resp
+
+
 @crm.route("/resources")
 @resources_view_required
 def resources():
@@ -8693,37 +8756,20 @@ def resources():
     labels = {p["id"]: p["label"] for p in programs}
     sel = (request.args.get("program") or "").strip()
     if sel.isdigit() and int(sel) in labels:
-        rows = conn.execute(
-            """SELECT id, program_id, kind, title, author, url, note, original_filename,
-                      (data IS NOT NULL) AS has_file, added_by
-               FROM program_resources WHERE program_id = ? OR program_id IS NULL""", (int(sel),)).fetchall()
+        rows = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE program_id = ? OR program_id IS NULL",
+                            (int(sel),)).fetchall()
     elif sel == "shared":
-        rows = conn.execute(
-            """SELECT id, program_id, kind, title, author, url, note, original_filename,
-                      (data IS NOT NULL) AS has_file, added_by
-               FROM program_resources WHERE program_id IS NULL""").fetchall()
+        rows = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE program_id IS NULL").fetchall()
     else:
         sel = ""
-        rows = conn.execute(
-            """SELECT id, program_id, kind, title, author, url, note, original_filename,
-                      (data IS NOT NULL) AS has_file, added_by
-               FROM program_resources""").fetchall()
+        rows = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources").fetchall()
     can_edit = _can_edit_resources()
     edit_item = None
     edit_id = (request.args.get("edit") or "").strip()
     if can_edit and edit_id.isdigit():
-        edit_item = conn.execute(
-            """SELECT id, program_id, kind, title, author, url, note, original_filename, (data IS NOT NULL) AS has_file
-               FROM program_resources WHERE id = ?""", (int(edit_id),)).fetchone()
+        edit_item = conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE id = ?", (int(edit_id),)).fetchone()
     conn.close()
-    groups = []
-    for kind in RESOURCE_KINDS:
-        items = sorted([r for r in rows if r["kind"] == kind], key=lambda r: (r["title"] or "").lower())
-        if items:
-            groups.append({"kind": kind, "heading": RESOURCE_KIND_HEADINGS[kind], "rows": items})
-    other_kinds = sorted([r for r in rows if r["kind"] not in RESOURCE_KINDS], key=lambda r: (r["title"] or "").lower())
-    if other_kinds:
-        groups.append({"kind": "Other", "heading": RESOURCE_KIND_HEADINGS["Other"], "rows": other_kinds})
+    groups = _group_resource_rows(rows)
     return render_template(
         "resources.html", groups=groups, programs=programs, labels=labels, sel=sel,
         kinds=RESOURCE_KINDS, can_edit=can_edit, edit_item=edit_item, total=len(rows),
@@ -8748,6 +8794,7 @@ def resource_new():
     author = (request.form.get("author") or "").strip()[:200]
     note = (request.form.get("note") or "").strip()[:2000]
     program_id = _resource_program_id(request.form.get("program"))
+    share = 1 if request.form.get("share_trainees") else 0
     url, url_err = _clean_resource_url(request.form.get("url"))
     data, ctype, fname, file_err = _resource_file_from_form()
     problem = (None if title else "Give the resource a title.") or (url_err) or (file_err) \
@@ -8759,9 +8806,9 @@ def resource_new():
     conn = get_db()
     _ensure_resources_table(conn)
     conn.execute(
-        """INSERT INTO program_resources (program_id, kind, title, author, url, note, data, original_filename, content_type, added_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (program_id, kind, title, author or None, url or None, note or None, data, fname, ctype, session.get("staff_name") or ""),
+        """INSERT INTO program_resources (program_id, kind, title, author, url, note, data, original_filename, content_type, added_by, share_trainees)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (program_id, kind, title, author or None, url or None, note or None, data, fname, ctype, session.get("staff_name") or "", share),
     )
     conn.commit()
     conn.close()
@@ -8787,6 +8834,7 @@ def resource_edit(resource_id):
     author = (request.form.get("author") or "").strip()[:200]
     note = (request.form.get("note") or "").strip()[:2000]
     program_id = _resource_program_id(request.form.get("program"))
+    share = 1 if request.form.get("share_trainees") else 0
     url, url_err = _clean_resource_url(request.form.get("url"))
     data, ctype, fname, file_err = _resource_file_from_form()
     problem = (None if title else "Give the resource a title.") or url_err or file_err \
@@ -8796,8 +8844,8 @@ def resource_edit(resource_id):
         flash(problem)
         return redirect(_resources_back(back))
     conn.execute(
-        "UPDATE program_resources SET program_id = ?, kind = ?, title = ?, author = ?, url = ?, note = ? WHERE id = ?",
-        (program_id, kind, title, author or None, url or None, note or None, resource_id),
+        "UPDATE program_resources SET program_id = ?, kind = ?, title = ?, author = ?, url = ?, note = ?, share_trainees = ? WHERE id = ?",
+        (program_id, kind, title, author or None, url or None, note or None, share, resource_id),
     )
     if data is not None:
         conn.execute("UPDATE program_resources SET data = ?, original_filename = ?, content_type = ? WHERE id = ?",
@@ -8839,14 +8887,62 @@ def resource_file(resource_id):
     conn.close()
     if not row or not row["data"]:
         abort(404)
-    name = (row["original_filename"] or "resource").replace('"', "")
-    is_pdf = name.lower().endswith(".pdf")
-    resp = make_response(bytes(row["data"]))
-    resp.headers["Content-Type"] = "application/pdf" if is_pdf else (row["content_type"] or "application/octet-stream")
-    resp.headers["Content-Disposition"] = f'{"inline" if is_pdf else "attachment"}; filename="{name}"'
+    return _resource_file_response(row)
+
+
+
+@crm.route("/resources/trainee-preview")
+@resources_view_required
+def resources_trainee_preview():
+    """Shows staff the page graduates get: every resource ticked 'show to trainees', with PDFs opened through the staff route."""
+    conn = get_db()
+    _ensure_resources_table(conn)
+    rows = [dict(r) for r in conn.execute(f"SELECT {_RESOURCE_COLS} FROM program_resources WHERE share_trainees = 1").fetchall()]
+    labels = {p["id"]: p["label"] for p in _nav_programs()}
+    conn.close()
+    for r in rows:
+        r["file_url"] = url_for(".resource_file", resource_id=r["id"]) if r["has_file"] else None
+    return render_template("public_trainee_resources.html", contact={"first_name": "(preview)"}, groups=_group_resource_rows(rows),
+                           labels=labels, preview=True, total=len(rows))
+
+
+@app.route("/my-resources/<token>")
+def public_trainee_resources(token):
+    """Public, no-login page for a graduate, reached from the link in the 'after the training' email.
+    The link is their private contact token; it shows only the resources ticked 'show to trainees'."""
+    conn = get_db()
+    _ensure_resources_table(conn)
+    contact = conn.execute("SELECT id, first_name FROM contacts WHERE profile_token = ?", (token,)).fetchone()
+    if not contact:
+        conn.close()
+        resp = make_response(render_template("public_trainee_resources.html", contact=None, groups=[], labels={}, preview=False, total=0), 404)
+        resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return resp
+    rows = _trainee_resource_rows(conn, contact["id"])
+    labels = {p["id"]: p["label"] for p in _nav_programs()}
+    conn.close()
+    for r in rows:
+        r["file_url"] = url_for("public_trainee_resource_file", token=token, resource_id=r["id"]) if r["has_file"] else None
+    resp = make_response(render_template("public_trainee_resources.html", contact=contact, groups=_group_resource_rows(rows),
+                                         labels=labels, preview=False, total=len(rows)))
+    resp.headers["X-Robots-Tag"] = "noindex, nofollow"
     resp.headers["Cache-Control"] = "no-store, private"
-    resp.headers["X-Content-Type-Options"] = "nosniff"
     return resp
+
+
+@app.route("/my-resources/<token>/file/<int:resource_id>")
+def public_trainee_resource_file(token, resource_id):
+    conn = get_db()
+    _ensure_resources_table(conn)
+    contact = conn.execute("SELECT id FROM contacts WHERE profile_token = ?", (token,)).fetchone()
+    if not contact or resource_id not in {r["id"] for r in _trainee_resource_rows(conn, contact["id"])}:
+        conn.close()
+        abort(404)
+    row = conn.execute("SELECT data, original_filename, content_type FROM program_resources WHERE id = ?", (resource_id,)).fetchone()
+    conn.close()
+    if not row or not row["data"]:
+        abort(404)
+    return _resource_file_response(row)
 
 
 @crm.context_processor
@@ -9743,7 +9839,8 @@ def send_due_completion_letters(today=None):
                 token = conn.execute("SELECT profile_token FROM contacts WHERE id = ?", (r["contact_id"],)).fetchone()["profile_token"]
             with app.test_request_context(base_url=os.environ.get("PUBLIC_BASE_URL", "https://sojourn.blueskyusa.net")):
                 url = url_for("public_complete_profile", token=token, contracts=1, _external=True)
-            letter = completion_letter_content(r["first_name"], url, code, r["program_name"])
+                resources_url = _trainee_resources_url(r["contact_id"], token)
+            letter = completion_letter_content(r["first_name"], url, code, r["program_name"], resources_url)
             if not letter:
                 continue
             claim = conn.execute(

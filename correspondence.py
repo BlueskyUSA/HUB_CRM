@@ -164,8 +164,8 @@ def _preview_map():
         "connect": lambda: (T.CONNECT_REQUEST_SUBJECT, T.connect_request_confirmation_content(P, "call")[0]),
         "plan": lambda: (T.PRELIMINARY_PLAN_SUBJECT, T.preliminary_plan_content(P)[0]),
         "excitement": lambda: (T.EXCITEMENT_BLAST_SUBJECT, T.excitement_blast_content(P)[0]),
-        "contract": lambda: (T.CONTRACT_REQUEST_SUBJECT, T.contract_request_content(P, "#")[0]),
-        "completion": lambda: (lambda r: (r[0], r[1]))(T.completion_letter_content(P, "#", "D4", "The Art of Us")),
+        "contract": lambda: (T.CONTRACT_REQUEST_SUBJECT, T.contract_request_content(P, "#", "#")[0]),
+        "completion": lambda: (lambda r: (r[0], r[1]))(T.completion_letter_content(P, "#", "D4", "The Art of Us", "#")),
         "helper_welcome": lambda: (lambda r: (r[0], r[1]))(C.letter_helper_welcome(P, "#", "#")),
     }
 

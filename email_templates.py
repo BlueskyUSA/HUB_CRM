@@ -506,10 +506,17 @@ _LETTER_BULLETS = [
 ]
 
 
-def contract_request_content(first_name, contracts_url):
+_RESOURCES_PARA = (
+    "We have also gathered books, podcasts and readings we recommend as you keep growing "
+    "after your training. You will find them here, and we will keep adding more."
+)
+
+
+def contract_request_content(first_name, contracts_url, resources_url=None):
     """Returns (html_content, text_content) for the Contract Information Request -- the one letter
     used for every training. Sent automatically after a session ends (see app.py) and by the
-    manual button on a contact's page (which also has a Preview)."""
+    manual button on a contact's page (which also has a Preview). resources_url is the graduate's
+    private link to the recommended-resources page; when it is None (nothing is shared yet) that part is left out."""
     import html as _html
     greeting = first_name.strip() if first_name and first_name.strip() else "Friend"
     g = _html.escape(greeting)
@@ -519,12 +526,17 @@ def contract_request_content(first_name, contracts_url):
         f'<p style="margin:18px 0"><a href="{contracts_url}" style="background:#3f5643; color:#ffffff; '
         'padding:12px 22px; border-radius:6px; text-decoration:none; font-weight:bold">Open your contact page</a></p>'
         "<ul>" + "".join(f"<li>{_html.escape(b)}</li>" for b in _LETTER_BULLETS) + "</ul>"
-        "<p>Thank you for helping us, and for the courage you are showing in this work.</p>"
+        + (f"<p>{_html.escape(_RESOURCES_PARA)}</p>"
+           f'<p style="margin:18px 0"><a href="{resources_url}" style="background:#3f5643; color:#ffffff; '
+           'padding:12px 22px; border-radius:6px; text-decoration:none; font-weight:bold">See our recommended resources</a></p>'
+           if resources_url else "")
+        + "<p>Thank you for helping us, and for the courage you are showing in this work.</p>"
         "<p>Have a great day,<br>Kent Hafemann</p>"
     )
     text_content = (
         f"Dear {greeting},\n\n{_LETTER_PARAS}\n\nOpen your contact page:\n{contracts_url}\n\n"
         + "".join(f"- {b}\n" for b in _LETTER_BULLETS)
+        + (f"\n{_RESOURCES_PARA}\n{resources_url}\n" if resources_url else "")
         + "\nThank you for helping us, and for the courage you are showing in this work.\n\n"
         "Have a great day,\nKent Hafemann"
     )
@@ -535,11 +547,11 @@ def contract_request_content(first_name, contracts_url):
 COMPLETION_LETTER_CODES = ("D1", "D2", "D3", "D4", "D6")
 
 
-def completion_letter_content(first_name, contracts_url, program_code, program_name=None):
+def completion_letter_content(first_name, contracts_url, program_code, program_name=None, resources_url=None):
     """(subject, html, text) for the automatic letter after a training, or None if that program sends none."""
     if (program_code or "").strip().upper() not in COMPLETION_LETTER_CODES:
         return None
-    html_content, text_content = contract_request_content(first_name, contracts_url)
+    html_content, text_content = contract_request_content(first_name, contracts_url, resources_url)
     return CONTRACT_REQUEST_SUBJECT, html_content, text_content
 
 
