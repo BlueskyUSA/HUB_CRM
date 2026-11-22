@@ -2159,6 +2159,22 @@ def inject_program_name():
 
 
 @app.context_processor
+def inject_free_resources_visible():
+    """True when at least one link is ticked 'Show on our public website', so the footer and home page only point
+    to the Free Resources page once it has something on it."""
+    try:
+        conn = get_db()
+        try:
+            _ensure_resources_table(conn)
+            row = conn.execute("SELECT 1 FROM program_resources WHERE share_public = 1 AND url IS NOT NULL AND url <> '' LIMIT 1").fetchone()
+        finally:
+            conn.close()
+        return {"free_resources_visible": bool(row)}
+    except Exception:
+        return {"free_resources_visible": False}
+
+
+@app.context_processor
 def inject_us_states():
     """Makes the state dropdown's options available to every template
     (internal CRM pages and the public forms alike) without having to pass
