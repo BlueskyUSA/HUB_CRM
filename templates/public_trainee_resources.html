@@ -34,6 +34,15 @@
     </div></div>{% endif %}
   <h1>Recommended resources</h1>
   <p class="muted">{% if not preview and contact.first_name %}{{ contact.first_name }}, here{% else %}Here{% endif %} are the books, podcasts and readings we recommend to keep your growth going after your training. This page is private to you, so please don&rsquo;t share the link.</p>
+  {% if not preview and by_program %}
+  <div style="margin:14px 0 4px"><div class="muted" style="font-size:.85rem;margin-bottom:4px">Resources for each program</div>
+    <a class="pv{% if not view %} on{% endif %}" href="{{ url_for('public_trainee_resources', token=token) }}">My resources</a>
+    {% for pr in by_program %}<a class="pv{% if view == pr.id|string %} on{% endif %}" href="{{ url_for('public_trainee_resources', token=token, program=pr.id) }}">{{ pr.label }}</a>{% endfor %}
+    <a class="pv{% if view == 'all' %} on{% endif %}" href="{{ url_for('public_trainee_resources', token=token, program='all') }}">See all resources</a>
+  </div>
+  {% if view == 'all' %}<p class="muted" style="margin:8px 0 0"><b>Showing everything we have posted, for every program.</b></p>
+  {% elif view %}<p class="muted" style="margin:8px 0 0"><b>Showing what we recommend for {{ labels[view|int] }}.</b></p>{% endif %}
+  {% endif %}
   {% if groups %}
     {% for g in groups %}
     <h2>{{ g.heading }}</h2>
