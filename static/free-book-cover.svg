@@ -38,5 +38,6 @@
     <path d="M140 640 Q 300 664 460 640" stroke-width="1.2"/>
     <path d="M100 694 Q 300 726 500 694" stroke-width="1"/>
   </g>
-  <text x="300" y="768" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#d8f2f2">a little book about the most interesting person you know</text>
+  <text x="300" y="734" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#d8f2f2">a little book about the most interesting person you know</text>
+  <text x="300" y="772" text-anchor="middle" font-family="Georgia, serif" font-size="25" letter-spacing="1.5" fill="#ffffff">by Kent and Pamela Hafemann</text>
 </svg>
