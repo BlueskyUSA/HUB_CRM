@@ -44,5 +44,6 @@
 {% if p.code in ('D1', 'D2', 'D3') %}<section class="pe-inc" style="background:#fff;padding:36px 24px 80px" id="whats-included">{% include '_program_included.html' %}</section>
 {% endif %}<section class="pe-band">{% for line in p.closing %}<p{% if not loop.first %} class="pe-q2"{% endif %}>{{ line }}</p>{% endfor %}</section>
 <section class="pe-is" id="is-this-for-you"><div class="pe-ttl">Is This for You?</div>{% for t in p.isthis %}<p>{{ t }}</p>{% endfor %}{% set ud_inline=true %}{% include '_upcoming_dates.html' %}{% if stories_visible %}<p style="margin-top:18px"><a href="{{ url_for('public_stories') }}#{{ p.code }}">Read what people say about this program</a></p>{% endif %}</section>
+{% include '_free_book_line.html' %}
 <section class="pe-faqw"><div class="pe-faq"><div class="pe-eye">A few things to know</div><h2>Questions?</h2>{% for q, a in p.faq %}<details><summary>{{ q|bang }}</summary><p>{{ a|bang }}</p></details>{% endfor %}</div></section>
 {% include '_words_band.html' %}<section class="pe-final"><a href="{{ url_for('public_programs') }}">Explore the programs &rarr;</a></section>
