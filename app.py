@@ -8819,6 +8819,8 @@ def _group_resource_rows(rows):
 def _free_resources_status():
     """(showing, problem). showing is True when at least one link is ticked 'Show on our public website', which is when
     the footer link and home page section appear. problem holds the error text if the check itself failed."""
+    if _free_book_live():
+        return True, ""   # the free book alone is enough to show the footer link and home page section
     try:
         conn = get_db()
         try:
@@ -9114,6 +9116,23 @@ def resources_trainee_preview():
                            labels=labels, preview=True, total=len(rows), programs=programs, sel=sel)
 
 
+def _free_book_live():
+    """The free little book is public only once FREE_BOOK_LIVE is set in Render (so the cover art, names and wording can be
+    settled first). The logged-in Owner can always preview it."""
+    return (os.environ.get("FREE_BOOK_LIVE") or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+@app.route("/free-book")
+def public_free_book():
+    live = _free_book_live()
+    if not live and not session.get("is_owner"):
+        abort(404)
+    resp = make_response(render_template("public_free_book.html", preview_only=not live))
+    if not live:
+        resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return resp
+
+
 @app.route("/free-resources")
 def public_free_resources():
     """Public page for visitors: only links (books, podcasts, websites) that staff ticked 'Show on our public website'.
@@ -9123,7 +9142,7 @@ def public_free_resources():
     _ensure_resources_table(conn)
     items = sorted([r for r in _load_resources(conn, "WHERE share_public = 1") if r["url"]], key=lambda r: r["id"])
     conn.close()
-    return render_template("public_free_resources.html", items=items, total=len(items))
+    return render_template("public_free_resources.html", items=items, total=len(items), book_live=_free_book_live())
 
 
 @app.route("/my-resources/<token>")
