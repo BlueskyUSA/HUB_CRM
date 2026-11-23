@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-label="Cover of The Curious Business of Being You: a person standing at the water's edge, their reflection holding a small golden light">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a3150"/><stop offset=".55" stop-color="#006c86"/><stop offset="1" stop-color="#27c4c0"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1fa5a8"/><stop offset="1" stop-color="#0a4f6b"/></linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe9a8" stop-opacity=".95"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#sky)"/>
+  <g fill="#fff" opacity=".75">
+    <circle cx="70" cy="395" r="1.6"/><circle cx="120" cy="330" r="1.2"/><circle cx="520" cy="350" r="1.6"/><circle cx="470" cy="300" r="1.1"/><circle cx="545" cy="420" r="1.2"/><circle cx="40" cy="300" r="1.1"/><circle cx="160" cy="420" r="1.1"/><circle cx="430" cy="410" r="1.3"/>
+  </g>
+  <!-- title -->
+  <g font-family="Georgia, 'Times New Roman', serif" font-style="italic" fill="#fff" text-anchor="middle">
+    <text x="300" y="112" opacity=".9" letter-spacing="4" font-style="normal" font-size="20">THE</text>
+    <text x="300" y="178" font-size="62">Curious</text>
+    <text x="300" y="244" font-size="62">Business</text>
+    <text x="300" y="296" font-size="38" opacity=".95">of Being You</text>
+  </g>
+  <!-- water -->
+  <rect y="520" width="600" height="280" fill="url(#water)"/>
+  <!-- shoreline mound -->
+  <path d="M0 520 Q 300 486 600 520 L600 528 Q 300 540 0 528 Z" fill="#06283f"/>
+  <!-- person -->
+  <g fill="#06283f">
+    <circle cx="300" cy="418" r="22"/>
+    <path d="M268 506 C 268 462 280 446 300 446 C 320 446 332 462 332 506 Z"/>
+  </g>
+  <!-- reflection: a little different from the person -->
+  <g opacity=".55" fill="#bff3ee">
+    <circle cx="300" cy="632" r="22"/>
+    <path d="M268 544 C 268 588 280 604 300 604 C 320 604 332 588 332 544 Z"/>
+  </g>
+  <circle cx="300" cy="572" r="46" fill="url(#glow)"/>
+  <path d="M300 556 L305 569 L319 570 L308 579 L312 593 L300 585 L288 593 L292 579 L281 570 L295 569 Z" fill="#ffe29a"/>
+  <!-- ripples -->
+  <g fill="none" stroke="#e8fbfa" stroke-linecap="round" opacity=".5">
+    <path d="M214 560 Q 300 572 386 560" stroke-width="1.6"/>
+    <path d="M178 596 Q 300 614 422 596" stroke-width="1.4"/>
+    <path d="M140 640 Q 300 664 460 640" stroke-width="1.2"/>
+    <path d="M100 694 Q 300 726 500 694" stroke-width="1"/>
+  </g>
+  <text x="300" y="768" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#d8f2f2">a little book about the most interesting person you know</text>
+</svg>
