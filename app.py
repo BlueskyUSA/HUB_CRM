@@ -8675,22 +8675,58 @@ STARTER_RESOURCES = [
     ("Book", "Hold Me Tight", "Dr. Sue Johnson",
      "https://www.amazon.com/dp/031611300X",
      "An exploration of emotional connection, recurring relationship patterns, and conversations that help partners understand what lies beneath conflict. Why it fits: Understanding the emotions beneath relationship patterns."),
-    ("Website or video link", "Active Listening", "Greater Good in Action, Greater Good Science Center at UC Berkeley",
-     "https://ggia.berkeley.edu/practice/active_listening",
-     "A practical exercise in listening to understand rather than simply preparing our next response. Useful in many kinds of relationships."),
+    ("Book", "The Relationship Cure", "John M. Gottman and Joan DeClaire",
+     "https://www.amazon.com/dp/0609809539",
+     "A five-step guide to strengthening your marriage, family and friendships, with practical exercises for connecting with the people closest to you. Why it fits: Practical steps for strengthening the relationships that matter most."),
 ]
 
 
 STARTER_RESOURCES_2 = [
-    ("Book", "Active Listening: 113 Techniques & Tips", "Emma Leigh Weber",
-     "https://www.amazon.com/dp/1963621093",
-     "113 techniques and tips for improving relationships through empathic communication. Why it fits: Practical techniques for listening well."),
+    ("Book", "Us: Getting Past You & Me", "Terrence Real",
+     "https://www.amazon.com/dp/0593233670",
+     "A guide to moving from \u201cyou and me\u201d to \u201cus,\u201d with practical ways for couples to work together on a more loving relationship. Why it fits: Helps partners shift from working on themselves alone to working together."),
 ]
 
 
 def _seed_starter_resources(conn):
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
     _seed_resource_list(conn, STARTER_RESOURCES_2, "resource_starter2_seeded")
+    _swap_active_listening_book(conn)
+    _swap_active_listening_exercise(conn)
+
+
+def _swap_active_listening_exercise(conn):
+    """One time: the starter list once held the free Berkeley 'Active Listening' exercise. It was replaced by The Relationship Cure.
+    The starter row (still marked as added by the starter list) is turned into that book in place, keeping its program and public
+    settings; a row someone added or changed themselves is left alone."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_starter4_done (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_starter4_done").fetchone():
+        return
+    kind, title, author, url, note = STARTER_RESOURCES[2]
+    if not conn.execute("SELECT 1 FROM program_resources WHERE LOWER(title) = LOWER(?)", (title,)).fetchone():
+        conn.execute(
+            "UPDATE program_resources SET kind = ?, title = ?, author = ?, url = ?, note = ?, cover_data = NULL, cover_type = NULL "
+            "WHERE LOWER(title) = 'active listening' AND added_by = ?",
+            (kind, title, author, url, note, "Starter list"))
+    conn.execute("INSERT INTO resource_starter4_done (done) VALUES (1)")
+    conn.commit()
+
+
+def _swap_active_listening_book(conn):
+    """One time: the starter list once held the Active Listening book (Emma Leigh Weber). It was replaced by Terrence Real's Us.
+    If that starter row is on the shelf (and still marked as added by the starter list), turn it into Us in place, keeping its
+    program and public settings; a row that someone added or renamed themselves is left alone."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_starter3_done (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_starter3_done").fetchone():
+        return
+    kind, title, author, url, note = STARTER_RESOURCES_2[0]
+    if not conn.execute("SELECT 1 FROM program_resources WHERE LOWER(title) = LOWER(?)", (title,)).fetchone():
+        conn.execute(
+            "UPDATE program_resources SET title = ?, author = ?, url = ?, note = ?, cover_data = NULL, cover_type = NULL "
+            "WHERE LOWER(title) = LOWER(?) AND added_by = ?",
+            (title, author, url, note, "Active Listening: 113 Techniques & Tips", "Starter list"))
+    conn.execute("INSERT INTO resource_starter3_done (done) VALUES (1)")
+    conn.commit()
 
 
 def _seed_resource_list(conn, items, marker):
@@ -9226,7 +9262,8 @@ def public_free_book():
 _STARTER_COVERS = {
     "the seven principles for making marriage work": "book-seven-principles.jpg",
     "hold me tight": "book-hold-me-tight.jpg",
-    "active listening: 113 techniques & tips": "book-active-listening.jpg",
+    "us: getting past you & me": "book-us.jpg",
+    "the relationship cure": "book-relationship-cure.jpg",
 }
 
 
