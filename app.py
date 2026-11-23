@@ -8651,7 +8651,61 @@ def _ensure_resources_table(conn):
             conn.execute("INSERT INTO resource_topics (name) VALUES (?) ON CONFLICT (name) DO NOTHING", (name,))
         conn.execute("INSERT INTO resource_topics_seeded (done) VALUES (1)")
     conn.commit()
+    try:
+        _seed_starter_resources(conn)
+    except Exception as e:
+        print(f"Starter resources skipped: {e}", flush=True)
+        try:
+            conn.rollback()
+        except Exception:
+            pass
     _resources_table_ready = True
+
+
+# Three starter resources for The Art of Us, added once (shown on the public Free Resources page). Links are plain Amazon searches
+# (no tracking codes); an Owner or Administrator can swap in a product page on the Resources page at any time. If one is already on
+# the shelf under the same title it is left alone, and nothing is added again after the first time, even if one is later deleted.
+STARTER_RESOURCES = [
+    ("Book", "The Seven Principles for Making Marriage Work", "John Gottman and Nan Silver",
+     "https://www.amazon.com/s?k=seven+principles+for+making+marriage+work",
+     "An accessible look at everyday habits that strengthen relationships, including friendship, appreciation, communication, and navigating disagreements. Why it fits: Practical tools for strengthening relationships."),
+    ("Book", "Hold Me Tight", "Dr. Sue Johnson",
+     "https://www.amazon.com/dp/031611300X",
+     "An exploration of emotional connection, recurring relationship patterns, and conversations that help partners understand what lies beneath conflict. Why it fits: Understanding the emotions beneath relationship patterns."),
+    ("Website or video link", "Active Listening", "Greater Good in Action, Greater Good Science Center at UC Berkeley",
+     "https://ggia.berkeley.edu/practice/active_listening",
+     "A practical exercise in listening to understand rather than simply preparing our next response. Useful in many kinds of relationships."),
+]
+
+
+STARTER_RESOURCES_2 = [
+    ("Book", "Active Listening: 113 Techniques & Tips", "Emma Leigh Weber",
+     "https://www.amazon.com/dp/1963621093",
+     "113 techniques and tips for improving relationships through empathic communication. Why it fits: Practical techniques for listening well."),
+]
+
+
+def _seed_starter_resources(conn):
+    _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
+    _seed_resource_list(conn, STARTER_RESOURCES_2, "resource_starter2_seeded")
+
+
+def _seed_resource_list(conn, items, marker):
+    conn.execute(f"CREATE TABLE IF NOT EXISTS {marker} (done INTEGER)")
+    if conn.execute(f"SELECT 1 FROM {marker}").fetchone():
+        return
+    prog = conn.execute("SELECT id FROM programs WHERE code = ?", ("D4",)).fetchone()
+    for kind, title, author, url, note in items:
+        if conn.execute("SELECT 1 FROM program_resources WHERE LOWER(title) = LOWER(?)", (title,)).fetchone():
+            continue
+        rid = conn.execute(
+            """INSERT INTO program_resources (program_id, kind, title, author, url, note, added_by, share_trainees, share_public)
+               VALUES (NULL, ?, ?, ?, ?, ?, ?, 0, 1) RETURNING id""",
+            (kind, title, author, url, note, "Starter list")).fetchone()["id"]
+        if prog:
+            conn.execute("INSERT INTO resource_programs (resource_id, program_id) VALUES (?, ?) ON CONFLICT DO NOTHING", (rid, prog["id"]))
+    conn.execute(f"INSERT INTO {marker} (done) VALUES (1)")
+    conn.commit()
 
 
 def _can_view_resources():
