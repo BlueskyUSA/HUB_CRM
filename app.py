@@ -8634,6 +8634,9 @@ def _ensure_resources_table(conn):
     # The page was first built without the "show to trainees" tick box, so older databases need the column added.
     conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS share_trainees INTEGER NOT NULL DEFAULT 0")
     conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS share_public INTEGER NOT NULL DEFAULT 0")
+    # An optional cover picture (for books), shown on the public Recommended Resources page.
+    conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS cover_data BYTEA")
+    conn.execute("ALTER TABLE program_resources ADD COLUMN IF NOT EXISTS cover_type TEXT")
     # A resource can belong to several programs: one row here per program. No rows = All programs.
     conn.execute("CREATE TABLE IF NOT EXISTS resource_programs (resource_id INTEGER NOT NULL, program_id INTEGER NOT NULL, PRIMARY KEY (resource_id, program_id))")
     # Resources saved when each could have only one program: copy that program across, once (program_id is cleared on every save after this).
@@ -8860,7 +8863,7 @@ def _load_resources(conn, where="", params=()):
 
 
 _RESOURCE_COLS = """id, program_id, kind, title, author, url, note, original_filename,
-                      (data IS NOT NULL) AS has_file, added_by, share_trainees, share_public"""
+                      (data IS NOT NULL) AS has_file, (cover_data IS NOT NULL) AS has_cover, added_by, share_trainees, share_public"""
 
 
 def _group_resource_rows(rows):
@@ -9029,6 +9032,24 @@ def _resources_back(program_value):
     return url_for(".resources", program=sel) if sel else url_for(".resources")
 
 
+MAX_COVER_BYTES = 2 * 1024 * 1024
+COVER_TYPES = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif"}
+
+
+def _cover_from_form():
+    """(data, content_type, error) for the optional cover picture on the Add / Edit resource form."""
+    f = request.files.get("cover")
+    if not f or not f.filename:
+        return None, None, None
+    ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
+    if ext not in COVER_TYPES:
+        return None, None, "The cover picture must be a JPG, PNG, WEBP or GIF image."
+    data = f.read()
+    if len(data) > MAX_COVER_BYTES:
+        return None, None, "The cover picture is too large (limit 2 MB). A small picture is fine."
+    return data, COVER_TYPES[ext], None
+
+
 @crm.route("/resources/new", methods=["POST"])
 @resources_view_required
 @resources_edit_required
@@ -9045,7 +9066,8 @@ def resource_new():
     share = 1 if request.form.get("share_trainees") else 0
     url, url_err = _clean_resource_url(request.form.get("url"))
     data, ctype, fname, file_err = _resource_file_from_form()
-    problem = (None if title else "Give the resource a title.") or (url_err) or (file_err) or prog_err \
+    cover, cover_type, cover_err = _cover_from_form()
+    problem = (None if title else "Give the resource a title.") or (url_err) or (file_err) or cover_err or prog_err \
         or ("Attach a file for a PDF / document, or switch the type." if kind == "PDF / document" and not data and not url else None)
     if problem:
         flash(problem)
@@ -9059,6 +9081,8 @@ def resource_new():
     )
     new_id = cur.fetchone()["id"]
     conn.execute("UPDATE program_resources SET share_public = ? WHERE id = ?", (1 if (request.form.get("share_public") and url) else 0, new_id))
+    if cover is not None:
+        conn.execute("UPDATE program_resources SET cover_data = ?, cover_type = ? WHERE id = ?", (cover, cover_type, new_id))
     _save_resource_programs(conn, new_id, program_ids)
     _apply_topics(conn, new_id, request.form)
     conn.commit()
@@ -9091,7 +9115,8 @@ def resource_edit(resource_id):
     share = 1 if request.form.get("share_trainees") else 0
     url, url_err = _clean_resource_url(request.form.get("url"))
     data, ctype, fname, file_err = _resource_file_from_form()
-    problem = (None if title else "Give the resource a title.") or url_err or file_err or prog_err
+    cover, cover_type, cover_err = _cover_from_form()
+    problem = (None if title else "Give the resource a title.") or url_err or file_err or cover_err or prog_err
     if problem:
         conn.close()
         flash(problem)
@@ -9103,6 +9128,10 @@ def resource_edit(resource_id):
     _save_resource_programs(conn, resource_id, program_ids)
     _apply_topics(conn, resource_id, request.form)
     conn.execute("UPDATE program_resources SET share_public = ? WHERE id = ?", (1 if (request.form.get("share_public") and url) else 0, resource_id))
+    if cover is not None:
+        conn.execute("UPDATE program_resources SET cover_data = ?, cover_type = ? WHERE id = ?", (cover, cover_type, resource_id))
+    elif request.form.get("remove_cover"):
+        conn.execute("UPDATE program_resources SET cover_data = NULL, cover_type = NULL WHERE id = ?", (resource_id,))
     if data is not None:
         conn.execute("UPDATE program_resources SET data = ?, original_filename = ?, content_type = ? WHERE id = ?",
                      (data, fname, ctype, resource_id))
@@ -9193,16 +9222,74 @@ def public_free_book():
     return resp
 
 
+# Pictures for the three starter books, shown until an Owner or Administrator uploads a cover of their own on the Resources page.
+_STARTER_COVERS = {
+    "the seven principles for making marriage work": "book-seven-principles.jpg",
+    "hold me tight": "book-hold-me-tight.jpg",
+    "active listening: 113 techniques & tips": "book-active-listening.jpg",
+}
+
+
+def _attach_cover_urls(items):
+    for r in items:
+        if r.get("has_cover"):
+            r["cover_url"] = url_for("public_resource_cover", rid=r["id"])
+        else:
+            fn = _STARTER_COVERS.get((r["title"] or "").strip().lower())
+            r["cover_url"] = url_for("static", filename=fn) if fn else None
+    return items
+
+
+def _program_gallery(code):
+    """Public resources (links ticked 'Show on our public website') that were tagged to this program on the Resources page,
+    for the book gallery on that program's page. Items tagged 'All programs' do not appear here, so each program page shows
+    only the books chosen for it. Any problem returns an empty list so a program page never breaks."""
+    try:
+        conn = get_db()
+        _ensure_resources_table(conn)
+        prog = conn.execute("SELECT id FROM programs WHERE code = ?", (code,)).fetchone()
+        items = []
+        if prog:
+            items = sorted([r for r in _load_resources(conn, "WHERE share_public = 1")
+                            if r["url"] and prog["id"] in r["program_ids"]], key=lambda r: r["id"])
+        conn.close()
+        return _attach_cover_urls(items)
+    except Exception as e:
+        print(f"program gallery skipped: {e!r}", flush=True)
+        return []
+
+
+@app.context_processor
+def inject_program_gallery():
+    return {"program_gallery": _program_gallery}
+
+
 @app.route("/free-resources")
 def public_free_resources():
-    """Public page for visitors: only links (books, podcasts, websites) that staff ticked 'Show on our public website'.
-    Shown as one short list, in the order they were added. Uploaded files are never listed here, and nothing appears
-    unless it was ticked."""
+    """Public page for visitors: a gallery with our little book in the middle and the recommended books around it. Only
+    links that staff ticked 'Show on our public website' appear (uploaded files never do), in the order they were added.
+    Clicking a cover goes to the link; the title and author sit under the picture."""
     conn = get_db()
     _ensure_resources_table(conn)
     items = sorted([r for r in _load_resources(conn, "WHERE share_public = 1") if r["url"]], key=lambda r: r["id"])
     conn.close()
+    _attach_cover_urls(items)
     return render_template("public_free_resources.html", items=items, total=len(items), book_live=_free_book_live())
+
+
+@app.route("/resource-cover/<int:rid>")
+def public_resource_cover(rid):
+    """The cover picture of a resource that is shown on the public page (and only those)."""
+    conn = get_db()
+    _ensure_resources_table(conn)
+    row = conn.execute("SELECT cover_data, cover_type FROM program_resources WHERE id = ? AND share_public = 1", (rid,)).fetchone()
+    conn.close()
+    if not row or not row["cover_data"]:
+        abort(404)
+    resp = make_response(bytes(row["cover_data"]))
+    resp.headers["Content-Type"] = row["cover_type"] or "image/jpeg"
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
 
 
 @app.route("/my-resources/<token>")
