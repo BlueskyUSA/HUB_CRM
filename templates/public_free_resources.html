@@ -9,7 +9,7 @@
 .fr-hero .k{font-size:.8rem;letter-spacing:.2em;font-weight:700;text-transform:uppercase;color:#bfe3ea}
 .fr-hero h1{color:#fff;font-style:italic;font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.15;margin:12px auto 16px}
 .fr-hero p{max-width:720px;margin:0 auto;font-size:clamp(1.1rem,1.7vw,1.3rem);font-family:Georgia,'Times New Roman',serif}
-.fr-body{max-width:860px;margin:0 auto;padding:36px 22px 56px}
+.fr-body{max-width:1100px;margin:0 auto;padding:36px 22px 56px}
 .fr-note{background:#eef7f9;border:1px solid #bddde3;border-left:5px solid #007b8b;padding:14px 18px;font-family:Inter,Arial,sans-serif;font-size:.95rem;color:#1d3d4d;margin:0 0 26px}
 .fr-chips{font-family:Inter,Arial,sans-serif;margin:0 0 8px}
 .fr-chips .lab{display:block;font-size:.85rem;color:#456575;margin-bottom:6px}
@@ -37,32 +37,7 @@
 </section>
 <div class="fr-body">
   <div class="fr-note">These resources are for learning and encouragement. They are not a substitute for counseling or medical care. If you are in crisis, call or text <b>988</b> (the Suicide &amp; Crisis Lifeline) anytime.</div>
-  {% if book_live %}
-  <div class="fr-card" style="margin-top:6px;border-top:4px solid #007b8b">
-    <div class="fr-item" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
-      <img src="{{ url_for('static', filename='free-book-cover.svg') }}" alt="Cover of The Curious Business of Being You" style="width:110px;height:auto;box-shadow:0 3px 10px rgba(12,69,97,.25)">
-      <div style="flex:1;min-width:220px">
-      <div class="by" style="text-transform:uppercase;letter-spacing:.12em;font-size:.75rem;color:#007b8b;font-weight:700">Our free little book</div>
-      <div class="t">The Curious Business of Being You</div>
-      <p>A light-hearted invitation to become a little more curious about the person you have been living with all your life: you. Seven short chapters, with a few questions to wonder about at the end of each.</p>
-      <a class="fr-btn" href="{{ url_for('public_free_book') }}">Read it free</a>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if items %}
-  <div class="fr-card" style="margin-top:14px">
-    {% for r in items %}
-    <div class="fr-item">
-      <div class="t">{{ r.title }}{% if r.author %} <span class="by">&middot; {{ r.author }}</span>{% endif %}</div>
-      {% if r.note %}<p>{{ r.note }}</p>{% endif %}
-      <a class="fr-btn" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if r.kind == 'Podcast' %}Listen{% elif r.kind == 'Book' %}Find the book{% else %}Open{% endif %}</a>
-    </div>
-    {% endfor %}
-  </div>
-  {% elif not book_live %}
-    <div class="fr-card"><p style="padding:14px 0;font-family:Georgia,serif">We are gathering our favorites and will post them here soon.</p></div>
-  {% endif %}
+  {% with gal_items=items, gal_book=book_live %}{% include '_resource_gallery.html' %}{% endwith %}
 </div>
 <section class="fr-cta">
   <h2>Ready for More Than Reading?</h2>

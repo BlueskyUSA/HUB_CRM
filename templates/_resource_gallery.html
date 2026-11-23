@@ -1,0 +1,31 @@
+{# Our little book in the middle, recommended books around it. Needs gal_items (resources with url, title, author, cover_url) and gal_book (show the little book). #}
+<style>
+.fr-btn{display:inline-block;background:#007b8b;color:#fff!important;font-family:Inter,Arial,sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.03em;padding:9px 20px;border-radius:24px;text-decoration:none;margin-top:12px}
+.fr-gal{display:grid;grid-template-columns:1fr minmax(250px,330px) 1fr;gap:34px;align-items:center;margin:10px 0 0}
+.fr-side{display:flex;flex-direction:column;gap:34px;align-items:center}
+.fr-tile{display:block;text-align:center;text-decoration:none;color:#0c4561;width:170px;transition:transform .18s}
+.fr-tile:hover{transform:translateY(-5px)}
+.fr-tile img,.fr-ph{width:140px;height:auto;display:block;margin:0 auto 12px;border-radius:4px;box-shadow:0 8px 20px rgba(12,69,97,.28)}
+.fr-ph{height:200px;background:linear-gradient(160deg,#0c4561,#007b8b);color:#fff;font-family:Georgia,serif;font-style:italic;font-size:1.05rem;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;line-height:1.3}
+.fr-cap{display:block;font-family:Georgia,'Times New Roman',serif;font-size:1.05rem;line-height:1.3;font-weight:700;color:#0c4561}
+.fr-by2{display:block;font-family:Inter,Arial,sans-serif;font-size:.88rem;color:#5a6b75;margin-top:3px}
+.fr-mid{text-align:center;padding:26px 18px;background:linear-gradient(#e3f1f4,#d6ebf0);border-radius:18px}
+.fr-mid img{width:min(220px,60%);height:auto;border-radius:6px;box-shadow:0 12px 28px rgba(10,49,80,.38);margin:0 auto 16px;display:block}
+.fr-mid .lab{font-family:Inter,Arial,sans-serif;font-size:.8rem;letter-spacing:.16em;font-weight:700;color:#006c86}
+.fr-mid .tt{font-family:Georgia,serif;font-style:italic;font-size:1.55rem;line-height:1.2;color:#0a3150;margin:4px 0 14px}
+.fr-more{display:flex;flex-wrap:wrap;gap:34px;justify-content:center;margin-top:40px}
+@media(max-width:860px){.fr-gal{display:flex;flex-direction:column;gap:30px}.fr-mid{order:-1}.fr-side{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:28px 14px}.fr-tile{width:44%;max-width:190px}}
+</style>
+{% macro tile(r) %}<a class="fr-tile" href="{{ r.url }}" target="_blank" rel="noopener noreferrer" title="{{ r.title }}">{% if r.cover_url %}<img src="{{ r.cover_url }}" alt="Cover of {{ r.title }}" loading="lazy">{% else %}<span class="fr-ph">{{ r.title }}</span>{% endif %}<span class="fr-cap">{{ r.title }}</span>{% if r.author %}<span class="fr-by2">{{ r.author }}</span>{% endif %}</a>{% endmacro %}
+{% set ring = gal_items[:6] %}{% set rest = gal_items[6:] %}
+{% set nleft = (ring|length + 1) // 2 %}
+<div class="fr-gal">
+  {% if gal_book %}
+  <div class="fr-side">{% for r in ring[:nleft] %}{{ tile(r) }}{% endfor %}</div>
+  <a class="fr-mid" href="{{ url_for('public_free_book') }}" style="text-decoration:none"><img src="{{ url_for('static', filename='free-book-cover.svg') }}" alt="Cover of The Curious Business of Being You, by Kent and Pamela Hafemann"><div class="lab">OUR FREE LITTLE BOOK</div><div class="tt">The Curious Business of Being You</div><span class="fr-btn">Read it free</span></a>
+  <div class="fr-side">{% for r in ring[nleft:] %}{{ tile(r) }}{% endfor %}</div>
+  {% else %}
+  <div class="fr-more" style="grid-column:1/-1;margin-top:0">{% for r in ring %}{{ tile(r) }}{% endfor %}</div>
+  {% endif %}
+</div>
+{% if rest %}<div class="fr-more">{% for r in rest %}{{ tile(r) }}{% endfor %}</div>{% endif %}

@@ -68,6 +68,10 @@
     <p style="margin:6px 0"><label>Title<br><input type="text" name="title" maxlength="200" required style="width:100%;max-width:520px" value="{{ edit_item.title if edit_item else '' }}"></label></p>
     <p style="margin:6px 0"><label><span id="rauthor">Author or source</span><br><input type="text" name="author" maxlength="200" style="width:100%;max-width:520px" value="{{ edit_item.author if edit_item and edit_item.author else '' }}"></label></p>
     <p style="margin:6px 0"><label><span id="rurl">Link (optional)</span><br><input type="text" name="url" maxlength="500" placeholder="https://" style="width:100%;max-width:520px" value="{{ edit_item.url if edit_item and edit_item.url else '' }}"></label></p>
+    <p style="margin:6px 0"><label>Cover picture (optional, for books: JPG or PNG, up to 2 MB)<br><input type="file" name="cover" accept=".jpg,.jpeg,.png,.webp,.gif,image/*"></label>
+      <span class="muted">Shown on the public Recommended Resources page, with the title and author under it. Clicking it goes to the link above.</span>
+      {% if edit_item and edit_item.has_cover %}<br><span class="muted">A cover is saved. Choosing a new picture replaces it.</span>
+      <br><label><input type="checkbox" name="remove_cover"> Remove the cover picture</label>{% endif %}</p>
     <p style="margin:6px 0"><label>Attach a file (PDF, Word or text, up to 10 MB)<br><input type="file" name="file" accept=".pdf,.doc,.docx,.txt"></label>
       {% if edit_item and edit_item.has_file %}<br><span class="muted">Now attached: {{ edit_item.original_filename }}. Choosing a new file replaces it.</span>
       <br><label><input type="checkbox" name="remove_file"> Remove the attached file</label>{% endif %}</p>
