@@ -8619,6 +8619,7 @@ DEFAULT_RESOURCE_TOPICS = [
     "Forgiveness and repair", "Grief and loss", "Intimacy and connection", "Self-compassion",
     "Self-worth and shame", "Trauma and the body", "Triangulation",
 ]
+BRAIN_TOPIC = "The Remarkable Human Brain"   # the topic whose books get their own button and page on the public Recommended Resources page
 _resources_table_ready = False
 
 
@@ -8653,6 +8654,12 @@ def _ensure_resources_table(conn):
         for name in DEFAULT_RESOURCE_TOPICS:
             conn.execute("INSERT INTO resource_topics (name) VALUES (?) ON CONFLICT (name) DO NOTHING", (name,))
         conn.execute("INSERT INTO resource_topics_seeded (done) VALUES (1)")
+    # The "Remarkable Human Brain" topic is added once. If it is renamed or removed later it is not put back, but the public
+    # page looks for a topic with exactly this name, so keep the name if you want the button and page to keep working.
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_topic_brain_seeded (done INTEGER)")
+    if not conn.execute("SELECT 1 FROM resource_topic_brain_seeded").fetchone():
+        conn.execute("INSERT INTO resource_topics (name) VALUES (?) ON CONFLICT (name) DO NOTHING", (BRAIN_TOPIC,))
+        conn.execute("INSERT INTO resource_topic_brain_seeded (done) VALUES (1)")
     conn.commit()
     try:
         _seed_starter_resources(conn)
@@ -9323,17 +9330,43 @@ def inject_program_gallery():
     return {"program_gallery": _program_gallery}
 
 
+def _public_link_items(conn):
+    """The public links (ticked 'Show on our public website'), in the order they were added, split into the main list and the
+    books carrying the Remarkable Human Brain topic. The brain books appear only under their own button, so the main page stays uncrowded."""
+    trow = conn.execute("SELECT id FROM resource_topics WHERE lower(name) = lower(?)", (BRAIN_TOPIC,)).fetchone()
+    tid = trow["id"] if trow else None
+    rows = sorted([r for r in _load_resources(conn, "WHERE share_public = 1") if r["url"]], key=lambda r: r["id"])
+    brain = [r for r in rows if tid and tid in r["topic_ids"]]
+    main = [r for r in rows if not (tid and tid in r["topic_ids"])]
+    return main, brain
+
+
 @app.route("/free-resources")
 def public_free_resources():
     """Public page for visitors: a gallery with our little book in the middle and the recommended books around it. Only
     links that staff ticked 'Show on our public website' appear (uploaded files never do), in the order they were added.
-    Clicking a cover goes to the link; the title and author sit under the picture."""
+    Clicking a cover goes to the link; the title and author sit under the picture. Books tagged with the Remarkable Human
+    Brain topic are left out here; they have their own button and page (once at least one is posted)."""
     conn = get_db()
     _ensure_resources_table(conn)
-    items = sorted([r for r in _load_resources(conn, "WHERE share_public = 1") if r["url"]], key=lambda r: r["id"])
+    items, brain = _public_link_items(conn)
     conn.close()
     _attach_cover_urls(items)
-    return render_template("public_free_resources.html", items=items, total=len(items), book_live=_free_book_live())
+    return render_template("public_free_resources.html", items=items, total=len(items), book_live=_free_book_live(),
+                           brain_count=len(brain))
+
+
+@app.route("/free-resources/brain")
+def public_brain_resources():
+    """The Remarkable Human Brain: an introduction and the books tagged with that topic. With none posted yet, visitors go back to the main page."""
+    conn = get_db()
+    _ensure_resources_table(conn)
+    items, brain = _public_link_items(conn)
+    conn.close()
+    if not brain:
+        return redirect(url_for("public_free_resources"))
+    _attach_cover_urls(brain)
+    return render_template("public_brain_resources.html", items=brain)
 
 
 @app.route("/resource-cover/<int:rid>")
