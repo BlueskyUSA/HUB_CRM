@@ -1,0 +1,5 @@
+{# A quiet one-line pointer for visitors who are not ready to sign up. Shows only when FREE_BOOK_LIVE is on. #}
+{% if free_book_line_visible %}
+<style>.fbl{text-align:center;padding:22px 20px;font-family:Inter,Arial,sans-serif;font-size:.98rem;color:#33505a;background:#f4fafb}.fbl a{color:#006c86;font-weight:700;text-decoration:underline}</style>
+<p class="fbl">Not ready to sign up yet? Start with our free little book, <a href="{{ url_for('public_free_book') }}"><em>The Curious Business of Being You</em></a>.</p>
+{% endif %}
