@@ -16,7 +16,7 @@
 .fr-more{display:flex;flex-wrap:wrap;gap:34px;justify-content:center;margin-top:40px}
 @media(max-width:860px){.fr-gal{display:flex;flex-direction:column;gap:30px}.fr-mid{order:-1}.fr-side{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:28px 14px}.fr-tile{width:44%;max-width:190px}}
 </style>
-{% macro tile(r) %}<a class="fr-tile" href="{{ r.url }}" target="_blank" rel="noopener noreferrer" title="{{ r.title }}">{% if r.cover_url %}<img src="{{ r.cover_url }}" alt="Cover of {{ r.title }}" loading="lazy">{% else %}<span class="fr-ph">{{ r.title }}</span>{% endif %}<span class="fr-cap">{{ r.title }}</span>{% if r.author %}<span class="fr-by2">{{ r.author }}</span>{% endif %}</a>{% endmacro %}
+{% macro tile(r) %}<a class="fr-tile" href="{{ r.url }}" target="_blank" rel="noopener noreferrer" title="{{ r.title }}"><span class="fr-im">{% if r.cover_url %}<img src="{{ r.cover_url }}" alt="Cover of {{ r.title }}" loading="lazy">{% else %}<span class="fr-ph">{{ r.title }}</span>{% endif %}</span><span class="fr-cap">{{ r.title }}</span>{% if r.author %}<span class="fr-by2">{{ r.author }}</span>{% endif %}</a>{% endmacro %}
 {% set ring = gal_items[:6] %}{% set rest = gal_items[6:] %}
 {% set nleft = (ring|length + 1) // 2 %}
 <div class="fr-gal">
