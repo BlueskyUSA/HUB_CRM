@@ -1,0 +1,12 @@
+{# Home page: our free little book in the middle, with a book on each side. Shown only when FREE_BOOK_LIVE is on. The two books are written here
+   (not on the Resources page); to change them, edit the two entries below. #}
+{% if free_book_line_visible %}
+<style>.fbg{background:#fffdf8;padding:60px 20px 64px;font-family:Inter,Arial,sans-serif}.fbg-in{max-width:1100px;margin:0 auto}.fbg-k{font-size:1rem;letter-spacing:.18em;font-weight:700;color:#006c86;margin:0 0 8px;text-align:center}.fbg h2{border:0!important;font:italic clamp(34px,5vw,54px)/1.15 Georgia,'Times New Roman',serif;margin:0 0 10px;color:#0a3150;text-align:center}.fbg-sub{text-align:center;font-size:clamp(18px,2vw,22px);color:#1d3d4d;max-width:720px;margin:0 auto 34px;line-height:1.5}</style>
+{% set home_books = [
+  {'title': 'The Gifts of Imperfection', 'author': 'Bren\u00e9 Brown', 'url': 'https://www.amazon.com/dp/1616499605', 'cover_url': url_for('static', filename='book-gifts-of-imperfection.jpg')},
+  {'title': 'Maybe You Should Talk to Someone', 'author': 'Lori Gottlieb', 'url': 'https://www.amazon.com/dp/1328662055', 'cover_url': url_for('static', filename='book-maybe-talk-to-someone.jpg')}
+] %}
+<section class="fbg" id="free-book"><div class="fbg-in"><div class="fbg-k">FREE LITTLE BOOK</div><h2>Not ready to sign up yet?</h2><p class="fbg-sub">Start here. <em>The Curious Business of Being You</em> is a short, friendly read on curiosity, relationships and the stories we carry. It's free, and there's nothing to sign up for.</p>
+{% with gal_items=home_books, gal_book=True %}{% include '_resource_gallery.html' %}{% endwith %}
+</div></section>
+{% endif %}
