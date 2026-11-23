@@ -8712,10 +8712,55 @@ STARTER_RESOURCES_BEGINNING = [
 ]
 
 
+# Six books for the Remarkable Human Brain page, added once and tagged with that topic. Plain Amazon product links (no tracking codes).
+STARTER_RESOURCES_BRAIN = [
+    ("Book", "The Brain That Changes Itself", "Norman Doidge, M.D.",
+     "https://www.amazon.com/dp/0143113100",
+     "Stories of people whose brains rewired themselves, and what the science of neuroplasticity says about our ability to change. Why it fits: Our brains are far more adaptable than we once believed."),
+    ("Book", "Incognito", "David Eagleman",
+     "https://www.amazon.com/dp/0307389928",
+     "A neuroscientist explores the vast territory of the mind that works beneath our awareness. Why it fits: Much of what drives us happens out of sight."),
+    ("Book", "Livewired", "David Eagleman",
+     "https://www.amazon.com/dp/0307949699",
+     "The inside story of how the brain constantly reshapes itself throughout life. Why it fits: A lifelong, ever-changing brain."),
+    ("Book", "How Emotions Are Made", "Lisa Feldman Barrett",
+     "https://www.amazon.com/dp/1328915433",
+     "A fresh look at how the brain constructs emotion, challenging what most of us were taught. Why it fits: Our feelings are not quite what we assumed."),
+    ("Book", "The Power of Habit", "Charles Duhigg",
+     "https://www.amazon.com/dp/081298160X",
+     "Why habits form, how they work in the brain, and how they can be changed. Why it fits: So much of life runs on habit."),
+    ("Book", "Seven and a Half Lessons About the Brain", "Lisa Feldman Barrett",
+     "https://www.amazon.com/dp/035864559X",
+     "Seven short, readable essays, plus a half-lesson, on what the brain is and what it is for. Why it fits: A friendly, brief tour of the brain."),
+]
+
+
+def _seed_brain_books(conn):
+    """One time: add the six brain books (if a title is not already on the shelf) and tag all six with the Remarkable Human Brain topic."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_brain_books_seeded (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_brain_books_seeded").fetchone():
+        return
+    trow = conn.execute("SELECT id FROM resource_topics WHERE lower(name) = lower(?)", (BRAIN_TOPIC,)).fetchone()
+    for kind, title, author, url, note in STARTER_RESOURCES_BRAIN:
+        row = conn.execute("SELECT id FROM program_resources WHERE LOWER(title) = LOWER(?)", (title,)).fetchone()
+        if row:
+            rid = row["id"]
+        else:
+            rid = conn.execute(
+                """INSERT INTO program_resources (program_id, kind, title, author, url, note, added_by, share_trainees, share_public)
+                   VALUES (NULL, ?, ?, ?, ?, ?, ?, 0, 1) RETURNING id""",
+                (kind, title, author, url, note, "Starter list")).fetchone()["id"]
+        if trow:
+            conn.execute("INSERT INTO resource_topic_links (resource_id, topic_id) VALUES (?, ?) ON CONFLICT DO NOTHING", (rid, trow["id"]))
+    conn.execute("INSERT INTO resource_brain_books_seeded (done) VALUES (1)")
+    conn.commit()
+
+
 def _seed_starter_resources(conn):
     _seed_resource_list(conn, STARTER_RESOURCES_BEGINNING, "resource_starter5_seeded", "D1")
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
     _seed_resource_list(conn, STARTER_RESOURCES_2, "resource_starter2_seeded")
+    _seed_brain_books(conn)
     _swap_active_listening_book(conn)
     _swap_active_listening_exercise(conn)
 
@@ -9293,6 +9338,12 @@ _STARTER_COVERS = {
     "atlas of the heart": "book-atlas-of-the-heart.jpg",
     "unwinding anxiety": "book-unwinding-anxiety.jpg",
     "emotional agility": "book-emotional-agility.jpg",
+    "the brain that changes itself": "book-brain-that-changes-itself.jpg",
+    "incognito": "book-incognito.jpg",
+    "livewired": "book-livewired.jpg",
+    "how emotions are made": "book-how-emotions-are-made.jpg",
+    "the power of habit": "book-power-of-habit.jpg",
+    "seven and a half lessons about the brain": "book-seven-half-lessons.jpg",
 }
 
 
