@@ -1,0 +1,19 @@
+{# The plain "Not ready to sign up yet?" band: our free little book, nothing else. Shown on the home page and on program pages with no books of their own. Only when FREE_BOOK_LIVE is on. #}
+{% if free_book_line_visible %}
+<style>
+.fbl{background:linear-gradient(#e3f1f4,#d6ebf0);padding:64px 20px;font-family:Inter,Arial,sans-serif}
+.fbl-in{max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:44px;flex-wrap:wrap;text-align:left}
+.fbl img{width:200px;height:auto;border-radius:6px;box-shadow:0 8px 22px rgba(10,49,80,.28);flex:0 0 auto}
+.fbl-t{flex:1 1 340px;max-width:640px}
+.fbl-k{font-size:1rem;letter-spacing:.18em;font-weight:700;color:#006c86;margin:0 0 8px}
+.fbl h2{border:0!important;font:italic clamp(36px,5vw,56px)/1.15 Georgia,'Times New Roman',serif;margin:0 0 14px;color:#0a3150}
+.fbl p{margin:0 0 24px;font-size:clamp(19px,2vw,24px);line-height:1.5;color:#1d3d4d}
+.fbl a.fbl-btn{display:inline-block;background:#007b8b;color:#fff!important;font-weight:700;letter-spacing:.04em;padding:18px 42px;font-size:1.15rem;border-radius:40px;text-decoration:none}
+.fbl a.fbl-btn:hover{background:#006c86}
+@media(max-width:600px){.fbl-in{text-align:center}.fbl img{width:150px}}
+</style>
+<section class="fbl" id="free-book"><div class="fbl-in">
+<img src="{{ url_for('static', filename='free-book-cover.svg') }}" alt="Cover of the free little book, The Curious Business of Being You">
+<div class="fbl-t"><div class="fbl-k">FREE LITTLE BOOK</div><h2>Not ready to sign up yet?</h2><p>Start here. <em>The Curious Business of Being You</em> is a short, friendly read on curiosity, relationships and the stories we carry. It's free, and there's nothing to sign up for.</p><a class="fbl-btn" href="{{ url_for('public_free_book') }}">READ THE FREE BOOK</a></div>
+</div></section>
+{% endif %}
