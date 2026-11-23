@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}The Curious Business of Being You — {{ public_brand }}{% endblock %}
+{% block meta_description %}A light-hearted little book about becoming more curious about the person you have been living with all your life: you. Free to read.{% endblock %}
+{% block content %}
+<style>
+.bk{color:#183b45;line-height:1.75}
+.bk-hero{background:linear-gradient(120deg,#0c4561,#007b8b);color:#fff;text-align:center;padding:64px 24px 54px}
+.bk-hero .k{font-size:.8rem;letter-spacing:.2em;font-weight:700;text-transform:uppercase;color:#bfe3ea}
+.bk-hero h1{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:400;color:#fff;font-size:clamp(2.2rem,5.2vw,3.5rem);line-height:1.15;margin:12px auto 14px;border:0}
+.bk-hero p{max-width:640px;margin:0 auto;font-family:Georgia,serif;font-size:clamp(1.1rem,1.7vw,1.3rem)}
+.bk-wrap{max-width:720px;margin:0 auto;padding:30px 22px 20px}
+.bk-preview{background:#fff3cd;border:1px solid #e0c36a;padding:12px 16px;margin:0 0 18px;font-family:Inter,Arial,sans-serif;font-size:.95rem}
+.bk-toc{font-family:Inter,Arial,sans-serif;background:#eef7f9;border:1px solid #bddde3;padding:14px 18px;margin:0 0 26px}
+.bk-toc b{display:block;margin-bottom:6px;color:#0c4561}
+.bk-toc a{display:block;color:#006c86;text-decoration:none;padding:2px 0;font-size:.95rem}
+.bk-toc a:hover{text-decoration:underline}
+.bk-actions{font-family:Inter,Arial,sans-serif;margin:0 0 6px}
+.bk-btn{display:inline-block;background:#007b8b;color:#fff!important;font-weight:600;font-size:.88rem;padding:8px 18px;border-radius:24px;text-decoration:none;border:0;cursor:pointer;font-family:inherit}
+.bk-body{font-family:Georgia,'Times New Roman',serif;font-size:1.14rem}
+.bk-body h1{font-style:italic;font-weight:400;color:#0c4561;font-size:clamp(1.7rem,3.4vw,2.2rem);line-height:1.25;margin:2.4em 0 .6em;padding-top:.6em;border-top:2px solid #d8e9ea;border-bottom:0}
+.bk-body section:first-child h1{margin-top:.4em;border-top:0}
+.bk-body h2{font-style:italic;font-weight:400;color:#006c86;font-size:1.35rem;margin:1.8em 0 .4em;border:0}
+.bk-body p{margin:0 0 1em}
+.bk-body ol{margin:0 0 1.2em 1.3em;padding:0}.bk-body li{margin:.4em 0}
+.bk-body blockquote{border-left:4px solid #bddde3;margin:1em 0;padding:.2em 1em;color:#33505c}
+.bk-end{font-family:Inter,Arial,sans-serif;font-size:.85rem;color:#5a6b75;border-top:1px solid #d8e9ea;margin-top:34px;padding-top:12px}
+.bk-cta{background:linear-gradient(135deg,#0a3150,#006c86);color:#fff;text-align:center;padding:40px 24px;margin-top:36px}
+.bk-cta h2{font-family:Georgia,serif;font-style:italic;font-weight:400;color:#fff;margin:0 0 8px;border:0}.bk-cta p{font-family:Georgia,serif;font-size:1.15rem;margin:0 0 18px}
+.bk-cta .bk-btn{background:#fff;color:#0c4561!important}
+@media print{.bk-hero,.bk-toc,.bk-actions,.bk-cta,.bk-preview,header,nav,footer,.site-footer{display:none!important}.bk-wrap{max-width:none;padding:0}.bk-body{font-size:12pt}.bk-body h1{page-break-before:always;border:0}.bk-body section:first-child h1{page-break-before:avoid}}
+</style>
+<div class="bk">
+<section class="bk-hero">
+  <div class="k">A little book to read</div>
+  <h1>The Curious Business of Being You</h1>
+  <p>An invitation to become a little more curious about the person you have been living with all your life: you.</p>
+</section>
+<div class="bk-wrap">
+  {% if preview_only %}<div class="bk-preview"><b>Only you can see this page right now.</b> It is not public yet. To make it public (and to show it on the Free Resources page, the website footer and the home page), add the setting <code>FREE_BOOK_LIVE</code> with the value <code>1</code> in Render&rsquo;s Environment tab.</div>{% endif %}
+  <div class="bk-actions"><button class="bk-btn" type="button" onclick="window.print()">Print or save as PDF</button></div>
+  <nav class="bk-toc" aria-label="Contents"><b>Contents</b>
+    <a href="#a-note-from-kent-and-pamela">A Note from Kent and Pamela</a>
+    <a href="#chapter-one">Ch. One · Welcome to the Mystery Called You</a>
+    <a href="#chapter-two-funny-how-we-do-that">Ch. Two · Funny How We Do That</a>
+    <a href="#chapter-three-the-stories-we-tell-ourselves">Ch. Three · The Stories We Tell Ourselves</a>
+    <a href="#chapter-four-who-pushed-my-buttons">Ch. Four · Who Pushed My Buttons?</a>
+    <a href="#chapter-five-the-people-who-helped-make-us">Ch. Five · The People Who Helped Make Us</a>
+    <a href="#chapter-six-permission-to-be-imperfect">Ch. Six · Permission to Be Imperfect</a>
+    <a href="#chapter-seven-what-if-theres-more">Ch. Seven · What If There's More?</a>
+  </nav>
+  <div class="bk-body">
+{% include '_free_book_body.html' %}
+  </div>
+  <div class="bk-end">This little book is for reflection and enjoyment. It is not a substitute for counseling or medical care.</div>
+</div>
+<section class="bk-cta">
+  <h2>Ready for More Than Reading?</h2>
+  <p>Our seminars give you a place to practice what you learn, with people who care.</p>
+  <a class="bk-btn" href="{{ url_for('public_programs') }}">EXPLORE THE PROGRAMS</a>
+</section>
+</div>
+{% endblock %}

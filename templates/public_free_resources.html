@@ -37,8 +37,18 @@
 </section>
 <div class="fr-body">
   <div class="fr-note">These resources are for learning and encouragement. They are not a substitute for counseling or medical care. If you are in crisis, call or text <b>988</b> (the Suicide &amp; Crisis Lifeline) anytime.</div>
+  {% if book_live %}
+  <div class="fr-card" style="margin-top:6px;border-top:4px solid #007b8b">
+    <div class="fr-item">
+      <div class="by" style="text-transform:uppercase;letter-spacing:.12em;font-size:.75rem;color:#007b8b;font-weight:700">Our free little book</div>
+      <div class="t">The Curious Business of Being You</div>
+      <p>A light-hearted invitation to become a little more curious about the person you have been living with all your life: you. Seven short chapters, with a few questions to wonder about at the end of each.</p>
+      <a class="fr-btn" href="{{ url_for('public_free_book') }}">Read it free</a>
+    </div>
+  </div>
+  {% endif %}
   {% if items %}
-  <div class="fr-card" style="margin-top:6px">
+  <div class="fr-card" style="margin-top:14px">
     {% for r in items %}
     <div class="fr-item">
       <div class="t">{{ r.title }}{% if r.author %} <span class="by">&middot; {{ r.author }}</span>{% endif %}</div>
@@ -47,7 +57,7 @@
     </div>
     {% endfor %}
   </div>
-  {% else %}
+  {% elif not book_live %}
     <div class="fr-card"><p style="padding:14px 0;font-family:Georgia,serif">We are gathering our favorites and will post them here soon.</p></div>
   {% endif %}
 </div>
