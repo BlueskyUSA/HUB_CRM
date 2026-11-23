@@ -27,7 +27,7 @@
 .bk-cta{background:linear-gradient(135deg,#0a3150,#006c86);color:#fff;text-align:center;padding:40px 24px;margin-top:36px}
 .bk-cta h2{font-family:Georgia,serif;font-style:italic;font-weight:400;color:#fff;margin:0 0 8px;border:0}.bk-cta p{font-family:Georgia,serif;font-size:1.15rem;margin:0 0 18px}
 .bk-cta .bk-btn{background:#fff;color:#0c4561!important}
-@media print{.bk-hero,.bk-toc,.bk-actions,.bk-cta,.bk-preview,header,nav,footer,.site-footer{display:none!important}.bk-wrap{max-width:none;padding:0}.bk-body{font-size:12pt}.bk-body h1{page-break-before:always;border:0}.bk-body section:first-child h1{page-break-before:avoid}}
+@media print{.bk-hero,.bk-toc,.bk-actions,.bk-cta,.bk-preview,header,nav,footer,.site-footer{display:none!important}.bk-cover{display:block!important}.bk-wrap{max-width:none;padding:0}.bk-body{font-size:12pt}.bk-body h1{page-break-before:always;border:0}.bk-body section:first-child h1{page-break-before:avoid}}
 </style>
 <div class="bk">
 <section class="bk-hero">
@@ -37,6 +37,7 @@
 </section>
 <div class="bk-wrap">
   {% if preview_only %}<div class="bk-preview"><b>Only you can see this page right now.</b> It is not public yet. To make it public (and to show it on the Free Resources page, the website footer and the home page), add the setting <code>FREE_BOOK_LIVE</code> with the value <code>1</code> in Render&rsquo;s Environment tab.</div>{% endif %}
+  <div style="text-align:center;margin:0 0 20px"><img src="{{ url_for('static', filename='free-book-cover.svg') }}" alt="Cover of The Curious Business of Being You" style="width:100%;max-width:300px;height:auto;box-shadow:0 6px 22px rgba(12,69,97,.25)"></div>
   <div class="bk-actions"><button class="bk-btn" type="button" onclick="window.print()">Print or save as PDF</button></div>
   <nav class="bk-toc" aria-label="Contents"><b>Contents</b>
     <a href="#a-note-from-kent-and-pamela">A Note from Kent and Pamela</a>

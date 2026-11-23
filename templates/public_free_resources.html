@@ -39,11 +39,14 @@
   <div class="fr-note">These resources are for learning and encouragement. They are not a substitute for counseling or medical care. If you are in crisis, call or text <b>988</b> (the Suicide &amp; Crisis Lifeline) anytime.</div>
   {% if book_live %}
   <div class="fr-card" style="margin-top:6px;border-top:4px solid #007b8b">
-    <div class="fr-item">
+    <div class="fr-item" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <img src="{{ url_for('static', filename='free-book-cover.svg') }}" alt="Cover of The Curious Business of Being You" style="width:110px;height:auto;box-shadow:0 3px 10px rgba(12,69,97,.25)">
+      <div style="flex:1;min-width:220px">
       <div class="by" style="text-transform:uppercase;letter-spacing:.12em;font-size:.75rem;color:#007b8b;font-weight:700">Our free little book</div>
       <div class="t">The Curious Business of Being You</div>
       <p>A light-hearted invitation to become a little more curious about the person you have been living with all your life: you. Seven short chapters, with a few questions to wonder about at the end of each.</p>
       <a class="fr-btn" href="{{ url_for('public_free_book') }}">Read it free</a>
+      </div>
     </div>
   </div>
   {% endif %}
