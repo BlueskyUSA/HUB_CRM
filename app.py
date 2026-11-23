@@ -8688,7 +8688,25 @@ STARTER_RESOURCES_2 = [
 ]
 
 
+# Four books for The Beginning (program D1), added once like the others.
+STARTER_RESOURCES_BEGINNING = [
+    ("Book", "The Stories We Live By", "Timothy Keller and Michael Keller",
+     "https://www.amazon.com/dp/0310371295",
+     "A look at seven stories our culture tells about identity, freedom, happiness and more, and why they can leave us feeling hollow, written from a Christian point of view. Why it fits: Helps us notice the stories we absorbed growing up."),
+    ("Book", "Atlas of the Heart", "Bren\u00e9 Brown",
+     "https://www.amazon.com/dp/0399592555",
+     "A guided tour of 87 emotions and experiences, giving us language for what we feel and how we connect. Why it fits: Better words for our feelings help us understand where they come from."),
+    ("Book", "Unwinding Anxiety", "Judson Brewer",
+     "https://www.amazon.com/dp/059342140X",
+     "A neuroscientist\u2019s practical look at how worry turns into a habit, with simple, brain-based exercises. Why it fits: Understanding our habits of mind, and how they began."),
+    ("Book", "Emotional Agility", "Susan David",
+     "https://www.amazon.com/dp/1592409490",
+     "A practical, research-based guide to meeting our emotions with openness and acting on what matters most to us. Why it fits: Helps us step out of old patterns and choose how we respond."),
+]
+
+
 def _seed_starter_resources(conn):
+    _seed_resource_list(conn, STARTER_RESOURCES_BEGINNING, "resource_starter5_seeded", "D1")
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
     _seed_resource_list(conn, STARTER_RESOURCES_2, "resource_starter2_seeded")
     _swap_active_listening_book(conn)
@@ -8729,11 +8747,11 @@ def _swap_active_listening_book(conn):
     conn.commit()
 
 
-def _seed_resource_list(conn, items, marker):
+def _seed_resource_list(conn, items, marker, program_code="D4"):
     conn.execute(f"CREATE TABLE IF NOT EXISTS {marker} (done INTEGER)")
     if conn.execute(f"SELECT 1 FROM {marker}").fetchone():
         return
-    prog = conn.execute("SELECT id FROM programs WHERE code = ?", ("D4",)).fetchone()
+    prog = conn.execute("SELECT id FROM programs WHERE code = ?", (program_code,)).fetchone()
     for kind, title, author, url, note in items:
         if conn.execute("SELECT 1 FROM program_resources WHERE LOWER(title) = LOWER(?)", (title,)).fetchone():
             continue
@@ -9264,6 +9282,10 @@ _STARTER_COVERS = {
     "hold me tight": "book-hold-me-tight.jpg",
     "us: getting past you & me": "book-us.jpg",
     "the relationship cure": "book-relationship-cure.jpg",
+    "the stories we live by": "book-stories-we-live-by.jpg",
+    "atlas of the heart": "book-atlas-of-the-heart.jpg",
+    "unwinding anxiety": "book-unwinding-anxiety.jpg",
+    "emotional agility": "book-emotional-agility.jpg",
 }
 
 
