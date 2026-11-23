@@ -25,18 +25,23 @@
 .fr-item p{font-family:Georgia,'Times New Roman',serif;font-size:1.08rem;color:#1d3d4d;margin:8px 0 0;white-space:pre-line}
 .fr-btn{display:inline-block;background:#007b8b;color:#fff!important;font-family:Inter,Arial,sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.03em;padding:9px 20px;border-radius:24px;text-decoration:none;margin-top:12px}
 .fr-btn:hover{background:#006c86}
+.fr-topics{text-align:center;margin:0 0 30px;font-family:Inter,Arial,sans-serif}
+.fr-topics .lab{font-size:.8rem;letter-spacing:.18em;font-weight:700;text-transform:uppercase;color:#456575;margin-bottom:10px}
+.fr-topic{display:inline-block;background:#fff;color:#0c4561!important;border:2px solid #007b8b;border-radius:40px;padding:14px 34px;margin:4px 6px;text-decoration:none;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:1.25rem;box-shadow:0 2px 8px rgba(12,69,97,.12);transition:background .15s,color .15s}
+.fr-topic:hover{background:#007b8b;color:#fff!important}
 .fr-cta{background:linear-gradient(135deg,#0a3150,#006c86);color:#fff;text-align:center;padding:64px 24px;margin-top:44px}
 .fr-cta h2{color:#fff;margin:0 0 12px;font-size:clamp(34px,5vw,54px);line-height:1.15}.fr-cta p{font-family:Georgia,serif;font-size:clamp(20px,2.2vw,26px);margin:0 auto 26px;max-width:760px;line-height:1.45}
 .fr-cta .fr-btn{background:#fff;color:#0c4561!important;font-size:1.15rem;font-weight:700;letter-spacing:.04em;padding:18px 42px;border-radius:40px}
 </style>
 <div class="fr">
 <section class="fr-hero">
-  <div class="k">Take what helps</div>
-  <h1>Recommended Resources</h1>
+  <div class="k">Recommended Resources</div>
+  <h1>At {{ public_brand|bang }} we&rsquo;re still discovering too!</h1>
   <p>Books, podcasts and websites we recommend on relationships and personal growth. Some are free; books are easy to find at your library or bookstore.</p>
 </section>
 <div class="fr-body">
   <div class="fr-note">These resources are for learning and encouragement. They are not a substitute for counseling or medical care. If you are in crisis, call or text <b>988</b> (the Suicide &amp; Crisis Lifeline) anytime.</div>
+  {% if brain_count %}<div class="fr-topics"><div class="lab">Explore a topic</div><a class="fr-topic" href="{{ url_for('public_brain_resources') }}">The Remarkable Human Brain</a></div>{% endif %}
   {% with gal_items=items, gal_book=book_live %}{% include '_resource_gallery.html' %}{% endwith %}
 </div>
 <section class="fr-cta">
