@@ -2166,6 +2166,12 @@ def inject_free_resources_visible():
 
 
 @app.context_processor
+def inject_free_book_line_visible():
+    """The 'Not ready to sign up yet? Start with our free little book' line on program pages follows FREE_BOOK_LIVE."""
+    return {"free_book_line_visible": _free_book_live()}
+
+
+@app.context_processor
 def inject_us_states():
     """Makes the state dropdown's options available to every template
     (internal CRM pages and the public forms alike) without having to pass
