@@ -1,3 +1,0 @@
-{# Slim "Back" bar above a page's own header. Goes to the page the visitor came from, or Home if they came straight here. Not shown on the Home page. #}
-{% if request.endpoint != 'public_home' %}<style>.bkbar{background:#0a3150;padding:7px 16px;text-align:left}.bkbar a{display:inline-block;border:1px solid rgba(255,255,255,.75);color:#fff!important;font:600 .85rem Inter,Arial,sans-serif;letter-spacing:.02em;padding:5px 14px;border-radius:22px;text-decoration:none;white-space:nowrap}.bkbar a:hover{background:#fff;color:#0c4561!important}@media print{.bkbar{display:none!important}}</style>
-<div class="bkbar"><a href="{{ url_for('public_home') }}" data-back>&larr; Back</a></div>{% endif %}
