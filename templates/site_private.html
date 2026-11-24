@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{ public_brand }} — opening soon</title>
+<style>
+html,body{margin:0;min-height:100%}
+body{display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(135deg,#0a3150,#007b8b);color:#fff;font-family:Georgia,'Times New Roman',serif;text-align:center}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 20px}
+h1{font:italic 400 clamp(2.6rem,7vw,4.6rem)/1.1 Georgia,'Times New Roman',serif;margin:0 0 6px}
+.tag{font:italic 1.2rem Georgia,serif;opacity:.9;margin:0 0 28px}
+p.msg{max-width:580px;font-size:1.2rem;line-height:1.7;margin:0 0 26px;white-space:pre-line}
+.box{background:#fff;color:#16384a;border-radius:14px;padding:24px 26px;max-width:480px;width:100%;box-sizing:border-box;text-align:left;box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.box h2{margin:0 0 6px;font:italic 400 1.5rem Georgia,serif;color:#0c4561;text-align:center}
+.box p{margin:0 0 14px;font:.98rem/1.5 Arial,sans-serif;text-align:center;color:#3c5868}
+.box label{display:block;font:600 .82rem Arial,sans-serif;margin:10px 0 3px;color:#0c4561}
+.box input,.box select,.box textarea{width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid #b8ccd6;border-radius:8px;font:1rem Arial,sans-serif}
+.row{display:flex;gap:10px}.row>div{flex:1}
+.box button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:30px;background:#007b8b;color:#fff;font:700 1rem Arial,sans-serif;cursor:pointer}
+.box button:hover{background:#0c4561}
+.err{background:#fdecea;color:#8a1f11;border-radius:8px;padding:9px 12px;margin-bottom:8px;font:.95rem Arial,sans-serif}
+.thanks{font-size:1.25rem;line-height:1.7;max-width:560px}
+footer{padding:18px;font:.85rem Arial,sans-serif;opacity:.75}
+footer a{color:#fff}
+</style></head>
+<body><main>
+<h1>{{ public_brand|bang }}</h1>
+<div class="tag">A Journey of Curiosity and Possibility</div>
+{% if thanks %}
+<p class="thanks">Thank you! We&rsquo;ve received your note and will be in touch soon.<br>We&rsquo;re glad you&rsquo;re curious.</p>
+{% else %}
+{% if message %}<p class="msg">{{ message }}</p>
+{% else %}<p class="msg">Thank you for your interest in {{ public_brand|bang }}!
+
+We&rsquo;re getting ready to open, and we&rsquo;re sharing our site with a small circle of friends first. If you received an invitation, please open the link we sent you.</p>{% endif %}
+<form class="box" method="post" action="{{ url_for('invite_request') }}">
+  <h2>Would you like to see more?</h2>
+  <p>We&rsquo;d love to hear from you. Tell us a little about yourself and we&rsquo;ll send you an invitation.</p>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  {{ bot_field() }}
+  <div style="position:absolute;left:-9999px" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
+  <div class="row"><div><label>First name</label><input name="first_name" required maxlength="60" value="{{ form.first_name if form else '' }}" autocomplete="given-name"></div>
+  <div><label>Last name</label><input name="last_name" maxlength="60" value="{{ form.last_name if form else '' }}" autocomplete="family-name"></div></div>
+  <label>Email</label><input type="email" name="email" required maxlength="120" value="{{ form.email if form else '' }}" autocomplete="email">
+  <label>Cell phone <span style="font-weight:400">(optional)</span></label><input type="tel" name="phone" maxlength="30" value="{{ form.phone if form else '' }}" autocomplete="tel">
+  <label>Best way to reach you</label>
+  <select name="way"><option value="email">Email</option><option value="text">Text</option><option value="call">Call</option></select>
+  <label>Anything you&rsquo;d like us to know? <span style="font-weight:400">(optional)</span></label><textarea name="message" rows="2" maxlength="500">{{ form.message if form else '' }}</textarea>
+  <button type="submit">Send</button>
+</form>
+{% endif %}
+</main>
+<footer><a href="{{ url_for('crm.dashboard') }}">Team Login</a></footer>
+</body></html>

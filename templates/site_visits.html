@@ -5,6 +5,26 @@
 <p class="muted">Who is looking at the public website, with no names and no logins. It counts visits to the public pages only. Team members who are logged in, search-engine robots and browsers set to &ldquo;Do Not Track&rdquo; are not counted. No IP addresses are kept.
 To see who clicked a link <em>you</em> sent, make a personal link in the box further down.</p>
 
+<div class="card" id="private" style="border-left:6px solid {{ '#c0392b' if private_on else '#2e8b57' }}">
+  <h3 style="margin-top:0">Private preview: <span style="color:{{ '#c0392b' if private_on else '#2e8b57' }}">{{ 'ON' if private_on else 'OFF' }}</span></h3>
+  {% if private_on %}
+  <p style="margin-top:0">The public website is <b>locked</b>. Visitors see a &ldquo;coming soon&rdquo; page. Only people who opened one of your personal links below, and team members who are logged in to the Hub, can see the pages. Search engines are asked not to list the site.
+  Pages people reach from a private emailed link (questionnaires, profile links, feedback, unsubscribe) still work.</p>
+  {% else %}
+  <p style="margin-top:0">The public website is <b>open to everyone</b>. Turn this on to lock it until you are ready to go public.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('.site_private_set') }}" style="display:inline">
+    <input type="hidden" name="mode" value="{{ 'off' if private_on else 'on' }}">
+    <button class="btn {% if private_on %}danger{% endif %}" type="submit" onclick="return confirm('{{ 'Open the public website to everyone?' if private_on else 'Lock the public website? Only invited people and logged-in team members will see it.' }}');">{{ 'Open the site to everyone' if private_on else 'Lock the site (private preview)' }}</button>
+  </form>
+  <details style="margin-top:12px"><summary class="muted" style="cursor:pointer">Message people see on the coming-soon page</summary>
+    <form method="post" action="{{ url_for('.site_private_message') }}" style="margin-top:8px;max-width:560px">
+      <textarea name="message" rows="4" maxlength="600" style="width:100%" placeholder="Leave blank to use the standard message.">{{ private_message }}</textarea>
+      <button class="btn secondary" type="submit" style="margin-top:6px">Save message</button>
+    </form>
+  </details>
+</div>
+
 <div style="display:flex;gap:8px;margin-bottom:14px">
   {% for n in (7, 30, 90) %}<a class="btn {% if days != n %}secondary{% endif %}" href="?days={{ n }}">Last {{ n }} days</a>{% endfor %}
 </div>
@@ -48,10 +68,26 @@ To see who clicked a link <em>you</em> sent, make a personal link in the box fur
   </div>
 </div>
 
+{% if invite_requests %}
+<div class="card" id="requests">
+  <h3 style="margin-top:0">People asking for an invitation <span class="muted" style="font-weight:400;font-size:.85rem">(from the coming-soon page; they are also in Contacts as Interested Party)</span></h3>
+  <table class="stack" style="width:100%">
+    <tr><th>Name</th><th>Email</th><th>Cell</th><th>Note</th><th></th></tr>
+    {% for r in invite_requests %}
+    <tr><td data-label="Name"><a href="{{ url_for('.contact_detail', contact_id=r.id) }}">{{ r.first_name }} {{ r.last_name or '' }}</a></td>
+      <td data-label="Email">{{ r.email }}</td><td data-label="Cell">{{ r.cell_phone or '—' }}</td>
+      <td data-label="Note" class="muted" style="font-size:.85rem">{{ (r.notes or '')[:160] }}</td>
+      <td><form method="post" action="{{ url_for('.site_visit_link_add') }}"><input type="hidden" name="label" value="{{ r.first_name }} {{ r.last_name or '' }}"><input type="hidden" name="contact_email" value="{{ r.email }}"><input type="hidden" name="target" value="/"><button class="btn secondary" type="submit" style="padding:2px 8px">Make invitation link</button></form></td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
 <div class="card" id="links">
-  <h3 style="margin-top:0">Personal links</h3>
+  <h3 style="margin-top:0">Personal links <span class="muted" style="font-weight:400;font-size:.85rem">(also your invitations while the site is private)</span></h3>
   <p class="muted" style="margin-top:0">Make a link for one person or group, paste it into your own email or text, and see here whether they opened it and which pages they looked at.
   The link takes them to the page you pick. It shows that <em>the link</em> was opened, not who was holding the phone, so a forwarded link or a mail program that opens links by itself can look like a visit.
+  While the site is private, opening one of these links is what lets someone in: it works for 90 days on their device, and turning the link off ends it.
   Tell people in your privacy statement that the site counts visits.</p>
   <form method="post" action="{{ url_for('.site_visit_link_add') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
     <div class="field" style="margin:0"><label>Who is it for?</label><input name="label" maxlength="80" placeholder="e.g. David and Brenda" required></div>
