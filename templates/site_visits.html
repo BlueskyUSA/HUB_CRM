@@ -1,0 +1,79 @@
+{% extends "crm_base.html" %}
+{% block title %}Site Visits — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Site Visits <span class="muted" style="font-size:1rem">(Owner only)</span></h1>
+<p class="muted">Who is looking at the public website, with no names and no logins. It counts visits to the public pages only. Team members who are logged in, search-engine robots and browsers set to &ldquo;Do Not Track&rdquo; are not counted. No IP addresses are kept.
+To see who clicked a link <em>you</em> sent, make a personal link in the box further down.</p>
+
+<div style="display:flex;gap:8px;margin-bottom:14px">
+  {% for n in (7, 30, 90) %}<a class="btn {% if days != n %}secondary{% endif %}" href="?days={{ n }}">Last {{ n }} days</a>{% endfor %}
+</div>
+
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+  <div class="card" style="flex:1;min-width:160px;text-align:center;margin:0"><div style="font-size:2rem;font-weight:700">{{ visitors }}</div><div class="muted">visitors</div></div>
+  <div class="card" style="flex:1;min-width:160px;text-align:center;margin:0"><div style="font-size:2rem;font-weight:700">{{ views }}</div><div class="muted">pages viewed</div></div>
+  <div class="card" style="flex:1;min-width:160px;text-align:center;margin:0"><div style="font-size:2rem;font-weight:700">{{ link_visitors }}</div><div class="muted">came through a personal link</div></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Each day</h3>
+  {% if views == 0 %}<p class="muted" style="margin:0">No visits yet in this period. Counting starts the moment this update goes live.</p>{% else %}
+  <table class="stack" style="width:100%">
+    <tr><th style="width:110px">Day</th><th>Pages viewed</th><th style="width:90px">Visitors</th></tr>
+    {% for d in daily|reverse %}{% if d.views or loop.index <= 14 %}
+    <tr><td data-label="Day">{{ d.day }}</td>
+      <td data-label="Pages viewed"><div style="display:flex;align-items:center;gap:8px"><div style="background:#007b8b;height:12px;border-radius:6px;width:{{ (d.views * 100 / top_n)|round|int }}%;min-width:{{ 2 if d.views else 0 }}px"></div><span>{{ d.views }}</span></div></td>
+      <td data-label="Visitors">{{ d.visitors }}</td></tr>
+    {% endif %}{% endfor %}
+  </table>{% endif %}
+</div>
+
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <div class="card" style="flex:2;min-width:300px;margin-top:0">
+    <h3 style="margin-top:0">Pages people look at</h3>
+    <table class="stack" style="width:100%"><tr><th>Page</th><th style="width:80px">Views</th><th style="width:90px">Visitors</th></tr>
+      {% for p in pages %}<tr><td>{{ p.name }}</td><td data-label="Views">{{ p.views }}</td><td data-label="Visitors">{{ p.visitors }}</td></tr>
+      {% else %}<tr><td colspan="3" class="muted">Nothing yet.</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div style="flex:1;min-width:240px">
+    <div class="card" style="margin-top:0">
+      <h3 style="margin-top:0">Where they came from</h3>
+      <table class="stack" style="width:100%">{% for s in sources %}<tr><td>{{ s.name }}</td><td style="width:60px;text-align:right">{{ s.visitors }}</td></tr>{% else %}<tr><td class="muted">Nothing yet.</td></tr>{% endfor %}</table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Device</h3>
+      <table class="stack" style="width:100%">{% for s in devices %}<tr><td>{{ s.name }}</td><td style="width:60px;text-align:right">{{ s.visitors }}</td></tr>{% else %}<tr><td class="muted">Nothing yet.</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="links">
+  <h3 style="margin-top:0">Personal links</h3>
+  <p class="muted" style="margin-top:0">Make a link for one person or group, paste it into your own email or text, and see here whether they opened it and which pages they looked at.
+  The link takes them to the page you pick. It shows that <em>the link</em> was opened, not who was holding the phone, so a forwarded link or a mail program that opens links by itself can look like a visit.
+  Tell people in your privacy statement that the site counts visits.</p>
+  <form method="post" action="{{ url_for('.site_visit_link_add') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+    <div class="field" style="margin:0"><label>Who is it for?</label><input name="label" maxlength="80" placeholder="e.g. David and Brenda" required></div>
+    <div class="field" style="margin:0"><label>Send them to</label>
+      <select name="target">{% for path, name in targets %}<option value="{{ path }}">{{ name }}</option>{% endfor %}</select></div>
+    <div class="field" style="margin:0"><label>Contact&rsquo;s email <span class="muted">(optional)</span></label><input type="email" name="contact_email" placeholder="to link to a contact"></div>
+    <button class="btn" type="submit">Make link</button>
+  </form>
+  {% if links %}
+  <table class="stack" style="width:100%">
+    <tr><th>For</th><th>Link</th><th style="width:70px">Opened</th><th style="width:80px">Pages seen</th><th>Last visit</th><th></th></tr>
+    {% for l in links %}
+    <tr {% if not l.row.active %}style="opacity:.55"{% endif %}>
+      <td data-label="For"><b>{{ l.row.label }}</b>{% if l.row.contact_name %}<br><span class="muted"><a href="{{ url_for('.contact_detail', contact_id=l.row.contact_id) }}">{{ l.row.contact_name }}</a></span>{% endif %}<br><span class="muted">&rarr; {{ l.target_name }}</span></td>
+      <td data-label="Link"><input readonly value="{{ l.url }}" style="width:100%;min-width:210px" onclick="this.select()"></td>
+      <td data-label="Opened">{{ l.opens }}</td>
+      <td data-label="Pages seen">{{ l.views }}{% if l.pages %}<div class="muted" style="font-size:.8rem">{% for p in l.pages %}{{ p.name }}{% if p.n > 1 %} &times;{{ p.n }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}</td>
+      <td data-label="Last visit">{{ l.last_at or '—' }}</td>
+      <td><form method="post" action="{{ url_for('.site_visit_link_toggle', link_id=l.row.id) }}"><button class="btn secondary" type="submit" style="padding:2px 8px">{{ 'Turn off' if l.row.active else 'Turn on' }}</button></form></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted" style="margin-bottom:0">No personal links yet.</p>{% endif %}
+</div>
+{% endblock %}
