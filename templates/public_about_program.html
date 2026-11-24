@@ -57,6 +57,13 @@ section.pg-hero{position:relative}
 .ab-intro{background:#fff;text-align:center;padding:64px 24px 56px;font-family:Georgia,'Times New Roman',serif}
 .ab-intro h1{margin:0 auto 22px;max-width:1000px;font:italic 400 clamp(2.1rem,4.4vw,3.6rem)/1.15 Georgia,'Times New Roman',serif;color:#006c86;border:0!important;text-wrap:balance}
 .ab-intro p{max-width:820px;margin:0 auto 28px;font-size:clamp(1.15rem,1.8vw,1.4rem);line-height:1.7;color:#1d3d4d}
+.ab-res{background:#fbf7ee;padding:60px 24px 58px;text-align:center;font-family:Georgia,'Times New Roman',serif}
+.ab-res .k{font:700 .85rem Inter,Arial,sans-serif;letter-spacing:.18em;color:#006c86;margin-bottom:8px}
+.ab-res h2{margin:0 0 14px;font:italic 400 clamp(1.9rem,3.6vw,3rem)/1.15 Georgia,'Times New Roman',serif;color:#0c4561;border:0!important}
+.ab-res p{max-width:700px;margin:0 auto 28px;font-size:clamp(1.05rem,1.5vw,1.25rem);line-height:1.7;color:#1d3d4d}
+.ab-res .covers{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;margin:0 0 30px}
+.ab-res .covers a{display:block;transition:transform .18s}.ab-res .covers a:hover{transform:translateY(-5px)}
+.ab-res .covers img{display:block;width:112px;height:auto;border-radius:4px;box-shadow:0 8px 20px rgba(12,69,97,.28)}
 .ab-btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .pg .ab-btns .btn{margin:0}
 .ab-about{background:#eaf5f7;padding:64px 24px 60px;font-family:Georgia,'Times New Roman',serif;text-align:center}
@@ -77,6 +84,15 @@ section.pg-hero{position:relative}
   <p>{{ public_brand|bang }} was founded with a vision to give people a guided, safe, and honest space to look at their lives &mdash; where they&rsquo;ve been, where they are, and where they&rsquo;re headed &mdash; and to help couples build stronger, healthier long term-relationships. Our trainings are experiential, small-group based, and led by a seasoned team of trained facilitators and assistants who&rsquo;ve walked the path themselves.</p>
   <p>Our personal-growth seminars move through three stages &mdash; The Beginning, Awakening, and Vision &mdash; each a three-day experience that builds on the one before and is taken in sequence. The Art of Us is a fun, challenging three-day seminar for couples (or committed relationships) and stands on its own, open to anyone. There is no prerequisite for The Art of Us or The Beginning, though many people who attend The Art of Us want additional opportunities to explore the mastery of successful relationships.</p>
   <div class="ab-btns"><a class="btn" href="{{ url_for('public_meet_team') }}">MEET THE TEAM</a><a class="btn" href="{{ url_for('public_our_story') }}">OUR STORY, OUR MISSION</a>{% if stories_visible %}<a class="btn" href="{{ url_for('public_stories') }}">IN THEIR OWN WORDS</a>{% endif %}<a class="btn" href="{{ url_for('public_register') }}#interested">REGISTER</a><a class="btn" href="{{ url_for('public_sponsor') }}">SPONSOR A FRIEND</a><a class="btn" href="{{ url_for('public_finances') }}">FINANCES</a><a class="btn" href="{{ url_for('public_donate') }}">DONATE</a></div>
+</section>
+<section class="ab-res">
+  <div class="k">RECOMMENDED RESOURCES</div>
+  <h2>At {{ public_brand|bang }} we&rsquo;re still discovering too!</h2>
+  <p>Books and ideas we&rsquo;ve found helpful on relationships and personal growth, picked for curious people. Some are free; all are worth a look.</p>
+  <div class="covers">
+    {% for f, t in [('book-hold-me-tight.jpg','Hold Me Tight'),('book-atlas-of-the-heart.jpg','Atlas of the Heart'),('book-brain-that-changes-itself.jpg','The Brain That Changes Itself'),('book-emotional-agility.jpg','Emotional Agility')] %}<a href="{{ url_for('public_free_resources') }}" tabindex="-1" aria-hidden="true"><img src="{{ url_for('static', filename=f) }}" alt="Cover of {{ t }}" loading="lazy"></a>{% endfor %}
+  </div>
+  <div class="ab-btns"><a class="btn" href="{{ url_for('public_free_resources') }}">EXPLORE RECOMMENDED RESOURCES</a></div>
 </section>
 <section class="ab-intro">
   <h1>Examine your past. Live your present. Build your future.</h1>
