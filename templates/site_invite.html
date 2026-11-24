@@ -1,0 +1,48 @@
+{% extends "crm_base.html" %}
+{% block title %}Invite to the website — {{ program_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('.contact_detail', contact_id=contact.id) }}">&larr; Back to {{ contact.full_name }}</a></p>
+<h1>Invite {{ contact.full_name }} to the website</h1>
+{% if not private_on %}<p class="muted">The site is open to everyone right now, so an invitation isn&rsquo;t needed. You can still send one.</p>{% endif %}
+
+<div class="card">
+{% if st.staff %}
+  <h3 style="margin-top:0">Already has a Hub login</h3>
+  <p>{{ contact.first_name }} has a Hub login ({{ st.staff.role }}{{ '' if st.staff.active else ', turned off' }}). Anyone logged in to the Hub already sees the whole website, so <b>no invitation is needed</b>.</p>
+{% elif not st.email %}
+  <h3 style="margin-top:0">No email address</h3>
+  <p>Add an email address to this contact first.</p>
+{% elif st.blocked %}
+  <h3 style="margin-top:0">Do not email</h3>
+  <p>This person asked not to be emailed, so the Hub won&rsquo;t send an invitation.</p>
+{% else %}
+  {% if st.link %}
+  <h3 style="margin-top:0">Already invited</h3>
+  <p>{{ contact.first_name }} has a personal link, made {{ st.link.created_at }}. Sending again uses the <b>same link</b>, so their visits stay under one name.</p>
+  <p style="word-break:break-all"><code>{{ link_url }}</code></p>
+  {% else %}
+  <h3 style="margin-top:0">Not invited yet</h3>
+  <p>The Hub will make a personal link for {{ contact.first_name }} and {{ 'email it to ' ~ st.email if live else 'show you a message to copy' }}.</p>
+  {% endif %}
+  {% if not live %}<p class="muted">Letter sending is switched off in Render, so the Hub won&rsquo;t email this. You&rsquo;ll get a message to copy into your own email or text.</p>{% endif %}
+  <form method="post" action="{{ url_for('.site_invitation_send', contact_id=contact.id) }}">
+    <button class="btn" type="submit">{{ ('Send the invitation again' if st.link else 'Send invitation') if live else ('Show the message again' if st.link else 'Make link and show message') }}</button>
+  </form>
+  <p class="muted" style="font-size:.85rem">The wording is on the Correspondence page (Contacts &rarr; Invitation to the private website preview).</p>
+{% endif %}
+</div>
+
+{% if paste %}
+<div class="card">
+  <h3 style="margin-top:0">Message to copy</h3>
+  <p class="muted" style="margin-top:0">Subject: {{ paste.subject }}</p>
+  <textarea readonly rows="12" style="width:100%" onclick="this.select()">{{ paste.text }}</textarea>
+</div>
+{% endif %}
+
+{% if sent %}
+<div class="card"><h3 style="margin-top:0">Invitations sent</h3>
+  {% for m in sent %}<div>{{ m.sent_at }} &mdash; {{ m.subject }}</div>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

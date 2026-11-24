@@ -239,6 +239,14 @@
   {% endif %}
 </div>
 
+{% if session.is_owner %}
+<div class="card">
+  <h3 style="margin-top:0">Website invitation</h3>
+  <p class="muted" style="margin-top:0">Invite {{ contact.full_name }} to see the website while it is private. People who already have a Hub login aren&rsquo;t sent one.</p>
+  <a class="btn secondary" href="{{ url_for('.site_invitation', contact_id=contact.id) }}">Invite to the website</a>
+</div>
+{% endif %}
+
 <div class="card">
   <h3 style="margin-top:0">Excitement email</h3>
   <p class="muted" style="margin-top:0">
