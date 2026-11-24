@@ -11,11 +11,15 @@ html{scroll-padding-top:66px}
 .sn-links a{opacity:.92;white-space:nowrap}.sn-links a:hover{opacity:1;text-decoration:underline}
 .sn-btn{background:#fff;color:#0c4561!important;font-weight:700;font-size:.85rem;letter-spacing:.03em;padding:9px 16px;border-radius:22px;white-space:nowrap}
 .sn-right{display:flex;align-items:center;gap:10px}
+.sn-back{border:1px solid rgba(255,255,255,.7);color:#fff!important;font-weight:600;font-size:.85rem;padding:8px 14px;border-radius:22px;white-space:nowrap}.sn-back:hover{background:#fff;color:#0c4561!important}
+@media(max-width:520px){.sn-back .sn-bx{display:none}.sn-back{padding:8px 12px}}
 .sn-menu{background:none;border:1px solid rgba(255,255,255,.6);color:#fff;border-radius:6px;padding:7px 12px;font:600 .9rem Inter,Arial,sans-serif;cursor:pointer}
 .sn-panel{display:none;background:#0c4561;border-top:1px solid rgba(255,255,255,.2);padding:6px 18px 14px}
 .sn-panel.open{display:block}
 .sn-panel a{display:block;padding:12px 4px;font-size:1.05rem;border-bottom:1px solid rgba(255,255,255,.12)}
-@media (min-width:900px){.sn-links{display:flex}.sn-menu,.sn-panel{display:none!important}}
+.sn-team{display:none;font-size:.85rem;opacity:.85;white-space:nowrap}.sn-team:hover{opacity:1;text-decoration:underline}
+@media (min-width:900px){.sn-links{display:flex}.sn-team{display:inline}.sn-menu,.sn-panel{display:none!important}}
+@media (min-width:900px) and (max-width:1199px){.sn-links{gap:13px;font-size:.84rem}.sn-in{gap:8px;padding:9px 12px}.sn-right{gap:8px}.sn-btn{padding:8px 12px;font-size:.8rem}.sn-back{padding:7px 11px}.sn-back .sn-bx{display:none}}
 </style>
 <div class="sn" id="sn" aria-label="Site menu">
   <div class="sn-in">
@@ -30,7 +34,9 @@ html{scroll-padding-top:66px}
       {% if stories_visible %}<a href="{{ url_for('public_stories') }}">In Their Own Words</a>{% endif %}
     </nav>
     <div class="sn-right">
+      {% if request.endpoint != 'public_home' %}<a class="sn-back" href="{{ url_for('public_home') }}" data-back>&larr;<span class="sn-bx"> Back</span></a>{% endif %}
       <a class="sn-btn" href="{{ url_for('public_register') }}#interested">Reserve Your Spot</a>
+      <a class="sn-team" href="{{ url_for('crm.dashboard') }}">Team Login</a>
       <button class="sn-menu" type="button" id="sn-menu" aria-expanded="false">Menu</button>
     </div>
   </div>
@@ -42,6 +48,7 @@ html{scroll-padding-top:66px}
     <a href="{{ url_for('public_program_page', slug='vision') }}">Vision</a>
     <a href="{{ url_for('public_about_program') }}">About</a>
     {% if stories_visible %}<a href="{{ url_for('public_stories') }}">In Their Own Words</a>{% endif %}
+    <a href="{{ url_for('crm.dashboard') }}">Team Login</a>
   </div>
 </div>
 <script>

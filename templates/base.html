@@ -57,7 +57,7 @@
       <a href="{{ url_for('public_about_program') }}">About</a>
       <a href="{{ url_for('public_register') }}#interested">Register</a>
     </nav>
-    <div class="pub-right">{% block topbar_back %}{% endblock %}<a class="pub-login" href="{{ url_for('crm.dashboard') }}">Team Login</a></div>
+    <div class="pub-right">{% block topbar_back %}{% if request.endpoint != 'public_home' %}<a class="pub-back" href="{{ url_for('public_home') }}" data-back>&larr; Back</a>{% endif %}{% endblock %}<a class="pub-login" href="{{ url_for('crm.dashboard') }}">Team Login</a></div>
   </header>
 {% endblock %}
   <main>
@@ -70,5 +70,6 @@
   </main>
 {% block site_footer %}{% include '_public_footer.html' %}{% endblock %}
   <script src="{{ url_for('static', filename='phone-mask.js') }}"></script>
+<script>document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('[data-back]');if(!a)return;try{if(history.length>1&&document.referrer&&new URL(document.referrer).origin===location.origin){e.preventDefault();history.back();}}catch(x){}});</script>
 </body>
 </html>
