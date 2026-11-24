@@ -999,6 +999,20 @@ GUIDE_LETTERS = {
         "signoff": "Have a great day,",
         "signer": "Kent Hafemann",
     },
+    "site_invitation": {
+        "title": "Invitation to the private website preview",
+        "audience": "Friends you invite to see the website before it opens to everyone",
+        "greeting": "Hi",
+        "subject": "You're invited to preview our new website",
+        "paras": [
+            "We are getting ready to open our new website, and I would love for you to be one of the first to see it. It is not open to the public yet, so this invitation is just for you.",
+            "{link}",
+            "This link is private to you, so please don't share it. If you have any questions or thoughts, just reply to this email. I would love to hear what you think.",
+        ],
+        "button": "Preview the website",
+        "signoff": "Warmly,",
+        "signer": "Kent Hafemann",
+    },
     "video_call": {
         "title": "Video call link (Google Meet)",
         "audience": "Any contact",

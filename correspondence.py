@@ -247,6 +247,7 @@ def catalog():
             E("testimonial_request", "Testimonial request (email)", "By hand, from Testimonials \u2192 Request a testimonial: \"Send it by email now\". Your personal note goes just above the closing. The Hub keeps a record on the contact.", "Former trainees and volunteers"),
             E("needs_request", "Food and physical needs request (session team)", "By hand, from a session page: the \"Email the team members who haven't answered\" button. The Hub sends it and keeps a record.", "Team members on a session"),
             E("video_call", "Video call link (Google Meet)", "By hand, from a contact's record: \"Email the link\". The Hub sends it and keeps a record.", "Any contact"),
+            E("site_invitation", "Invitation to the private website preview", "By hand, from a contact\u2019s record: \"Invite to the website\". The Hub makes their personal link, sends this and keeps a record. People who already have a Hub login are never sent one.", "Friends you invite while the site is private"),
          ]),
         ("trainees", "Trainee Correspondence",
          "Letters and questionnaires for the people registered for a session. Each session's page shows who has received each letter. The questionnaires are the forms trainees fill in on their private link; their questions are fixed in the program code for now, and making them editable per program is the next piece.", [

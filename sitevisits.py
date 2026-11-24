@@ -27,7 +27,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
-from flask import render_template, request, redirect, url_for, flash, session, g, make_response
+from flask import render_template, request, redirect, url_for, flash, session, g, make_response, abort
 
 CT = ZoneInfo("America/Chicago")
 COOKIE_VISITOR = "sv"        # random visitor number, one year
@@ -116,7 +116,7 @@ def _is_gated(path):
     return p in GATED_EXACT or p.startswith(GATED_PREFIX)
 
 
-def register(app, crm, owner_view, get_db, full_name_sql):
+def register(app, crm, owner_view, get_db, full_name_sql, log_message=None):
 
     def _state():
         """Private-preview settings and which invitations are on, refreshed every few seconds. Defaults to private."""
@@ -263,6 +263,115 @@ def register(app, crm, owner_view, get_db, full_name_sql):
 
     def _base_url():
         return (os.environ.get("PUBLIC_BASE_URL") or request.url_root).rstrip("/")
+
+    def _invite_state(conn, contact):
+        """Everything the invite page needs to decide what is allowed. Never raises."""
+        email = (contact["email"] or "").strip().lower()
+        st = {"email": email, "staff": None, "blocked": False, "link": None}
+        try:
+            st["staff"] = conn.execute(
+                "SELECT name, role, active FROM staff WHERE contact_id = ? OR (? <> '' AND LOWER(email) = ?) ORDER BY active DESC LIMIT 1",
+                (contact["id"], email, email)).fetchone()
+        except Exception:
+            try: conn.rollback()
+            except Exception: pass
+        try:
+            import do_not_contact
+            st["blocked"] = bool(email) and bool(do_not_contact.email_blocked(conn, email))
+        except Exception:
+            try: conn.rollback()
+            except Exception: pass
+        st["link"] = conn.execute(
+            "SELECT * FROM site_visit_links WHERE contact_id = ? AND active = 1 ORDER BY id DESC LIMIT 1", (contact["id"],)).fetchone()
+        return st
+
+    def _invite_page(contact_id, paste=None):
+        conn = get_db()
+        _ensure(conn)
+        contact = conn.execute(f"SELECT *, {full_name_sql('contacts')} AS full_name FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+        if not contact:
+            conn.close()
+            abort(404)
+        st = _invite_state(conn, contact)
+        sent = conn.execute("SELECT subject, sent_at FROM contact_messages WHERE contact_id = ? AND kind = ? ORDER BY id DESC LIMIT 3",
+                            (contact_id, "Website invitation")).fetchall() if _table_ok(conn, "contact_messages") else []
+        conn.close()
+        link_url = (_base_url() + "/v/" + st["link"]["token"]) if st["link"] else None
+        try:
+            import correspondence
+            live = correspondence.live()
+        except Exception:
+            live = False
+        return render_template("site_invite.html", contact=contact, st=st, link_url=link_url, sent=sent, live=live,
+                               paste=paste, private_on=_state()["private"])
+
+    def _table_ok(conn, name):
+        try:
+            conn.execute(f"SELECT 1 FROM {name} LIMIT 1")
+            return True
+        except Exception:
+            try: conn.rollback()
+            except Exception: pass
+            return False
+
+    @crm.route("/contacts/<int:contact_id>/site-invitation")
+    @owner_view
+    def site_invitation(contact_id):
+        return _invite_page(contact_id)
+
+    @crm.route("/contacts/<int:contact_id>/site-invitation/send", methods=["POST"])
+    @owner_view
+    def site_invitation_send(contact_id):
+        from email_utils import send_email
+        import email_templates as T
+        conn = get_db()
+        _ensure(conn)
+        contact = conn.execute(f"SELECT *, {full_name_sql('contacts')} AS full_name FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+        if not contact:
+            conn.close()
+            abort(404)
+        st = _invite_state(conn, contact)
+        back = redirect(url_for(".site_invitation", contact_id=contact_id))
+        if st["staff"]:
+            conn.close()
+            flash(f"{contact['full_name']} already has a Hub login, so no invitation is needed.")
+            return back
+        if not st["email"]:
+            conn.close()
+            flash("This contact has no email address on file.")
+            return back
+        if st["blocked"]:
+            conn.close()
+            flash("This person is marked do-not-email, so nothing was sent.")
+            return back
+        link = st["link"]
+        if not link:
+            token = secrets.token_urlsafe(6).replace("_", "x").replace("-", "y")
+            conn.execute("INSERT INTO site_visit_links (token, label, contact_id, target_path, created_at) VALUES (?,?,?,?,?)",
+                         (token, contact["full_name"], contact_id, "/", _now().strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+        else:
+            token = link["token"]
+        conn.close()
+        url = _base_url() + "/v/" + token
+        subject, html, text = T.guide_letter_content("site_invitation", contact["first_name"] or "there", "", "", "", link=url)
+        try:
+            import correspondence
+            live = correspondence.live()
+        except Exception:
+            live = False
+        if not live:
+            flash("Letter sending is switched off, so nothing was emailed. Copy the message below and send it yourself.")
+            return _invite_page(contact_id, paste=dict(subject=subject, text=text, link=url))
+        try:
+            send_email(to_email=contact["email"], to_name=contact["first_name"], subject=subject, html_content=html, text_content=text)
+            if log_message:
+                log_message(contact_id, "Website invitation", subject, html, contact["email"])
+            flash(f"Invitation emailed to {contact['first_name']} ({contact['email']}).")
+        except Exception as e:
+            flash(f"Couldn't send the email: {e}")
+            return _invite_page(contact_id, paste=dict(subject=subject, text=text, link=url))
+        return back
 
     @crm.route("/owner/site-visits")
     @owner_view
