@@ -8756,11 +8756,24 @@ def _seed_brain_books(conn):
     conn.commit()
 
 
+def _trim_program_page_books(conn):
+    """One time: cut the books on the Art of Us and The Beginning pages from four to two. The four dropped books stay on the
+    Resources page and the public Recommended Resources page; they just no longer appear on those two program pages."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_trim_two_seeded (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_trim_two_seeded").fetchone():
+        return
+    for like in ("%seven principles%", "%relationship cure%", "%stories we live by%", "%unwinding anxiety%"):
+        conn.execute("DELETE FROM resource_programs WHERE resource_id IN (SELECT id FROM program_resources WHERE LOWER(title) LIKE ?)", (like,))
+    conn.execute("INSERT INTO resource_trim_two_seeded (done) VALUES (1)")
+    conn.commit()
+
+
 def _seed_starter_resources(conn):
     _seed_resource_list(conn, STARTER_RESOURCES_BEGINNING, "resource_starter5_seeded", "D1")
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
     _seed_resource_list(conn, STARTER_RESOURCES_2, "resource_starter2_seeded")
     _seed_brain_books(conn)
+    _trim_program_page_books(conn)
     _swap_active_listening_book(conn)
     _swap_active_listening_exercise(conn)
 
