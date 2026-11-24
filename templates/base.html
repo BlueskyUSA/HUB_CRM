@@ -25,12 +25,18 @@
     .sj-waves { display: block; width: 3.1em; height: .3em; margin: .06em 0 .02em .32em; overflow: visible; }
     .hx-brand, .pg-brand, .wi-brand { --w1: #fff; }
     .sj-wordmark em { color: #FF0000; font-style: italic; }
+    .pub-right { display: flex; align-items: center; gap: 22px; justify-self: end; margin-left: 16px; }
+    .pub-right .pub-login { white-space: nowrap; }
+    .pub-back { display: inline-block; border: 2px solid #007b8b; color: #0c4561; background: #fff; border-radius: 40px; padding: 6px 16px; font-weight: 600; font-size: .85rem; text-decoration: none; white-space: nowrap; }
+    .pub-back:hover { background: #007b8b; color: #fff; }
+    @media (min-width: 900px) and (max-width: 1199px) { .pub-back .pb-x { display: none; } .pub-right { gap: 14px; margin-left: 8px; } }
+    @media print { .pub-back { display: none !important; } }
     .pub-login { color: var(--pub-muted); text-decoration: none; font-size: 0.92rem; font-weight: 500; }
     .pub-login:hover { color: var(--pub-text); }
     @media (max-width: 899px) {
       .pub-topbar { justify-content: center; }
       .pub-topbar .pub-nav { flex: 1 1 100%; text-align: center; }
-      .pub-topbar .pub-login { flex: 1 1 100%; text-align: center; }
+      .pub-topbar .pub-right { flex: 1 1 100%; justify-content: center; flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -51,7 +57,7 @@
       <a href="{{ url_for('public_about_program') }}">About</a>
       <a href="{{ url_for('public_register') }}#interested">Register</a>
     </nav>
-    <a class="pub-login" href="{{ url_for('crm.dashboard') }}">Team Login</a>
+    <div class="pub-right">{% block topbar_back %}{% endblock %}<a class="pub-login" href="{{ url_for('crm.dashboard') }}">Team Login</a></div>
   </header>
 {% endblock %}
   <main>

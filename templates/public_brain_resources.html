@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}The Remarkable Human Brain — {{ public_brand }}{% endblock %}
 {% block meta_description %}Books that invite you to explore the relationship between your brain, your experiences, your habits, and your possibilities.{% endblock %}
+{% block topbar_back %}<a class="pub-back" href="{{ url_for('public_free_resources') }}">&larr; Back<span class="pb-x"> to Resources</span></a>{% endblock %}
 {% block content %}
 <style>
 .fr{color:#183b45;line-height:1.7}
@@ -39,6 +40,7 @@
 .fr-intro .fr-last{font-style:italic;color:#006c86;font-size:1.3rem;margin-top:22px}
 .fr-body .fr-more{max-width:700px;margin-left:auto;margin-right:auto;gap:40px 34px}
 .fr-body .fr-im{display:flex;align-items:flex-end;justify-content:center;height:215px;margin-bottom:12px}.fr-body .fr-im img{margin-bottom:0}
+.pg-top{text-align:left;margin:-34px 0 18px}.pg-top a{display:inline-block;border:2px solid rgba(255,255,255,.75);color:#fff!important;border-radius:40px;padding:7px 20px;font-family:Inter,Arial,sans-serif;font-weight:600;font-size:.88rem;text-decoration:none;letter-spacing:.02em;background:rgba(255,255,255,.08)}.pg-top a:hover{background:#fff;color:#0c4561!important}@media print{.pg-top{display:none!important}}
 .pg-back{text-align:center;margin:36px 0 8px;font-family:Inter,Arial,sans-serif}.pg-back a{display:inline-block;border:2px solid #007b8b;color:#0c4561!important;background:#fff;border-radius:40px;padding:11px 28px;font-weight:600;font-size:.95rem;text-decoration:none;letter-spacing:.02em}.pg-back a:hover{background:#007b8b;color:#fff!important}@media print{.pg-back{display:none!important}}
 .fr-back{text-align:center;margin:40px 0 0;font-family:Inter,Arial,sans-serif}
 .fr-back a{color:#006c86;font-weight:600;text-decoration:none}
@@ -60,7 +62,6 @@
   </div>
   {% with gal_items=items, gal_book=False %}{% include '_resource_gallery.html' %}{% endwith %}
   <div class="fr-note" style="margin-top:36px">These resources are for learning and encouragement. They are not a substitute for counseling or medical care. If you are in crisis, call or text <b>988</b> (the Suicide &amp; Crisis Lifeline) anytime.</div>
-  <div class="pg-back"><a href="{{ url_for('public_free_resources') }}">&larr; Back to Recommended Resources</a></div>
 </div>
 <section class="fr-cta">
   <h2>Ready for More Than Reading?</h2>
