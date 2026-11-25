@@ -10281,7 +10281,7 @@ owner_guide.register(app, crm, owner_required, get_db, _corr_sw.switches)
 import owners_corner
 owners_corner.register(app, crm, true_owner_required, get_db)
 import hub_ownership
-hub_ownership.register(app, crm, owner_required, get_db)
+hub_ownership.register(app, crm, true_owner_required, get_db)
 import contact_import
 contact_import.register(app, crm, owner_required, get_db)
 import error_alerts
