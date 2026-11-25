@@ -13,7 +13,8 @@ html{scroll-padding-top:66px}
 .sn-btn{background:#fff;color:#0c4561!important;font-weight:700;font-size:.85rem;letter-spacing:.03em;padding:9px 16px;border-radius:22px;white-space:nowrap}
 .sn-right{display:flex;align-items:center;gap:10px}
 .sn-back{border:1px solid rgba(255,255,255,.7);color:#fff!important;font-weight:600;font-size:.85rem;padding:8px 14px;border-radius:22px;white-space:nowrap}.sn-back:hover{background:#fff;color:#0c4561!important}
-@media(max-width:520px){.sn-back .sn-bx,.sn-ys{display:none}.sn-back{padding:7px 11px}
+.sn-rp{display:none}
+@media(max-width:520px){.sn-rp{display:inline}.sn-back .sn-bx,.sn-rs{display:none}.sn-back{padding:7px 11px}
  .sn-in{padding:8px 10px;gap:6px}.sn-right{gap:6px}.sn-brand .sj-wordmark{font-size:1.35rem!important}
  .sn-btn{padding:8px 12px;font-size:.8rem;letter-spacing:.01em}.sn-menu{padding:6px 9px;font-size:.85rem}}
 @media(max-width:360px){.sn-brand .sj-wordmark{font-size:1.2rem!important}.sn-back{padding:7px 9px}.sn-btn{padding:8px 10px}}
@@ -39,7 +40,7 @@ html{scroll-padding-top:66px}
     </nav>
     <div class="sn-right">
       {% if request.endpoint != 'public_home' %}<a class="sn-back" href="{{ url_for('public_home') }}" data-back>&larr;<span class="sn-bx"> Back</span></a>{% endif %}
-      <a class="sn-btn" href="{{ url_for('public_register') }}#interested">Reserve<span class="sn-ys"> Your Spot</span></a>
+      <a class="sn-btn" href="{{ url_for('public_register') }}#interested"><span class="sn-rs">Reserve Your Spot</span><span class="sn-rp">Register</span></a>
       <a class="sn-team" href="{{ url_for('crm.dashboard') }}">Team Login</a>
       <button class="sn-menu" type="button" id="sn-menu" aria-expanded="false">Menu</button>
     </div>
