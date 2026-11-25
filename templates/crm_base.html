@@ -75,6 +75,7 @@
             <summary>Finance &#9662;</summary>
             {% if show_finance %}<a href="{{ url_for('.finance') }}" style="padding-left:30px">Finance overview</a>{% endif %}
             {% if show_donations %}<a href="{{ url_for('.donations_list') }}" style="padding-left:30px">Donations</a>{% endif %}
+            {% if session.is_owner %}<a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports</a>{% endif %}
             {% if session.is_owner or has_budgets_access %}
             <details class="subnav">
               <summary style="padding-left:30px">Budgets &#9662;</summary>
@@ -95,9 +96,7 @@
           <details class="subnav">
             <summary>Administrator &#9662;</summary>
             <a href="{{ url_for('.owner_instructions') }}" style="padding-left:30px">Software &amp; go-live</a>
-            <a href="{{ url_for('.hub_ownership') }}" style="padding-left:30px">Hub Ownership</a>
             <a href="{{ url_for('.program_end_times') }}" style="padding-left:30px">Program end times</a>
-            <a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports (Finances)</a>
             {% if not session.is_admin %}<a href="{{ url_for('.site_visits') }}" style="padding-left:30px">Site Visits</a>{% endif %}
             {% if (session.is_owner and not session.is_admin) or has_change_history_view %}<a href="{{ url_for('.change_history') }}" style="padding-left:30px">Access History</a>{% endif %}
             {% if not session.is_admin %}<a href="{{ url_for('.chat_review') }}" style="padding-left:30px">Chat Review</a>{% endif %}
