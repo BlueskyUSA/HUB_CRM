@@ -1,0 +1,17 @@
+{% extends "crm_base.html" %}
+{% block title %}Program taglines — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Program taglines</h1>
+<p class="muted">The short line that shows under the Discovery! logo at the top of each program&rsquo;s own page. Leave a box empty to show the main line, &ldquo;A Journey of Curiosity and Possibility.&rdquo; Keep it under about 60 characters so it stays tidy.</p>
+<form method="post" class="card">
+  {% for code, name, current, suggested in rows %}
+  <label style="display:block;font-weight:700;margin:14px 0 4px">{{ name }}</label>
+  <input type="text" name="t_{{ code }}" value="{{ current }}" maxlength="100" style="width:100%;box-sizing:border-box">
+  <div class="muted" style="font-size:.85rem;margin-top:2px">Suggested: {{ suggested }}</div>
+  {% endfor %}
+  <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn" type="submit">Save taglines</button>
+    <button class="btn secondary" type="submit" name="reset" value="1" onclick="return confirm('Put all four back to the suggested lines?')">Restore suggested lines</button>
+  </div>
+</form>
+{% endblock %}
