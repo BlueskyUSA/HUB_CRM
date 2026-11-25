@@ -22,7 +22,7 @@
       <input name="rate" placeholder="Rate $/hr (optional)" style="flex:0 1 150px">
       <input name="who" value="{{ session.staff_name }}" placeholder="Who" style="flex:0 1 150px">
     </div>
-    <div style="display:flex; gap:6px; margin-top:6px"><input name="what" placeholder="What was done (for example: Change/Access History page)" style="flex:1 1 auto"><button class="btn" type="submit">Add</button></div>
+    <div style="display:flex; gap:6px; margin-top:6px"><input name="what" placeholder="What was done (for example: Access History page)" style="flex:1 1 auto"><button class="btn" type="submit">Add</button></div>
   </form>
   {% for m in hour_months %}
   <details style="border-bottom:1px solid #ddd; padding:6px 0" {{ 'open' if loop.first }}>

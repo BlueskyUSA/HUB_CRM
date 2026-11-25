@@ -27,7 +27,7 @@
       {% if session.is_owner or session.staff_role == 'Leadership' or has_hub_access_view %}
       <a href="{{ url_for('.staff_list') }}">HUB Access</a>
       {% endif %}
-      {% if has_change_history_view and not session.is_owner %}<a href="{{ url_for('.change_history') }}">Change/Access History</a>{% endif %}
+      {% if has_change_history_view and not session.is_owner %}<a href="{{ url_for('.change_history') }}">Access History</a>{% endif %}
       <a href="{{ url_for('.mission_page') }}">Mission</a>
       {% if session.is_owner or session.staff_role == 'Leadership' %}<a href="{{ url_for('.at_a_glance') }}">At a Glance</a>{% endif %}
       {% set is_lead = session.staff_role == 'Leadership' %}
@@ -98,7 +98,7 @@
             <a href="{{ url_for('.hub_ownership') }}" style="padding-left:30px">Hub Ownership</a>
             <a href="{{ url_for('.program_end_times') }}" style="padding-left:30px">Program end times</a>
             <a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports (Finances)</a>
-            {% if (session.is_owner and not session.is_admin) or has_change_history_view %}<a href="{{ url_for('.change_history') }}" style="padding-left:30px">Change/Access History</a>{% endif %}
+            {% if (session.is_owner and not session.is_admin) or has_change_history_view %}<a href="{{ url_for('.change_history') }}" style="padding-left:30px">Access History</a>{% endif %}
             {% if not session.is_admin %}<a href="{{ url_for('.chat_review') }}" style="padding-left:30px">Chat Review</a>{% endif %}
             {% if not session.is_admin %}<a href="{{ url_for('.site_visits') }}" style="padding-left:30px">Site Visits</a>{% endif %}
             <a href="{{ url_for('.do_not_contact_list') }}" style="padding-left:30px">Do Not Contact</a>
