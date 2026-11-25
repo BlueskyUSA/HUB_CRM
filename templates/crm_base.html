@@ -95,7 +95,6 @@
           {% if session.is_owner %}
           <details class="subnav">
             <summary>Administrator &#9662;</summary>
-            <a href="{{ url_for('.owner_instructions') }}" style="padding-left:30px">Software &amp; go-live</a>
             <a href="{{ url_for('.program_end_times') }}" style="padding-left:30px">Program end times</a>
             {% if not session.is_admin %}<a href="{{ url_for('.site_visits') }}" style="padding-left:30px">Site Visits</a>{% endif %}
             {% if (session.is_owner and not session.is_admin) or has_change_history_view %}<a href="{{ url_for('.change_history') }}" style="padding-left:30px">Access History</a>{% endif %}
