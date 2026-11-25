@@ -7,7 +7,7 @@
   {% for code, name, current, suggested in rows %}
   <label style="display:block;font-weight:700;margin:14px 0 4px">{{ name }}</label>
   <input type="text" name="t_{{ code }}" value="{{ current }}" maxlength="100" style="width:100%;box-sizing:border-box">
-  <div class="muted" style="font-size:.85rem;margin-top:2px">Suggested: {{ suggested }}</div>
+  <div class="muted" style="font-size:.85rem;margin-top:2px">Suggested: {% if suggested %}{{ suggested }}{% else %}leave empty, so it shows the main line, &ldquo;A Journey of Curiosity and Possibility.&rdquo;{% endif %}</div>
   {% endfor %}
   <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
     <button class="btn" type="submit">Save taglines</button>
