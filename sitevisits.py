@@ -83,6 +83,15 @@ def device_of(ua):
     return "Computer"
 
 
+DEFAULT_TAGLINES = {
+    "D1": "Pushing beyond the familiar to discover the possible.",
+    "D2": "Seeing clearly, feeling deeply, choosing freely.",
+    "D3": "Imagine a future worth stepping into.",
+    "D4": "An adventure into the heart of your relationship.",
+}
+TAGLINE_NAMES = {"D1": "The Beginning", "D2": "Awakening", "D3": "Vision", "D4": "The Art of Us"}
+
+
 def _ensure(conn):
     global _ready
     if _ready:
@@ -372,6 +381,52 @@ def register(app, crm, owner_view, get_db, full_name_sql, log_message=None):
             flash(f"Couldn't send the email: {e}")
             return _invite_page(contact_id, paste=dict(subject=subject, text=text, link=url))
         return back
+
+    # ---- program taglines (the line under the logo on each program's own page) ----
+    _tl = {"at": 0.0, "vals": {}}
+
+    def _tagline_for(code):
+        """The saved line for a program ('D1'..'D4'), the suggested one if never edited, '' if left blank."""
+        if time.time() - _tl["at"] > 20:
+            try:
+                conn = get_db()
+                try:
+                    _ensure(conn)
+                    _tl["vals"] = {r["skey"][8:]: (r["svalue"] or "") for r in
+                                   conn.execute("SELECT skey, svalue FROM site_settings WHERE skey LIKE 'tagline_%'").fetchall()}
+                finally:
+                    conn.close()
+            except Exception as e:
+                print(f"taglines not read: {e!r}", flush=True)
+            _tl["at"] = time.time()
+        if code in _tl["vals"]:
+            return _tl["vals"][code]
+        return DEFAULT_TAGLINES.get(code, "")
+
+    app.context_processor(lambda: {"brand_tagline": _tagline_for})
+
+    @crm.route("/owner/taglines", methods=["GET", "POST"])
+    @owner_view
+    def program_taglines():
+        conn = get_db()
+        _ensure(conn)
+        if request.method == "POST":
+            for code in DEFAULT_TAGLINES:
+                if request.form.get("reset"):
+                    conn.execute("DELETE FROM site_settings WHERE skey = ?", ("tagline_" + code,))
+                else:
+                    conn.execute("DELETE FROM site_settings WHERE skey = ?", ("tagline_" + code,))
+                    conn.execute("INSERT INTO site_settings (skey, svalue) VALUES (?, ?)",
+                                 ("tagline_" + code, (request.form.get("t_" + code) or "").strip()[:100]))
+            conn.commit()
+            conn.close()
+            _tl["at"] = 0.0
+            flash("Suggested lines restored." if request.form.get("reset") else "Taglines saved.")
+            return redirect(url_for(".program_taglines"))
+        conn.close()
+        _tl["at"] = 0.0
+        rows = [(c, TAGLINE_NAMES[c], _tagline_for(c), DEFAULT_TAGLINES[c]) for c in DEFAULT_TAGLINES]
+        return render_template("program_taglines.html", rows=rows)
 
     @crm.route("/owner/site-visits")
     @owner_view
