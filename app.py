@@ -10277,7 +10277,7 @@ import contact_health
 contact_health.register(app, crm, owner_required, get_db)
 import ta_invites
 import owner_guide, correspondence as _corr_sw
-owner_guide.register(app, crm, owner_required, get_db, _corr_sw.switches)
+owner_guide.register(app, crm, true_owner_required, get_db, _corr_sw.switches)
 import owners_corner
 owners_corner.register(app, crm, true_owner_required, get_db)
 import hub_ownership
