@@ -87,7 +87,7 @@ DEFAULT_TAGLINES = {
     "D1": "Pushing beyond the familiar to discover the possible.",
     "D2": "Seeing clearly, feeling deeply, choosing freely.",
     "D3": "Imagine a future worth stepping into.",
-    "D4": "An adventure into the heart of your relationship.",
+    "D4": "",   # The Art of Us keeps the main line, "A Journey of Curiosity and Possibility"
 }
 TAGLINE_NAMES = {"D1": "The Beginning", "D2": "Awakening", "D3": "Vision", "D4": "The Art of Us"}
 
