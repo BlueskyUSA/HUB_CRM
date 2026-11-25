@@ -446,7 +446,7 @@ FIXED_ACCESS_AREAS = [
     ("correspondence", "Correspondence"),
     ("guides", "Guides (choose and change who the Guides are)"),
     ("hub_access", "HUB Access page (see who has Hub access and their roles)"),
-    ("change_history", "Change/Access History (see what each person has done in the Hub)"),
+    ("change_history", "Access History (see what each person has done in the Hub)"),
     ("contacts", "Contacts"),
     ("donations", "Donations"),
     ("contracts", "Contracts & business plan"),
@@ -1037,7 +1037,7 @@ def staff_list():
                          ("correspondence", "Correspondence"),
                          ("guides", "Guides (choose and change who the Guides are)"),
                          ("hub_access", "HUB Access page (see who has Hub access and their roles)"),
-                         ("change_history", "Change/Access History (see what each person has done in the Hub)")],
+                         ("change_history", "Access History (see what each person has done in the Hub)")],
         general_areas=[a for a in all_areas if a[0] not in FULL_ACCESS_EXCLUDED_AREAS],
         fixed_areas=FIXED_ACCESS_AREAS, program_groups=program_groups,
         door_staff_ids={g["staff_id"] for g in grants if g["area_key"] == ACCOUNTING_LOGIN_GRANT},
@@ -1710,7 +1710,7 @@ def staff_special_access(staff_id):
         return redirect(url_for(".staff_list"))
     chosen = set(request.form.getlist("area_key"))
     changes = []
-    for key, label in (("hub_access", "the HUB Access page"), ("change_history", "Change/Access History")):
+    for key, label in (("hub_access", "the HUB Access page"), ("change_history", "Access History")):
         has = conn.execute("SELECT id FROM access_grants WHERE area_key = ? AND staff_id = ?", (key, staff_id)).fetchone()
         if key in chosen and not has:
             conn.execute("INSERT INTO access_grants (area_key, staff_id) VALUES (?, ?)", (key, staff_id))
@@ -9881,7 +9881,7 @@ def chat_room_delete(msg_id):
 
 # ---- Private chats: you pick one or more people and only the people in the chat can read it. Other team members cannot.
 # ---- The Owner can review them on the Owner-only Chat Review page. They never appear on the Correspondence page or in
-# ---- the Change/Access History. Nothing is emailed or texted from here.
+# ---- the Access History. Nothing is emailed or texted from here.
 
 def _chat_private_choices(conn, me):
     return conn.execute(
