@@ -7,6 +7,7 @@ html,body{margin:0;min-height:100%}
 body{display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(135deg,#0a3150,#007b8b);color:#fff;font-family:Georgia,'Times New Roman',serif;text-align:center}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 20px}
 h1{font:italic 400 clamp(2.6rem,7vw,4.6rem)/1.1 Georgia,'Times New Roman',serif;margin:0 0 6px}
+.wv{display:block;width:min(300px,60vw);height:30px;margin:0 auto 14px;overflow:visible}
 .tag{font:italic 1.2rem Georgia,serif;opacity:.9;margin:0 0 28px}
 p.msg{max-width:580px;font-size:1.2rem;line-height:1.7;margin:0 0 26px;white-space:pre-line}
 .box{background:#fff;color:#16384a;border-radius:14px;padding:24px 26px;max-width:480px;width:100%;box-sizing:border-box;text-align:left;box-shadow:0 14px 40px rgba(0,0,0,.28)}
@@ -24,6 +25,7 @@ footer a{color:#fff}
 </style></head>
 <body><main>
 <h1>{{ public_brand|bang }}</h1>
+<svg class="wv" viewBox="324 220 552 126" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M 330 268 C 420 228, 500 308, 600 268 S 780 228, 870 268" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="M 330 298 C 420 338, 500 258, 600 298 S 780 338, 870 298" fill="none" stroke="#27C4C0" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>
 <div class="tag">A Journey of Curiosity and Possibility</div>
 {% if thanks %}
 <p class="thanks">Thank you! We&rsquo;ve received your note and will be in touch soon.<br>We&rsquo;re glad you&rsquo;re curious.</p>
