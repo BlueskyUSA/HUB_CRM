@@ -505,18 +505,27 @@ def program_heading_key(program_code, heading):
     return f"{program_code}:{heading}"
 
 
+def _prog_display(code, name=None):
+    """A program's everyday name for access lists: 'D1' -> 'The Beginning', never the bare code."""
+    n = (name or "").strip()
+    if not n or n.upper() == (code or "").upper() or n.upper().startswith((code or "").upper() + " ") or n.upper().startswith((code or "").upper() + "-"):
+        return SESSION_LABELS.get(code) or nice_prog(n, code) or code
+    return nice_prog(n, code)
+
+
 def _area_labels_map(conn):
     """area_key -> human label, for every fixed area plus every program
-    that actually exists today (e.g. 'B1' -> 'B1 — Bluesky 1')."""
+    that actually exists today (e.g. 'D1' -> 'The Beginning')."""
     labels = dict(FIXED_ACCESS_AREAS)
     labels[ACCOUNTING_LOGIN_GRANT] = "Accounting & Legal login"
     for code in RESERVED_PROGRAM_AREA_CODES:
         for h in MATERIAL_CATEGORIES:
-            labels[program_heading_key(code, h)] = f"{code}: {h}"
+            labels[program_heading_key(code, h)] = f"{_prog_display(code)}: {h}"
     for row in conn.execute("SELECT code, name FROM programs").fetchall():
-        labels[row["code"]] = f"{row['code']} — {row['name']}"
+        disp = _prog_display(row["code"], row["name"])
+        labels[row["code"]] = disp
         for h in MATERIAL_CATEGORIES:
-            labels[program_heading_key(row["code"], h)] = f"{row['code']} — {row['name']}: {h}"
+            labels[program_heading_key(row["code"], h)] = f"{disp}: {h}"
     return labels
 
 
@@ -1015,11 +1024,11 @@ def staff_list():
     for g in grants:
         key = g["area_key"]
         label = area_labels.get(key, key)
-        m = re.match(r"^(D\d+) \u2014 (.+?): (.+)$", label)
+        pk = re.match(r"^(.+?):(.+)$", key)
         if key in own_keys:
             head, item = "Ownership access", label
-        elif m:
-            head, item = (m.group(2) if m.group(2) != m.group(1) else m.group(1)), m.group(3)
+        elif pk and label.endswith(": " + pk.group(2)):
+            head, item = label[: -len(": " + pk.group(2))], pk.group(2)
         else:
             head, item = "General access", label
         access_groups_by_staff.setdefault(g["staff_id"], {}).setdefault(head, []).append(item)
