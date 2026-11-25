@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Programs — {{ public_brand }}{% endblock %}
 {% block site_header %}{% endblock %}
-{% block meta_description %}Four immersive, three-day experiential seminars: The Art of Us, The Beginning, Awakening, and Vision.{% endblock %}
+{% block meta_description %}Three personal-growth programs for individuals, and The Art of Us for couples. Immersive three-day experiences.{% endblock %}
 {% block content %}
 <style>
 .pg{color:#183b45;line-height:1.7}.pg h1,.pg h2,.pg h3{font-family:Georgia,'Times New Roman',serif;font-weight:500;border:0!important;color:#123e54}
@@ -118,15 +118,31 @@ section.pg-hero{position:relative}
 <section class="pp-sec">
   <div class="eyebrow">Programs</div>
   <h2>Explore Sojourn<span style="color:#FF0000">!</span> Programs</h2>
-  <p class="pp-lead">Four immersive, three-day experiential seminars. Explore the relationship experience or follow the progressive personal-growth journey.</p>
-  <div class="pp-grid">
-    <article class="pp-card"><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='the-art-of-us') }}">The Art of Us</a></h3><p>Creating a more honest, intimate, and fulfilling marriage or committed relationship. A fun, challenging experience focused on communicating more accurately and building one another up.</p></article>
-    <article class="pp-card"><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='the-beginning') }}">The Beginning</a></h3><p>Explore your upbringing, the beliefs you developed about yourself, and the ways early experiences may still influence your life today.</p></article>
-    <article class="pp-card"><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='awakening') }}">Awakening</a></h3><p>Bring greater awareness to your thoughts, emotions, relationships, and choices, and discover new ways of responding to life today.</p></article>
-    <article class="pp-card"><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='vision') }}">Vision</a></h3><p>Clarify what matters most, imagine new possibilities, and begin shaping a future that reflects your values and intentions.</p></article>
+  <p class="pp-lead">Immersive, three-day experiences. Come on your own for a personal journey, or come together as a couple.</p>
+  <div class="pp-who">For individuals</div>
+  <p class="pp-sub">A personal journey, just for you. Three programs that build on one another as you look at your past, your present and your future.</p>
+  <div class="pp-grid pp-grid3">
+    <article class="pp-card"><div class="pp-num">1 &middot; YOUR PAST</div><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='the-beginning') }}">The Beginning</a></h3><p>Explore your upbringing, the beliefs you developed about yourself, and the ways early experiences may still influence your life today.</p><span class="pp-open">Learn more &rarr;</span></article>
+    <article class="pp-card"><div class="pp-num">2 &middot; YOUR PRESENT</div><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='awakening') }}">Awakening</a></h3><p>Bring greater awareness to your thoughts, emotions, relationships, and choices, and discover new ways of responding to life today.</p><span class="pp-open">Learn more &rarr;</span></article>
+    <article class="pp-card"><div class="pp-num">3 &middot; YOUR FUTURE</div><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='vision') }}">Vision</a></h3><p>Clarify what matters most, imagine new possibilities, and begin shaping a future that reflects your values and intentions.</p><span class="pp-open">Learn more &rarr;</span></article>
   </div>
-  
 </section>
+<section class="pp-sec alt">
+  <div class="pp-who">For couples</div>
+  <p class="pp-sub">Attend together with your spouse or committed partner.</p>
+  <div class="pp-grid pp-grid1">
+    <article class="pp-card"><div class="pp-num">FOR COMMITTED RELATIONSHIPS</div><h3><a class="pp-hl" href="{{ url_for('public_program_page', slug='the-art-of-us') }}">The Art of Us</a></h3><p>Creating a more honest, intimate, and fulfilling marriage or committed relationship. A fun, challenging experience focused on communicating more accurately and building one another up.</p><span class="pp-open">Learn more &rarr;</span></article>
+  </div>
+</section>
+<style>
+.pp-who{font:italic 400 clamp(1.7rem,3.2vw,2.4rem)/1.2 Georgia,'Times New Roman',serif;color:#006c86;margin:6px 0 8px}
+.pp-sub{max-width:720px;margin:0 auto 24px;line-height:1.65;font-family:Georgia,'Times New Roman',serif;font-size:1.1rem;color:#1d3d4d}
+.pp-grid.pp-grid3{grid-template-columns:repeat(3,minmax(0,1fr));max-width:1100px}
+.pp-grid.pp-grid1{grid-template-columns:minmax(0,1fr);max-width:760px}
+.pp-grid3 .pp-card h3{font-size:1.65rem}
+.pp-grid1 .pp-card{min-height:0}
+@media(max-width:900px){.pp-grid.pp-grid3{grid-template-columns:1fr}}
+</style>
 </div>
 {% include '_words_band.html' %}{% set cf_page='programs' %}{% set cf_program='' %}{% include '_call_form.html' %}
 {% endblock %}
