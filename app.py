@@ -8784,8 +8784,7 @@ def _tag_awakening_vision_books(conn):
     conn.execute("CREATE TABLE IF NOT EXISTS resource_awk_vision_seeded (done INTEGER)")
     if conn.execute("SELECT 1 FROM resource_awk_vision_seeded").fetchone():
         return
-    plan = {"D2": ("emotional agility", "atlas of the heart"),
-            "D3": ("unwinding anxiety", "the stories we live by")}
+    plan = {"D2": ("emotional agility", "atlas of the heart")}
     for code, titles in plan.items():
         prog = conn.execute("SELECT id FROM programs WHERE code = ?", (code,)).fetchone()
         if not prog:
@@ -8798,6 +8797,41 @@ def _tag_awakening_vision_books(conn):
     conn.commit()
 
 
+VISION_BOOKS = [
+    ("Book", "The Art of Possibility", "Rosamund Stone Zander and Benjamin Zander",
+     "https://www.amazon.com/dp/0142001104",
+     "Twelve practices for seeing what is possible and stepping into it, in work and in life."),
+    ("Book", "Designing Your Life", "Bill Burnett and Dave Evans",
+     "https://www.amazon.com/dp/1101875321",
+     "A practical, creative approach to imagining and building a well-lived, joyful life, one small experiment at a time."),
+]
+
+
+def _set_vision_books(conn):
+    """One time: the Vision page (D3) shows The Art of Possibility and Designing Your Life. Any earlier tags for Unwinding Anxiety
+    and The Stories We Live By are taken off Vision only; those books stay on the Resources page. Re-tag any time there."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_vision_two_seeded (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_vision_two_seeded").fetchone():
+        return
+    prog = conn.execute("SELECT id FROM programs WHERE code = ?", ("D3",)).fetchone()
+    if prog:
+        for like in ("%unwinding anxiety%", "%the stories we live by%"):
+            conn.execute("DELETE FROM resource_programs WHERE program_id = ? AND resource_id IN "
+                         "(SELECT id FROM program_resources WHERE LOWER(title) LIKE ?)", (prog["id"], like))
+        for kind, title, author, url, note in VISION_BOOKS:
+            row = conn.execute("SELECT id FROM program_resources WHERE LOWER(title) = LOWER(?)", (title,)).fetchone()
+            if row:
+                rid = row["id"]
+            else:
+                rid = conn.execute(
+                    """INSERT INTO program_resources (program_id, kind, title, author, url, note, added_by, share_trainees, share_public)
+                       VALUES (NULL, ?, ?, ?, ?, ?, ?, 0, 1) RETURNING id""",
+                    (kind, title, author, url, note, "Starter list")).fetchone()["id"]
+            conn.execute("INSERT INTO resource_programs (resource_id, program_id) VALUES (?, ?) ON CONFLICT DO NOTHING", (rid, prog["id"]))
+    conn.execute("INSERT INTO resource_vision_two_seeded (done) VALUES (1)")
+    conn.commit()
+
+
 def _seed_starter_resources(conn):
     _seed_resource_list(conn, STARTER_RESOURCES_BEGINNING, "resource_starter5_seeded", "D1")
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
@@ -8805,6 +8839,7 @@ def _seed_starter_resources(conn):
     _seed_brain_books(conn)
     _trim_program_page_books(conn)
     _tag_awakening_vision_books(conn)
+    _set_vision_books(conn)
     _swap_active_listening_book(conn)
     _swap_active_listening_exercise(conn)
 
@@ -9381,6 +9416,8 @@ _STARTER_COVERS = {
     "the stories we live by": "book-stories-we-live-by.jpg",
     "atlas of the heart": "book-atlas-of-the-heart.jpg",
     "unwinding anxiety": "book-unwinding-anxiety.jpg",
+    "the art of possibility": "book-art-of-possibility.jpg",
+    "designing your life": "book-designing-your-life.jpg",
     "emotional agility": "book-emotional-agility.jpg",
     "the brain that changes itself": "book-brain-that-changes-itself.jpg",
     "incognito": "book-incognito.jpg",
