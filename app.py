@@ -8832,6 +8832,57 @@ def _set_vision_books(conn):
     conn.commit()
 
 
+VISION_READING_LIST = [
+    ("Book", 'Halftime: Moving from Success to Significance', 'Bob Buford',
+     'https://www.amazon.com/s?k=halftime+moving+from+success+to+significance',
+     'A Christian-informed look at creating a compelling vision for the second half of life, moving from success toward contribution and significance.', 0),
+    ("Book", 'The Second Mountain', 'David Brooks',
+     'https://www.amazon.com/s?k=the+second+mountain',
+     'The journey from personal achievement to a life of meaning, commitment, relationships and community; especially relevant for midlife.', 0),
+    ("Book", 'The Great Work of Your Life', 'Stephen Cope',
+     'https://www.amazon.com/s?k=the+great+work+of+your+life',
+     "Discovering your true calling, through the stories of real people who found the courage to pursue their life's work.", 1),
+    ("Book", "Man's Search for Meaning", 'Viktor Frankl',
+     'https://www.amazon.com/s?k=mans+search+for+meaning',
+     'One of the most profound books on human purpose: our capacity to choose our response and find meaning even amid suffering.', 1),
+    ("Book", 'The Path Made Clear', 'Oprah Winfrey',
+     'https://www.amazon.com/s?k=the+path+made+clear',
+     'An accessible, inspirational look at discovering your direction, recognizing your gifts and living with greater intention.', 1),
+    ("Book", 'The 7 Habits of Highly Effective People', 'Stephen R. Covey',
+     'https://www.amazon.com/s?k=the+7+habits+of+highly+effective+people',
+     'Begin with the end in mind: establish a personal mission and build your life around enduring principles.', 1),
+    ("Book", 'From Strength to Strength', 'Arthur C. Brooks',
+     'https://www.amazon.com/s?k=from+strength+to+strength',
+     'Finding renewed purpose, happiness and significance as we grow older.', 1),
+    ("Book", 'The Last Lecture', 'Randy Pausch with Jeffrey Zaslow',
+     'https://www.amazon.com/s?k=the+last+lecture',
+     'An invitation to pursue our dreams, overcome obstacles and consider the legacy we want to leave behind.', 1),
+    ("Book", 'The Alchemist', 'Paulo Coelho',
+     'https://www.amazon.com/s?k=the+alchemist',
+     "A novel about pursuing one's calling, listening to one's heart and venturing into the unknown.", 1),
+    ("Book", 'How Will You Measure Your Life?', 'Clayton M. Christensen, James Allworth and Karen Dillon',
+     'https://www.amazon.com/s?k=how+will+you+measure+your+life',
+     'Challenges conventional definitions of success and encourages investing your life in what matters most.', 1),
+]
+
+
+def _seed_vision_reading_list(conn):
+    """One time: adds ten more life-vision books to the Resources page, not tagged to any program (so they appear only on the
+    Resources page and, where public, the Recommended Resources page; tag them to a program any time). Halftime and The Second
+    Mountain are kept off the public website; tick 'Show on our public website' to change that. Amazon links are searches."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_vision_list_seeded (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_vision_list_seeded").fetchone():
+        return
+    for _k, title, author, url, note, public in VISION_READING_LIST:
+        if conn.execute("SELECT 1 FROM program_resources WHERE LOWER(title) = LOWER(?)", (title,)).fetchone():
+            continue
+        conn.execute(
+            """INSERT INTO program_resources (program_id, kind, title, author, url, note, added_by, share_trainees, share_public)
+               VALUES (NULL, 'Book', ?, ?, ?, ?, ?, 0, ?)""", (title, author, url, note, "Starter list", public))
+    conn.execute("INSERT INTO resource_vision_list_seeded (done) VALUES (1)")
+    conn.commit()
+
+
 def _seed_starter_resources(conn):
     _seed_resource_list(conn, STARTER_RESOURCES_BEGINNING, "resource_starter5_seeded", "D1")
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
@@ -8840,6 +8891,7 @@ def _seed_starter_resources(conn):
     _trim_program_page_books(conn)
     _tag_awakening_vision_books(conn)
     _set_vision_books(conn)
+    _seed_vision_reading_list(conn)
     _swap_active_listening_book(conn)
     _swap_active_listening_exercise(conn)
 
