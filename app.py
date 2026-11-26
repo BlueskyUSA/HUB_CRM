@@ -8777,12 +8777,34 @@ def _trim_program_page_books(conn):
     conn.commit()
 
 
+def _tag_awakening_vision_books(conn):
+    """One time: put two books on the Awakening page (D2) and two on the Vision page (D3), so each shows the free little book
+    with two books beside it, like The Beginning and The Art of Us. The books stay on their other pages and on the Resources
+    page. Books can be re-tagged any time on the Resources page."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_awk_vision_seeded (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_awk_vision_seeded").fetchone():
+        return
+    plan = {"D2": ("emotional agility", "atlas of the heart"),
+            "D3": ("unwinding anxiety", "the stories we live by")}
+    for code, titles in plan.items():
+        prog = conn.execute("SELECT id FROM programs WHERE code = ?", (code,)).fetchone()
+        if not prog:
+            continue
+        for t in titles:
+            row = conn.execute("SELECT id FROM program_resources WHERE LOWER(title) LIKE ? ORDER BY id LIMIT 1", ("%" + t + "%",)).fetchone()
+            if row:
+                conn.execute("INSERT INTO resource_programs (resource_id, program_id) VALUES (?, ?) ON CONFLICT DO NOTHING", (row["id"], prog["id"]))
+    conn.execute("INSERT INTO resource_awk_vision_seeded (done) VALUES (1)")
+    conn.commit()
+
+
 def _seed_starter_resources(conn):
     _seed_resource_list(conn, STARTER_RESOURCES_BEGINNING, "resource_starter5_seeded", "D1")
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
     _seed_resource_list(conn, STARTER_RESOURCES_2, "resource_starter2_seeded")
     _seed_brain_books(conn)
     _trim_program_page_books(conn)
+    _tag_awakening_vision_books(conn)
     _swap_active_listening_book(conn)
     _swap_active_listening_exercise(conn)
 
