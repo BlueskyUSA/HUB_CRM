@@ -9470,6 +9470,8 @@ _STARTER_COVERS = {
     "unwinding anxiety": "book-unwinding-anxiety.jpg",
     "the art of possibility": "book-art-of-possibility.jpg",
     "designing your life": "book-designing-your-life.jpg",
+    "the alchemist": "book-alchemist.jpg",
+    "how will you measure your life?": "book-how-will-you-measure-your-life.jpg",
     "the great work of your life": "book-great-work-of-your-life.jpg",
     "the second mountain": "book-second-mountain.jpg",
     "halftime: moving from success to significance": "book-halftime.jpg",
