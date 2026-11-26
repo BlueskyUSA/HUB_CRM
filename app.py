@@ -8883,6 +8883,31 @@ def _seed_vision_reading_list(conn):
     conn.commit()
 
 
+def _set_beginning_awakening_books(conn):
+    """One time: The Beginning (D1) shows The Stories We Live By and Emotional Agility; Awakening (D2) shows Atlas of the Heart and
+    Unwinding Anxiety. Those four books are re-tagged for just these two pages; every other book and tag is left alone."""
+    conn.execute("CREATE TABLE IF NOT EXISTS resource_begin_awake_seeded (done INTEGER)")
+    if conn.execute("SELECT 1 FROM resource_begin_awake_seeded").fetchone():
+        return
+    plan = {"D1": ("the stories we live by", "emotional agility"), "D2": ("atlas of the heart", "unwinding anxiety")}
+    four = [t for ts in plan.values() for t in ts]
+    progs = {c: conn.execute("SELECT id FROM programs WHERE code = ?", (c,)).fetchone() for c in plan}
+    for c, p in progs.items():
+        if p:
+            for t in four:
+                conn.execute("DELETE FROM resource_programs WHERE program_id = ? AND resource_id IN "
+                             "(SELECT id FROM program_resources WHERE LOWER(title) LIKE ?)", (p["id"], "%" + t + "%"))
+    for c, titles in plan.items():
+        if not progs[c]:
+            continue
+        for t in titles:
+            row = conn.execute("SELECT id FROM program_resources WHERE LOWER(title) LIKE ? ORDER BY id LIMIT 1", ("%" + t + "%",)).fetchone()
+            if row:
+                conn.execute("INSERT INTO resource_programs (resource_id, program_id) VALUES (?, ?) ON CONFLICT DO NOTHING", (row["id"], progs[c]["id"]))
+    conn.execute("INSERT INTO resource_begin_awake_seeded (done) VALUES (1)")
+    conn.commit()
+
+
 def _seed_starter_resources(conn):
     _seed_resource_list(conn, STARTER_RESOURCES_BEGINNING, "resource_starter5_seeded", "D1")
     _seed_resource_list(conn, STARTER_RESOURCES, "resource_starter_seeded")
@@ -8892,6 +8917,7 @@ def _seed_starter_resources(conn):
     _tag_awakening_vision_books(conn)
     _set_vision_books(conn)
     _seed_vision_reading_list(conn)
+    _set_beginning_awakening_books(conn)
     _swap_active_listening_book(conn)
     _swap_active_listening_exercise(conn)
 
