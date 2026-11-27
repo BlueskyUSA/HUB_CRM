@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page == 'home' %}Discovery Legacy{% elif page == 'soon' %}Discovery Legacy{% else %}{{ {'why':'Why this matters','where':'Where your gift goes','pledge':'Become a Founding Friend','thanks':'Thank you','about':'About and transparency'}.get(page,'') }} | Discovery Legacy{% endif %}</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font:18px/1.65 Georgia,'Times New Roman',serif;color:#123e54;background:#fdfcf8}
+a{color:#006d82}
+.preview{background:#c9a24a;color:#123e54;text-align:center;padding:8px 14px;font:700 .9rem Arial,sans-serif}
+header.top{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;padding:18px 22px 0}
+.bar{max-width:1040px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.brand{font:italic 700 1.9rem Georgia,serif;color:#fff;text-decoration:none;line-height:1}
+.brand small{display:block;font:400 .72rem Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.8;margin-top:4px}
+nav a{color:#fff;text-decoration:none;font:600 .92rem Arial,sans-serif;margin-left:18px;opacity:.9}
+nav a:hover,nav a.on{opacity:1;border-bottom:2px solid #27c4c0}
+.waves{display:block;width:100%;height:34px;margin-top:14px}
+.hero{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;text-align:center;padding:40px 22px 70px}
+.hero h1{font:italic 700 clamp(2.4rem,6vw,4rem)/1.1 Georgia,serif;margin:0 0 12px}
+.hero p.sub{font:1.3rem/1.5 Georgia,serif;margin:0 auto 26px;max-width:640px;opacity:.95}
+main{max-width:760px;margin:0 auto;padding:44px 22px 30px}
+main.wide{max-width:900px}
+h2{font:700 clamp(1.7rem,3.4vw,2.3rem)/1.2 Georgia,serif;margin:0 0 6px;padding-bottom:10px;border-bottom:2px solid #c9a24a}
+h3{font:700 1.25rem Georgia,serif;margin:28px 0 6px}
+.btn{display:inline-block;background:#fff;color:#003b49;font:700 .95rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:15px 32px;border-radius:40px;text-decoration:none;border:0;cursor:pointer}
+.btn.dark{background:#006d82;color:#fff}
+.btn:hover{filter:brightness(.95)}
+ul.tick{padding-left:22px}ul.tick li{margin:8px 0}
+.note{background:#eef6f7;border-left:4px solid #006d82;padding:14px 18px;border-radius:6px;font:.95rem/1.55 Arial,sans-serif;margin:24px 0}
+form.card{background:#fff;border:1px solid #d5e6e8;border-radius:14px;padding:26px;margin-top:20px;box-shadow:0 8px 24px rgba(0,59,73,.07);font:16px/1.5 Arial,sans-serif}
+form.card label{display:block;font-weight:700;margin:16px 0 4px;color:#123e54}
+form.card label .opt{font-weight:400;color:#5c7a86}
+input[type=text],input[type=email],input[type=tel],input[type=number],select,textarea{width:100%;padding:11px 12px;border:1px solid #b9ced2;border-radius:8px;font:inherit;background:#fff}
+textarea{min-height:90px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.row{grid-template-columns:1fr}nav a{margin-left:12px}}
+.choice{display:flex;gap:18px;flex-wrap:wrap;margin-top:4px}
+.choice label{font-weight:400;margin:0;display:flex;align-items:center;gap:8px}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400!important}
+.check input{margin-top:5px}
+.err{background:#fdecea;border:1px solid #e0a8a2;color:#8a1f17;padding:12px 14px;border-radius:8px;margin-bottom:6px;font:1rem Arial,sans-serif}
+footer{background:#0b2f3a;color:#cfe2e6;padding:30px 22px;font:.88rem/1.6 Arial,sans-serif;text-align:center;margin-top:40px}
+footer a{color:#fff}
+.soon{min-height:100vh;background:linear-gradient(135deg,#003b49,#006d82);color:#fff;text-align:center;padding:12vh 24px;font-family:Georgia,serif}
+.soon h1{font:italic 700 clamp(2.6rem,7vw,4.2rem) Georgia,serif;margin:0 0 10px}
+.soon p{max-width:520px;margin:12px auto;font-size:1.2rem;opacity:.95}
+.soon a{color:#fff}
+</style>
+</head>
+<body>
+{% if page == 'soon' %}
+<div class="soon">
+  <h1>Discovery Legacy</h1>
+  <svg viewBox="0 0 320 34" width="260" style="display:block;margin:0 auto 18px" aria-hidden="true"><path d="M2 14 C42 -2 82 30 122 14 S202 -2 242 14 S300 26 318 14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M2 24 C42 8 82 38 122 24 S202 8 242 24 S300 34 318 24" fill="none" stroke="#27c4c0" stroke-width="4" stroke-linecap="round"/></svg>
+  <p>We are a Texas nonprofit corporation, and our website is coming soon.</p>
+  <p>Questions? Write to <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+</div>
+{% else %}
+{% if preview %}<div class="preview">Preview only. This site is not public yet. Only people signed in to the Hub can see it.</div>{% endif %}
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>
+    <nav>
+      <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this matters</a>
+      <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Where your gift goes</a>
+      <a href="{{ url_for('legacy_about') }}" class="{{ 'on' if page=='about' }}">About</a>
+      <a href="{{ url_for('legacy_pledge') }}" class="{{ 'on' if page=='pledge' }}">Pledge</a>
+    </nav>
+  </div>
+  <svg class="waves" viewBox="0 0 1040 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 C130 -2 260 30 390 14 S650 -2 780 14 S980 26 1040 14" fill="none" stroke="#fff" stroke-width="3"/><path d="M0 24 C130 8 260 38 390 24 S650 8 780 24 S980 34 1040 24" fill="none" stroke="#27c4c0" stroke-width="3"/></svg>
+</header>
+
+{% if page == 'home' %}
+<section class="hero">
+  <h1>A legacy of connection.</h1>
+  <p class="sub">Help us bring Discovery back to Dallas&ndash;Fort Worth.</p>
+  <a class="btn" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a>
+</section>
+<main>
+  <p>Discovery Legacy is a Texas nonprofit corporation that offers experiential weekend programs to help individuals and couples build self-awareness, communication and relationship skills.</p>
+  <p>We are getting ready to open our doors in 2027, and we are inviting a small circle of friends to help us start well.</p>
+  <p><a href="{{ url_for('legacy_why') }}">Why this matters</a> &middot; <a href="{{ url_for('legacy_where') }}">Where your gift goes</a> &middot; <a href="{{ url_for('legacy_about') }}">About us</a></p>
+</main>
+
+{% elif page == 'why' %}
+<main>
+  <h2>Why this matters</h2>
+  <p>Most of us were never taught how to understand ourselves or how to stay close to the people we love.</p>
+  <p>Discovery Legacy&rsquo;s programs are three-day experiences, not lectures. They give individuals and couples the chance to slow down, look honestly at their own story, and practice new ways of connecting.</p>
+  <p>Our programs are educational. They are not counseling, therapy, or mental-health treatment.</p>
+  <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a></p>
+</main>
+
+{% elif page == 'where' %}
+<main>
+  <h2>Where your gift goes</h2>
+  <p>Our goal is to build a foundation of about <strong>$100,000</strong> for operating expenses and reserves, so that our first programs can run without debt and so that the work can endure and be passed on to the next team of leaders.</p>
+  <ul class="tick">
+    <li>Operating expenses to open and run our first programs.</li>
+    <li>Reserves, so the programs are strong enough to last.</li>
+  </ul>
+  <p>Our programs are led by trained volunteers, and we plan to publish a financial report every year so you can see how gifts were used.</p>
+  <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a></p>
+</main>
+
+{% elif page == 'pledge' %}
+<main>
+  <h2>Become a Founding Friend</h2>
+  <p>Please tell us you would like to help. A pledge is a statement of your intention. It is not a payment and not a legal obligation. When Discovery Legacy&rsquo;s bank account is open, we will contact you about how to give, and you can decide then.</p>
+  <form class="card" method="post" action="{{ url_for('legacy_pledge') }}">
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    {{ bot_field() }}
+    <div style="position:absolute;left:-9999px" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <div class="row">
+      <div><label for="fn">First name</label><input id="fn" type="text" name="first_name" value="{{ form.get('first_name','') }}" required></div>
+      <div><label for="ln">Last name</label><input id="ln" type="text" name="last_name" value="{{ form.get('last_name','') }}"></div>
+    </div>
+    <label for="em">Email</label><input id="em" type="email" name="email" value="{{ form.get('email','') }}" required>
+    <label for="ph">Cell phone <span class="opt">(optional)</span></label><input id="ph" type="tel" name="phone" value="{{ form.get('phone','') }}">
+    <label>I would like to pledge</label>
+    <div class="choice">
+      <label><input type="radio" name="kind" value="once" {{ 'checked' if form.get('kind','once') != 'monthly' }}> One time</label>
+      <label><input type="radio" name="kind" value="monthly" {{ 'checked' if form.get('kind') == 'monthly' }}> Monthly</label>
+    </div>
+    <div class="row">
+      <div><label for="am">Amount ($)</label><input id="am" type="text" inputmode="decimal" name="amount" value="{{ form.get('amount','') }}" placeholder="100" required></div>
+      <div id="mo" style="display:none"><label for="mn">For how long</label>
+        <select id="mn" name="months">
+          <option value="0">Until I change it</option>
+          {% for m in (6,12,24,36) %}<option value="{{ m }}" {{ 'selected' if form.get('months') == m|string }}>{{ m }} months</option>{% endfor %}
+        </select></div>
+    </div>
+    <label for="nt">Anything you would like us to know <span class="opt">(optional)</span></label>
+    <textarea id="nt" name="note">{{ form.get('note','') }}</textarea>
+    <label class="check"><input type="checkbox" name="understand" value="1" {{ 'checked' if form.get('understand') }} required> <span>I understand this is a pledge of intent, not a payment or a legal obligation.</span></label>
+    <label class="check"><input type="checkbox" name="updates_ok" value="1" {{ 'checked' if form.get('updates_ok') }}> <span>Please keep me updated about Discovery Legacy by email.</span></label>
+    <p style="margin:20px 0 0"><button class="btn dark" type="submit">Send my pledge</button></p>
+    <div class="note" style="margin-bottom:0">Discovery Legacy is a Texas nonprofit corporation. We intend to apply for recognition of exemption from federal income tax under Section 501(c)(3). Until the IRS recognizes us, gifts are not known to be tax-deductible.</div>
+  </form>
+  <script>
+  (function(){var r=document.querySelectorAll('input[name=kind]'),m=document.getElementById('mo');
+  function s(){var v=document.querySelector('input[name=kind]:checked');m.style.display=(v&&v.value==='monthly')?'block':'none'}
+  for(var i=0;i<r.length;i++)r[i].addEventListener('change',s);s()})();
+  </script>
+</main>
+
+{% elif page == 'thanks' %}
+<main>
+  <h2>Thank you</h2>
+  <p>Thank you for being a Founding Friend{% if plan %}: <strong>{{ plan }}</strong>{% endif %}. Your belief in this work means a great deal to us.</p>
+  <p>A pledge is a statement of your intention, so you will not be asked to give until our bank account is open. We will write to you then with the details, and we will keep you updated as we get ready to open in 2027.</p>
+  <p>Until the IRS recognizes our application for tax-exempt status, we cannot tell you that gifts are tax-deductible. We will let you know when that changes.</p>
+  <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_home') }}">Back to the home page</a></p>
+</main>
+
+{% elif page == 'about' %}
+<main>
+  <h2>About and transparency</h2>
+  <p>Discovery Legacy was formed as a Texas nonprofit corporation on {{ formed }}. Its federal employer identification number is <strong>{{ ein }}</strong>.</p>
+  <p>It is governed by a volunteer board of directors and by bylaws that include a conflict-of-interest policy, so that its assets and name serve its mission and not any individual. The bylaws and the conflict-of-interest policy are available on request.</p>
+  <p>Questions? Write to <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+  <div class="note">Discovery Legacy is a Texas nonprofit corporation. We intend to apply for recognition of exemption from federal income tax under Section 501(c)(3). Until the IRS recognizes us, gifts are not known to be tax-deductible.</div>
+</main>
+{% endif %}
+
+<footer>
+  &copy; Discovery Legacy &middot; A Texas nonprofit corporation<br>
+  Federal tax-exempt status not yet recognized &middot; <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+</footer>
+{% endif %}
+</body>
+</html>

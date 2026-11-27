@@ -1,0 +1,49 @@
+{% extends "crm_base.html" %}
+{% block title %}Pledges — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Pledges</h1>
+<p class="muted">Pledges made on the Discovery Legacy fundraising site. A pledge is a statement of intent, not a payment. Only the Owner sees this page.</p>
+
+<div class="card">
+  <h3 style="margin-top:0">The fundraising site is {% if live %}<span style="color:#1d6b3a">public</span>{% else %}<span style="color:#9a6a00">hidden</span>{% endif %}</h3>
+  <p class="muted" style="margin-top:0">
+    {% if live %}Anyone can see it at the Discovery Legacy web address.{% else %}Visitors see a &ldquo;coming soon&rdquo; page. Anyone signed in to the Hub can still preview it.{% endif %}
+  </p>
+  <form method="post" action="{{ url_for('.pledges_live') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <input type="hidden" name="live" value="{{ '0' if live else '1' }}">
+    <button class="btn" type="submit" onclick="return confirm('{{ 'Hide the fundraising site from the public?' if live else 'Make the fundraising site public now? Before you do, please confirm the exemption notice wording with your attorney.' }}')">{{ 'Hide the site' if live else 'Make the site public' }}</button>
+    <a class="btn secondary" href="{{ url_for('legacy_home') }}" target="_blank">Preview the site</a>
+  </form>
+  <p class="muted" style="margin-bottom:0;font-size:.88rem">Web addresses that show the site at their own front page: {{ hosts|join(', ') }}. To add another, put it in Render&rsquo;s Environment as LEGACY_HOSTS (separate several with commas).</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Totals</h3>
+  <p style="margin:4px 0"><b>{{ count }}</b> pledge{{ '' if count == 1 else 's' }} (not counting any marked Withdrawn)</p>
+  <p style="margin:4px 0">One-time pledges: <b>{{ money(once) }}</b></p>
+  <p style="margin:4px 0">Monthly pledges: <b>{{ money(monthly) }}</b> a month</p>
+  <p class="muted" style="margin:4px 0;font-size:.88rem">First-year value (one-time plus up to 12 months of each monthly pledge): {{ money(year) }}</p>
+</div>
+
+<div style="overflow-x:auto">
+<table class="stack" style="width:100%">
+  <tr><th>Date</th><th>Name</th><th>Pledge</th><th>Email</th><th>Note</th><th>Status</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td data-label="Date">{{ r.created_at[5:7] }}/{{ r.created_at[8:10] }}/{{ r.created_at[0:4] }}</td>
+    <td data-label="Name">{% if r.contact_id %}<a href="{{ url_for('.contact_detail', contact_id=r.contact_id) }}">{{ r.first_name }} {{ r.last_name or '' }}</a>{% else %}{{ r.first_name }} {{ r.last_name or '' }}{% endif %}</td>
+    <td data-label="Pledge">{{ plan_text(r.kind, r.amount_cents, r.months) }}</td>
+    <td data-label="Email">{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</td>
+    <td data-label="Note">{{ r.note or '' }}{% if not r.updates_ok %}<div class="muted" style="font-size:.8rem">Did not ask for updates.</div>{% endif %}</td>
+    <td data-label="Status">
+      <form method="post" action="{{ url_for('.pledge_status', pledge_id=r.id) }}">
+        <select name="status" onchange="this.form.submit()">{% for s in statuses %}<option {{ 'selected' if s == r.status }}>{{ s }}</option>{% endfor %}</select>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="muted">No pledges yet.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}
