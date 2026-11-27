@@ -64,8 +64,8 @@
           {% if is_lead %}<a href="{{ url_for('.testimonials_review') }}">Testimonials</a>{% endif %}
           {% if show_contacts %}
           <details class="subnav">
-            <summary>Guides and Sponsors &#9662;</summary>
-            {% if has_guides_access %}<a href="{{ url_for('.call_volunteers_page') }}" style="padding-left:30px">Guides</a>{% endif %}
+            <summary>Ambassadors and Sponsors &#9662;</summary>
+            {% if has_guides_access %}<a href="{{ url_for('.call_volunteers_page') }}" style="padding-left:30px">Ambassadors</a>{% endif %}
             <a href="{{ url_for('.leadership_pipeline') }}" style="padding-left:30px">Sponsor pipeline</a>
             <a href="{{ url_for('public_sponsor') }}" style="padding-left:30px">Sponsor form (public)</a>
           </details>
@@ -75,6 +75,7 @@
             <summary>Finance &#9662;</summary>
             {% if show_finance %}<a href="{{ url_for('.finance') }}" style="padding-left:30px">Finance overview</a>{% endif %}
             {% if show_donations %}<a href="{{ url_for('.donations_list') }}" style="padding-left:30px">Donations</a>{% endif %}
+            {% if session.is_owner and not session.is_admin %}<a href="{{ url_for('.pledges_page') }}" style="padding-left:30px">Pledges (Discovery Legacy)</a>{% endif %}
             {% if session.is_owner %}<a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports</a>{% endif %}
             {% if session.is_owner or has_budgets_access %}
             <details class="subnav">
