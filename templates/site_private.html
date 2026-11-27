@@ -20,10 +20,12 @@ p.msg{max-width:580px;font-size:1.2rem;line-height:1.7;margin:0 0 26px;white-spa
 .box button:hover{background:#0c4561}
 .err{background:#fdecea;color:#8a1f11;border-radius:8px;padding:9px 12px;margin-bottom:8px;font:.95rem Arial,sans-serif}
 .thanks{font-size:1.25rem;line-height:1.7;max-width:560px}
-footer{padding:18px;font:.85rem Arial,sans-serif;opacity:.75}
-footer a{color:#fff}
+header.top{padding:14px 20px 0;text-align:right;font:.88rem Arial,sans-serif}
+header.top a{color:#fff;opacity:.85;text-decoration:none;border:1px solid rgba(255,255,255,.45);border-radius:20px;padding:6px 14px}
+header.top a:hover{opacity:1;background:rgba(255,255,255,.12)}
 </style></head>
-<body><main>
+<body><header class="top"><a href="{{ url_for('crm.dashboard') }}">Team Login</a></header>
+<main>
 <h1>{{ public_brand|bang }}</h1>
 <svg class="wv" viewBox="324 220 552 126" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M 330 268 C 420 228, 500 308, 600 268 S 780 228, 870 268" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="M 330 298 C 420 338, 500 258, 600 298 S 780 338, 870 298" fill="none" stroke="#27C4C0" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>
 <div class="tag">A Journey of Curiosity and Possibility</div>
@@ -51,5 +53,4 @@ We&rsquo;re getting ready to open, and we&rsquo;re sharing our site with a small
 </form>
 {% endif %}
 </main>
-<footer><a href="{{ url_for('crm.dashboard') }}">Team Login</a></footer>
 </body></html>
