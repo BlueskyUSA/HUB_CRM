@@ -44,10 +44,10 @@ def switches():
     return [
         ("SESSION_LETTERS_LIVE", on("SESSION_LETTERS_LIVE"), "Master switch: letters to trainees and the team (sent by hand or automatically). Off means nothing is sent."),
         ("AUTO_LETTERS_LIVE", on("AUTO_LETTERS_LIVE"), "Automatic letters: confirmation after reserving, \u201cThank you \u2013 We\u2019re so excited\u201d, and What to bring. Also needs the master switch."),
-        ("CALL_ALERTS_LIVE", on("CALL_ALERTS_LIVE"), "Guide alerts, Guide-page emails, the 7-day payment nudges, and the reply to \u201cI\u2019m curious\u201d."),
-        ("SPONSOR_LIVE", on("SPONSOR_LIVE"), "Sponsor letters: the Sponsor welcome letter and the help alert. Also needs the Guide alerts switch (CALL_ALERTS_LIVE)."),
+        ("CALL_ALERTS_LIVE", on("CALL_ALERTS_LIVE"), "Ambassador alerts, Ambassador-page emails, the 7-day payment nudges, and the reply to \u201cI\u2019m curious\u201d."),
+        ("SPONSOR_LIVE", on("SPONSOR_LIVE"), "Sponsor letters: the Sponsor welcome letter and the help alert. Also needs the Ambassador alerts switch (CALL_ALERTS_LIVE)."),
         ("PUBLIC_REPLIES_LIVE", on("PUBLIC_REPLIES_LIVE"), "Automatic replies when someone uses a public website form: profile link, welcome letter, thank-you letter, \u201creach out to me\u201d confirmation, and the plan email."),
-        ("BLASTS_LIVE", on("BLASTS_LIVE"), "Marketing & Email Blasts (excitement letters, volunteer and Guide emails)."),
+        ("BLASTS_LIVE", on("BLASTS_LIVE"), "Marketing & Email Blasts (excitement letters, volunteer and Ambassador emails)."),
     ]
 
 
@@ -157,7 +157,7 @@ def _preview_map():
     import call_flow as C
     P = "[First name]"
     return {
-        "venue": lambda: (lambda r: (r[0], r[1]))(C.letter_venue(P, "[partner's name]", "[Guide name]", "[Guide phone]")),
+        "venue": lambda: (lambda r: (r[0], r[1]))(C.letter_venue(P, "[partner's name]", "[Ambassador name]", "[Ambassador phone]")),
         "welcome": lambda: (T.INTERESTED_PARTY_WELCOME_SUBJECT, T.interested_party_welcome_content(P)[0]),
         "longform_followup": lambda: (T.LONGFORM_FOLLOWUP_SUBJECT, T.longform_followup_content(P, "#")[0]),
         "longform_thankyou": lambda: (T.LONGFORM_THANKYOU_SUBJECT, T.longform_thankyou_content(P, "#", "#")[0]),
@@ -170,32 +170,32 @@ def _preview_map():
     }
 
 
-# Plain-language note shown where the Guide letters appear, because most people don't know what a Guide is.
+# Plain-language note shown where the Ambassador letters appear, because most people don't know what an Ambassador is.
 GUIDE_EXPLAINER = (
-    "A Guide is a volunteer with a very important role. A Guide is a volunteer selected by leadership who is responsible for responding to the \u201cI\u2019m Curious to know more\u201d short form on the public website. "
-    "If a Guide responds to this inquiry, the Guide becomes that person's personal contact for Sojourn, from their first question all the way into the training room. "
-    "In short, a Guide is a salesperson who helps fill the seats. In years past only staff took on this job. We think it makes sense to invite qualified volunteers to help. "
+    "An Ambassador is a volunteer with a very important role. An Ambassador is a volunteer selected by leadership who is responsible for responding to the \u201cI\u2019m Curious to know more\u201d short form on the public website. "
+    "If an Ambassador responds to this inquiry, the Ambassador becomes that person's personal contact for Sojourn, from their first question all the way into the training room. "
+    "In short, an Ambassador is a salesperson who helps fill the seats. In years past only staff took on this job. We think it makes sense to invite qualified volunteers to help. "
     "Our goal is to select 12 volunteers to do this job: 6 for The Art of Us program, and 6 for The Beginning program.",
     "## How it works",
-    "When someone fills out an \"I'm curious\" form, and let's say they are interested in The Art of Us, an alert is sent to all 6 of the Guides for that program. "
-    "The first Guide to respond to the request is assigned to that contact, and a letter goes out right away to tell the person who their Guide is and that the Guide will be in touch. "
+    "When someone fills out an \"I'm curious\" form, and let's say they are interested in The Art of Us, an alert is sent to all 6 of the Ambassadors for that program. "
+    "The first Ambassador to respond to the request is assigned to that contact, and a letter goes out right away to tell the person who their Ambassador is and that the Ambassador will be in touch. "
     "(If a person selects \"Not sure\" about which program, or if they ask about Awakening, Vision, Refocus, or Spiritual, the \"Everything else\" group is alerted.)",
-    "From then on the same Guide is a salesperson, coach and counselor bundled together, and takes on the responsibility from cradle to grave to answer questions and guide that person into the training room. "
-    "A Guide must be gifted, with breadth and depth in communication skill.",
-    "When a Guide accepts the \"I'm curious\" request, that Guide is sent a link of their own with an alert that carries the name of the client so the Guide knows right away who it is about. "
-    "The link opens an easy to use web page dedicated to that one client, which, by simply pressing buttons, makes it simple for the Guide to send pre-written correspondence to the contact. "
-    "For example, when the client is ready to register, the Guide will press the button to send the registration link. After the client registers, the Guide is notified to send the questionnaire link, payment request link, and so on. "
-    "If the client delays payment, the Guide will be automatically notified every seven days that payment is delayed, and at the Guide's discretion, a payment reminder may be sent. "
+    "From then on the same Ambassador is a salesperson, coach and counselor bundled together, and takes on the responsibility from cradle to grave to answer questions and guide that person into the training room. "
+    "An Ambassador must be gifted, with breadth and depth in communication skill.",
+    "When an Ambassador accepts the \"I'm curious\" request, that Ambassador is sent a link of their own with an alert that carries the name of the client so the Ambassador knows right away who it is about. "
+    "The link opens an easy to use web page dedicated to that one client, which, by simply pressing buttons, makes it simple for the Ambassador to send pre-written correspondence to the contact. "
+    "For example, when the client is ready to register, the Ambassador will press the button to send the registration link. After the client registers, the Ambassador is notified to send the questionnaire link, payment request link, and so on. "
+    "If the client delays payment, the Ambassador will be automatically notified every seven days that payment is delayed, and at the Ambassador's discretion, a payment reminder may be sent. "
     "Once payment is made, a \"Thank you \u2013 We're so excited\" letter is automatically sent, followed by a \"What to bring\" letter seven days before the training begins.",
-    "A dropdown menu gives the Guide options to tell us how the initial conversation went (spoke with them, left a voicemail, texted and waiting for a reply, no answer and will try again, not interested, or wrong number). "
-    "The Guide may dictate a note about what the person is hoping for, their questions and the next step. This information is stored on the \u201cCall Requests\u201d page under the Admin menu.",
-    "Before the trainee shows up at the door, the Guide makes sure the contact information is complete, including a photo, the questionnaire is complete, and payment has been received.",
+    "A dropdown menu gives the Ambassador options to tell us how the initial conversation went (spoke with them, left a voicemail, texted and waiting for a reply, no answer and will try again, not interested, or wrong number). "
+    "The Ambassador may dictate a note about what the person is hoping for, their questions and the next step. This information is stored on the \u201cCall Requests\u201d page under the Admin menu.",
+    "Before the trainee shows up at the door, the Ambassador makes sure the contact information is complete, including a photo, the questionnaire is complete, and payment has been received.",
 )
 
 
 
 def guides_by_group(conn):
-    """Names of the active Guides, grouped the way the Guide team is organised. Empty if nothing is set up yet."""
+    """Names of the active Ambassadors, grouped the way the Ambassador team is organised. Empty if nothing is set up yet."""
     try:
         import call_flow as CF
         rows = conn.execute("SELECT program_code, name FROM call_volunteers WHERE active = 1 ORDER BY id").fetchall()
@@ -239,7 +239,7 @@ def catalog():
             V("connect", "Connect-request confirmation", "Automatically, when someone asks us to reach out from their private link.", "People who asked to connect"),
             V("excitement", "Excitement email", "By hand, from a contact's record.", "Contacts"),
             V("plan", "Preliminary business plan", "When someone requests it, or by hand from their record.", "Interested parties"),
-            V("venue", "Where we'll be and what's included", "By hand, from the Guide's page or a contact's record.", "Registered couples, or anyone asking about the venue"),
+            V("venue", "Where we'll be and what's included", "By hand, from the Ambassador's page or a contact's record.", "Registered couples, or anyone asking about the venue"),
          ]),
         ("contacts", "Contacts (anyone in the Hub)",
          "Messages you send to any contact from their record.", [
@@ -248,26 +248,27 @@ def catalog():
             E("needs_request", "Food and physical needs request (session team)", "By hand, from a session page: the \"Email the team members who haven't answered\" button. The Hub sends it and keeps a record.", "Team members on a session"),
             E("video_call", "Video call link (Google Meet)", "By hand, from a contact's record: \"Email the link\". The Hub sends it and keeps a record.", "Any contact"),
             E("site_invitation", "Invitation to the private website preview", "By hand, from a contact\u2019s record: \"Invite to the website\". The Hub makes their personal link, sends this and keeps a record. People who already have a Hub login are never sent one.", "Friends you invite while the site is private"),
+            E("pledge_thanks", "Thank you for your pledge (fundraising site)", "Automatically, the moment someone sends a pledge on the Discovery Legacy website (when letters are switched on). The Hub keeps a record on their contact.", "People who pledge on the fundraising site"),
          ]),
         ("trainees", "Trainee Correspondence",
          "Letters and questionnaires for the people registered for a session. Each session's page shows who has received each letter. The questionnaires are the forms trainees fill in on their private link; their questions are fixed in the program code for now, and making them editable per program is the next piece.", [
             E("seminar_registration", sl["seminar_registration"]["title"] + " \u2013 The Art of Us", "By hand from the session's letters page.", "Trainees (The Art of Us)"),
             E("seminar_registration_other", sl["seminar_registration_other"]["title"], "By hand from the session's letters page.", "Trainees (The Beginning and every other training)"),
-            E("trainee_confirm", sl["trainee_confirm"]["title"] + " \u2013 The Art of Us", "By hand from the session's letters page; also automatically to people who reserve through a Guide's link.", "Trainees (The Art of Us)"),
-            E("trainee_confirm_other", sl["trainee_confirm_other"]["title"], "By hand from the session's letters page; also automatically to people who reserve through a Guide's link.", "Trainees (The Beginning and every other training)"),
-            E("payment_reminder", sl["payment_reminder"]["title"] + " \u2013 The Art of Us", "By hand only. The Guide is nudged every 7 days while payment is late and decides whether to send a reminder.", "Trainees who have not paid (The Art of Us)"),
-            E("payment_reminder_other", sl["payment_reminder_other"]["title"], "By hand only. The Guide is nudged every 7 days while payment is late and decides whether to send a reminder.", "Trainees who have not paid (The Beginning and every other training)"),
-            E("payment_received", sl["payment_received"]["title"] + " \u2013 The Art of Us", "Automatically when payment is recorded (for people who reserved through a Guide); also by hand from the session's letters page.", "Trainees who have paid (The Art of Us)"),
-            E("payment_received_other", sl["payment_received_other"]["title"], "Automatically when payment is recorded (for people who reserved through a Guide); also by hand from the session's letters page.", "Trainees who have paid (The Beginning and every other training)"),
+            E("trainee_confirm", sl["trainee_confirm"]["title"] + " \u2013 The Art of Us", "By hand from the session's letters page; also automatically to people who reserve through an Ambassador's link.", "Trainees (The Art of Us)"),
+            E("trainee_confirm_other", sl["trainee_confirm_other"]["title"], "By hand from the session's letters page; also automatically to people who reserve through an Ambassador's link.", "Trainees (The Beginning and every other training)"),
+            E("payment_reminder", sl["payment_reminder"]["title"] + " \u2013 The Art of Us", "By hand only. The Ambassador is nudged every 7 days while payment is late and decides whether to send a reminder.", "Trainees who have not paid (The Art of Us)"),
+            E("payment_reminder_other", sl["payment_reminder_other"]["title"], "By hand only. The Ambassador is nudged every 7 days while payment is late and decides whether to send a reminder.", "Trainees who have not paid (The Beginning and every other training)"),
+            E("payment_received", sl["payment_received"]["title"] + " \u2013 The Art of Us", "Automatically when payment is recorded (for people who reserved through an Ambassador); also by hand from the session's letters page.", "Trainees who have paid (The Art of Us)"),
+            E("payment_received_other", sl["payment_received_other"]["title"], "Automatically when payment is recorded (for people who reserved through an Ambassador); also by hand from the session's letters page.", "Trainees who have paid (The Beginning and every other training)"),
             E("questionnaire_request", sl["questionnaire_request"]["title"] + " \u2013 The Art of Us", "By hand from the session's letters page.", "Trainees without a completed questionnaire (The Art of Us)"),
             E("questionnaire_request_other", sl["questionnaire_request_other"]["title"], "By hand from the session's letters page.", "Trainees without a completed questionnaire (The Beginning and every other training)"),
             E("questionnaire_reminder", sl["questionnaire_reminder"]["title"] + " \u2013 The Art of Us", "By hand from the session's letters page.", "Trainees without a completed questionnaire (The Art of Us)"),
             E("questionnaire_reminder_other", sl["questionnaire_reminder_other"]["title"], "By hand from the session's letters page.", "Trainees without a completed questionnaire (The Beginning and every other training)"),
-            X("Questionnaire: The Art of Us", "Sent as a private link by the Guide's \"Email it\" or from the session page.", "Each partner of a couple, separately", "/cep-letters/q-rt"),
+            X("Questionnaire: The Art of Us", "Sent as a private link by the Ambassador's \"Email it\" or from the session page.", "Each partner of a couple, separately", "/cep-letters/q-rt"),
             X("Questionnaire: The Beginning", "Sent as a private link from the session page.", "Each person, separately. The Beginning's own questions are still to be written (shown as TBD).", "/cep-letters/q-d1"),
             C("Questionnaire: other programs", "Sent as a private link from the session page.", "Each person", "Awakening, Vision, Renew and Spiritual use a short standard set: first time attending, goals, food and access needs, injuries, anything else."),
-            E("what_to_bring_aou", sl["what_to_bring_aou"]["title"], "Automatically 7 days before The Art of Us for people who have paid (reserved through a Guide); also by hand from the session's letters page.", "Trainees (The Art of Us)"),
-            E("what_to_bring", "What to Bring \u2013 Other Trainings", "Automatically 7 days before the training for people who have paid (reserved through a Guide); also by hand.", "Trainees (The Beginning and every other training)"),
+            E("what_to_bring_aou", sl["what_to_bring_aou"]["title"], "Automatically 7 days before The Art of Us for people who have paid (reserved through an Ambassador); also by hand from the session's letters page.", "Trainees (The Art of Us)"),
+            E("what_to_bring", "What to Bring \u2013 Other Trainings", "Automatically 7 days before the training for people who have paid (reserved through an Ambassador); also by hand.", "Trainees (The Beginning and every other training)"),
             V("completion", "After the training", "Automatically, a short time after the training ends.", "Trainees who completed"),
             V("contract", "Contract information request", "By hand, from a contact's record.", "Trainees who completed"),
             E("trainee_resources", "After the training: recommended resources", "Automatically on the last day of each training, at the end time an Administrator sets for that program (Administrator menu, Program end times). Sent once to each trainee who has paid. Only sent when something is shared with trainees on the Resources page.", "Trainees who have paid"),
@@ -285,25 +286,25 @@ def catalog():
             C("Welcome to a new login", "Automatically, when a login is created or a password is reset.", "New team members"),
          ]),
         ("guides", "Volunteers", "What the people who make the calls receive.", [
-            E("guide_curious", "Reply to \"I'm curious\"", "Automatically, as soon as a Guide takes a call request.", "People who ask to be called", sub="Guides"),
-            E("guide_register", "Registration link", "When the Guide taps \"Email it\" in the Ready to register box.", "People a Guide has talked with", sub="Guides"),
-            E("guide_questionnaire", "Questionnaire link", "When the Guide taps \"Email it\" in the Send the questionnaire box.", "People who have reserved", sub="Guides"),
-            E("guide_longform", "Complete your profile", "When the Guide taps \"Email it\" under Next step, after the person has reserved.", "People who have reserved", sub="Guides"),
-            E("guide_payment", "Payment request", "When the Guide taps \"Email it\" for the payment request.", "People who have reserved", sub="Guides"),
-            E("guide_payment_reminder", "Payment reminder (from the Guide)", "When the Guide chooses to remind someone who has not paid (the Guide is prompted every 7 days).", "People who have reserved but not paid", sub="Guides"),
-            C("New call request", "Automatically, when someone asks to be called.", "The Guides for that program", sub="Guides", text=[
-                ("Email", "Subject: Please reach out to [Name] within 2 hours \u2013 [Program]\n\nHi [Guide first name],\n\n[Name] asked to be reached about [Program]. They prefer: [Call or text].\n\nCan you [call or text] them within two hours? Tap here to say yes:\n[the Guide\u2019s personal link]\n\nIf another volunteer already took it, the page will tell you. Thank you for helping!"),
+            E("guide_curious", "Reply to \"I'm curious\"", "Automatically, as soon as an Ambassador takes a call request.", "People who ask to be called", sub="Ambassadors"),
+            E("guide_register", "Registration link", "When the Ambassador taps \"Email it\" in the Ready to register box.", "People an Ambassador has talked with", sub="Ambassadors"),
+            E("guide_questionnaire", "Questionnaire link", "When the Ambassador taps \"Email it\" in the Send the questionnaire box.", "People who have reserved", sub="Ambassadors"),
+            E("guide_longform", "Complete your profile", "When the Ambassador taps \"Email it\" under Next step, after the person has reserved.", "People who have reserved", sub="Ambassadors"),
+            E("guide_payment", "Payment request", "When the Ambassador taps \"Email it\" for the payment request.", "People who have reserved", sub="Ambassadors"),
+            E("guide_payment_reminder", "Payment reminder (from the Ambassador)", "When the Ambassador chooses to remind someone who has not paid (the Ambassador is prompted every 7 days).", "People who have reserved but not paid", sub="Ambassadors"),
+            C("New call request", "Automatically, when someone asks to be called.", "The Ambassadors for that program", sub="Ambassadors", text=[
+                ("Email", "Subject: Please reach out to [Name] within 2 hours \u2013 [Program]\n\nHi [Ambassador first name],\n\n[Name] asked to be reached about [Program]. They prefer: [Call or text].\n\nCan you [call or text] them within two hours? Tap here to say yes:\n[the Ambassador\u2019s personal link]\n\nIf another volunteer already took it, the page will tell you. Thank you for helping!"),
                 ("Phone alert", "[Name] wants to hear from us\nCan you [call or text] [Name] within 2 hours? Tap to say yes. ([Program])"),
                 ("Second round, 2 hours later", "Same email, with \u201c(second reminder: no one has claimed this yet)\u201d added after the program name."),
             ]),
-            C("Unclaimed request and call reminders", "Automatically, if nobody claims a request in 2 hours, and to remind a Guide to log a call.", "Guides, and you", sub="Guides", text=[
-                ("To you and the Guide Team Captain: unclaimed request", "Subject: Unclaimed call request: [Name] ([Program])\n\nNobody has claimed this request in 2 hours; the volunteers were alerted again.\n(Or: No volunteers are set up for this program. / No volunteer could be emailed.)\n\nOpen Call requests in the CRM to follow up: [link]"),
-                ("To the Guide: please log your call (2 hours after taking a request)", "Subject: Please log your call\n\nHi [Guide first name],\n\nYou took a call request a couple of hours ago. When you\u2019ve called, please log how it went here:\n[the Guide\u2019s personal link]\n\nThank you!"),
+            C("Unclaimed request and call reminders", "Automatically, if nobody claims a request in 2 hours, and to remind an Ambassador to log a call.", "Ambassadors, and you", sub="Ambassadors", text=[
+                ("To you and the Ambassador Team Captain: unclaimed request", "Subject: Unclaimed call request: [Name] ([Program])\n\nNobody has claimed this request in 2 hours; the volunteers were alerted again.\n(Or: No volunteers are set up for this program. / No volunteer could be emailed.)\n\nOpen Call requests in the CRM to follow up: [link]"),
+                ("To the Ambassador: please log your call (2 hours after taking a request)", "Subject: Please log your call\n\nHi [Ambassador first name],\n\nYou took a call request a couple of hours ago. When you\u2019ve called, please log how it went here:\n[the Ambassador\u2019s personal link]\n\nThank you!"),
             ]),
-            C("Milestone emails", "Automatically, as a Guide reaches milestones.", "Guides", sub="Guides", text=[
-                ("When the person registers", "Subject: [First name] has registered!\n\nHi [Guide first name],\n\nGood news: [Name] registered for [Program, dates], thanks to your conversation. Please open your page for them to send the questionnaire link and the payment request: [link] Payment is still pending. We will let you know when it comes in.\n\nWarmly,\nThe Sojourn Team"),
-                ("When the person pays", "Subject: [First name] has registered and paid!\n\nHi [Guide first name],\n\n[Name] has paid for [Program, dates]. Their spot is secure. Thank you for helping them take this step!\n\nWarmly,\nThe Sojourn Team"),
-                ("Every 7 days while payment is late", "Subject: [First name] has not paid yet\n\nHi [Guide first name],\n\n[First name] reserved a seat but payment has not arrived. A friendly reminder may help, and it is your call. Open your page for them and tap the payment reminder: [link]\n\nWarmly,\nThe Sojourn Team"),
+            C("Milestone emails", "Automatically, as an Ambassador reaches milestones.", "Ambassadors", sub="Ambassadors", text=[
+                ("When the person registers", "Subject: [First name] has registered!\n\nHi [Ambassador first name],\n\nGood news: [Name] registered for [Program, dates], thanks to your conversation. Please open your page for them to send the questionnaire link and the payment request: [link] Payment is still pending. We will let you know when it comes in.\n\nWarmly,\nThe Sojourn Team"),
+                ("When the person pays", "Subject: [First name] has registered and paid!\n\nHi [Ambassador first name],\n\n[Name] has paid for [Program, dates]. Their spot is secure. Thank you for helping them take this step!\n\nWarmly,\nThe Sojourn Team"),
+                ("Every 7 days while payment is late", "Subject: [First name] has not paid yet\n\nHi [Ambassador first name],\n\n[First name] reserved a seat but payment has not arrived. A friendly reminder may help, and it is your call. Open your page for them and tap the payment reminder: [link]\n\nWarmly,\nThe Sojourn Team"),
             ]),
          
             dict(kind="page", name="Sponsor a Friend (the public form page)", when="A volunteer opens it from the public website to start sponsoring someone.", who="Volunteers who sponsor someone", url="/sponsor", label="View page", sub="Sponsors"),
@@ -405,14 +406,14 @@ def register(app, crm, get_db, h):
 
     @app.route("/cep-letters/suggest", methods=["POST"])
     def public_letter_suggest():
-        """Guides and volunteers (no login) can suggest a change to a letter. Only the Owner changes letters."""
+        """Ambassadors and volunteers (no login) can suggest a change to a letter. Only the Owner changes letters."""
         back = request.form.get("back") or url_for("public_cep_letters")
         if not back.startswith("/"):
             back = url_for("public_cep_letters")
         if request.form.get("website"):          # a hidden field only a robot fills in
             return redirect(back)
         ok, err = save_suggestion(get_db, request.form.get("letter_name"), request.form.get("name"),
-                                  request.form.get("email"), request.form.get("message"), "Guide letters page")
+                                  request.form.get("email"), request.form.get("message"), "Ambassador letters page")
         flash("Thank you. Your suggestion was sent to the Owner." if ok else err)
         return redirect(back + "#suggest")
 
@@ -690,7 +691,7 @@ def register(app, crm, get_db, h):
                           location="the hotel", role="Lead Facilitator", duties=["Sound Equipment"], link="https://example.org/your-link",
                           partner="Jordan", amount="$1,299 per couple")
     GUIDE_SAMPLE = dict(first="Alex", label="The Art of Us", vol_name="Pat Smith", vfirst="Pat", vphone="469-555-0100",
-                        link="https://example.org/your-link", pw="call or text", client="Jordan Lee", page_link="https://example.org/your-page", when_text=" on Thursday at 2:00 pm")
+                        link="https://example.org/your-link", pw="call or text", client="Jordan Lee", page_link="https://example.org/your-page", when_text=" on Thursday at 2:00 pm", amount_text="$100 a month for 12 months")
     FIELD_HELP = {
         "First Name": "the person's first name",
         "when_text": "\" on [day and time]\" when you type one, otherwise nothing",
@@ -701,8 +702,8 @@ def register(app, crm, get_db, h):
         "link": "the person's private link (must stay)", "role": "Lead Facilitator or Support Facilitator",
         "duties": "the person's assignment", "amount_sentence": "the fee sentence", "partner_sentence": "the partner sentence",
         "friday_end": "the Friday end time for that program (blank if none is set)",
-        "label": "the name of the training", "vol_name": "the Guide's full name", "vfirst": "the Guide's first name",
-        "vphone": "the Guide's phone number", "pw": "\"call\", \"text\" or \"call or text\"",
+        "label": "the name of the training", "vol_name": "the Ambassador's full name", "vfirst": "the Ambassador's first name",
+        "amount_text": "what they pledged, such as \"$100 a month for 12 months\"", "vphone": "the Ambassador's phone number", "pw": "\"call\", \"text\" or \"call or text\"",
     }
 
     def _problem(key, subject, body, signoff="", signer=""):

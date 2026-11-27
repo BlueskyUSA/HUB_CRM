@@ -444,7 +444,7 @@ FIXED_ACCESS_AREAS = [
     ("accounting", "Accounting"),
     ("marketing", "Marketing"),
     ("correspondence", "Correspondence"),
-    ("guides", "Guides (choose and change who the Guides are)"),
+    ("guides", "Ambassadors (choose and change who the Ambassadors are)"),
     ("hub_access", "HUB Access page (see who has Hub access and their roles)"),
     ("change_history", "Access History (see what each person has done in the Hub)"),
     ("contacts", "Contacts"),
@@ -1044,7 +1044,7 @@ def staff_list():
         ownership_areas=[("accounting", "Accounting"), ("donations", "Donations"),
                          ("contracts", "Legal (Contracts & business plan)"), ("marketing", "Marketing"),
                          ("correspondence", "Correspondence"),
-                         ("guides", "Guides (choose and change who the Guides are)"),
+                         ("guides", "Ambassadors (choose and change who the Ambassadors are)"),
                          ("hub_access", "HUB Access page (see who has Hub access and their roles)"),
                          ("change_history", "Access History (see what each person has done in the Hub)")],
         general_areas=[a for a in all_areas if a[0] not in FULL_ACCESS_EXCLUDED_AREAS],
@@ -1828,7 +1828,7 @@ def staff_grant_full_access(staff_id):
 
     if everything:
         msg = (f"{staff['name']} is now Leadership with access to everything, including Accounting, Donations, "
-               "Contracts & business plan, Marketing, Correspondence and Guides.")
+               "Contracts & business plan, Marketing, Correspondence and Ambassadors.")
     else:
         msg = (f"{staff['name']} is now Leadership with access to everything except Accounting, Donations, "
                "Contracts & business plan, and Marketing. Those are under Ownership access if they need them.")
@@ -2616,7 +2616,7 @@ def history_state(contact):
 
 
 def longform_sent_info(conn, contact):
-    """Date the long form / profile link last went out (from the HUB's record, a Guide's send, or the website), or None."""
+    """Date the long form / profile link last went out (from the HUB's record, an Ambassador's send, or the website), or None."""
     best = None
     try:
         r = conn.execute("SELECT MAX(sent_at) AS d FROM contact_messages WHERE contact_id = ? AND kind IN ('Profile update request', 'Long-form follow-up')",
@@ -2668,7 +2668,7 @@ TEAM_LISTS = [  # (list name, session roles that put someone on it)
     ("Office Support Team", ("Office Support",)),
 ]
 LEADERSHIP_LIST = "Leadership Team"
-LEADERSHIP_SOURCES = ["Facilitators", "TAs", "Guides", "Guide Team Captain", "Audio/Visual Team",
+LEADERSHIP_SOURCES = ["Facilitators", "TAs", "Ambassadors", "Ambassador Team Captain", "Audio/Visual Team",
                       "Check-in and Greeters", "Security Team", "Office Support Team"]
 
 
@@ -2695,6 +2695,7 @@ def _sync_team_lists(conn):
 def _sync_leadership_list(conn):
     """'Leadership Team' = everyone on any of the lists in LEADERSHIP_SOURCES. Rebuilt each time. Never raises."""
     try:
+        call_flow.rename_guide_lists(conn)
         lid = call_flow.list_id_for(conn, LEADERSHIP_LIST)
         src = [r["id"] for r in conn.execute(
             "SELECT id FROM contact_lists WHERE name IN ({})".format(",".join("?" for _ in LEADERSHIP_SOURCES)), tuple(LEADERSHIP_SOURCES)).fetchall()]
@@ -6811,7 +6812,7 @@ def lists_manage():
            FROM contact_lists l LEFT JOIN contact_list_members m ON m.list_id = l.id
            GROUP BY l.id, l.name, l.created_at ORDER BY l.name"""
     ).fetchall()
-    # Team groups (Leadership Team, TAs, Guides...) are not data sources: they live in "Sort & Email a Group" on Contacts.
+    # Team groups (Leadership Team, TAs, Ambassadors...) are not data sources: they live in "Sort & Email a Group" on Contacts.
     hidden = {n.lower() for n in [LEADERSHIP_LIST, *LEADERSHIP_SOURCES] + [n for n, _ in TEAM_LISTS]}
     lists = [l for l in lists if (l["name"] or "").lower() not in hidden]
     total = conn.execute("SELECT COUNT(*) AS n FROM contacts").fetchone()["n"]
@@ -9731,8 +9732,8 @@ def _nav_sessions():
 
 app.jinja_env.globals["role_label"] = role_label
 def _has_guides_access():
-    """Choosing and changing the Guides: the Owner always; a Leadership account only when the Owner has
-    ticked Guides for them under HUB Access."""
+    """Choosing and changing the Ambassadors: the Owner always; a Leadership account only when the Owner has
+    ticked Ambassadors for them under HUB Access."""
     if session.get("is_owner"):
         return True
     if session.get("staff_role") != "Leadership" or not session.get("staff_id"):
@@ -9745,7 +9746,7 @@ def guides_access(view):
     def wrapped(*args, **kwargs):
         if _has_guides_access():
             return view(*args, **kwargs)
-        flash("Choosing and changing Guides is limited to the Owner and the Leadership accounts the Owner has chosen.")
+        flash("Choosing and changing Ambassadors is limited to the Owner and the Leadership accounts the Owner has chosen.")
         return redirect(url_for(".dashboard"))
     return wrapped
 
@@ -9767,6 +9768,8 @@ import testimonials
 testimonials.register(app, crm, leadership_required, get_db, send_email, full_name_sql, PROGRAM_NAME)
 import sitevisits
 sitevisits.register(app, crm, true_owner_required, get_db, full_name_sql, log_message=_log_contact_message)
+import fundraising
+fundraising.register(app, crm, true_owner_required, get_db, log_message=_log_contact_message)
 
 # ---------- volunteer chat: discussion board + live chat room ----------
 # Internal only. Open to every Team / Leadership / Owner login; Accounting & Legal
@@ -10777,7 +10780,7 @@ def _auto_letters_sweep():
     """For people who reserved through a volunteer's personal link:
        - the Trainee Registration Confirmation goes to both partners right after they reserve;
        - once payment is recorded, "Thank you - We're so excited" goes out, and "What to bring" one week before the training.
-         (Payment reminders are no longer automatic: the Guide is nudged every 7 days and decides.)
+         (Payment reminders are no longer automatic: the Ambassador is nudged every 7 days and decides.)
        OFF unless BOTH SESSION_LETTERS_LIVE=1 and AUTO_LETTERS_LIVE=1 are set. Only sends 8 am - 8 pm Central."""
     if not (_session_letters_live() and (os.environ.get("AUTO_LETTERS_LIVE") or "").strip() == "1"):
         return
@@ -10818,7 +10821,7 @@ def _auto_letters_sweep():
                     for person in rec["what_to_bring"]:
                         if person["contact_id"] in wanted:
                             _auto_letter_send(conn, cohort, person, "what_to_bring", "what_to_bring")
-            # Not paid: the Guide is nudged every 7 days (see call_flow), and sends any payment reminder personally.
+            # Not paid: the Ambassador is nudged every 7 days (see call_flow), and sends any payment reminder personally.
     finally:
         conn.close()
 

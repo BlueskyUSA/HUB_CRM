@@ -172,7 +172,7 @@ def register(app, crm, owner_view, get_db, full_name_sql, log_message=None):
     @app.after_request
     def _no_index_while_private(resp):
         try:
-            if _cache["private"] and resp.mimetype == "text/html":
+            if _cache["private"] and resp.mimetype == "text/html" and not request.path.startswith("/legacy"):
                 resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         except Exception:
             pass

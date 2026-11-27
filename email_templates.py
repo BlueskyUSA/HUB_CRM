@@ -842,8 +842,8 @@ def content_key(key, program_code):
 SESSION_LETTER_ORDER = SESSION_TRAINEE_LETTERS + ["facilitator_confirm", "ta_invitation", "ta_confirm", "backup_confirm"]
 
 
-# The letters the Guide-call flow sends. Same shape as the session letters, so they can be edited the same way.
-# "greeting" is the word before the name; {vol_name} etc. fill in from the Guide who took the request.
+# The letters the Ambassador-call flow sends. Same shape as the session letters, so they can be edited the same way.
+# "greeting" is the word before the name; {vol_name} etc. fill in from the Ambassador who took the request.
 GUIDE_LETTERS = {
     "guide_curious": {
         "title": "Reply to \"I'm curious\"",
@@ -868,7 +868,7 @@ GUIDE_LETTERS = {
     },
     "guide_register": {
         "title": "Registration link",
-        "audience": "People a Guide has talked with",
+        "audience": "People an Ambassador has talked with",
         "greeting": "Hi",
         "subject": "Your personal link to reserve your spot \u2013 {label}",
         "paras": [
@@ -912,7 +912,7 @@ GUIDE_LETTERS = {
     },
     "profile_request": {
         "title": "Profile update request (email, text and the profile page)",
-        "audience": "Any contact: guides, sponsors, trainees, team",
+        "audience": "Any contact: ambassadors, sponsors, trainees, team",
         "greeting": "",
         "subject": "We Appreciate Your Help!",
         "paras": [
@@ -1013,6 +1013,19 @@ GUIDE_LETTERS = {
         "signoff": "Warmly,",
         "signer": "Kent Hafemann",
     },
+    "pledge_thanks": {
+        "title": "Thank you for your pledge (fundraising site)",
+        "audience": "People who pledge on the Discovery Legacy fundraising website",
+        "greeting": "Dear",
+        "subject": "Thank you for being a Founding Friend",
+        "paras": [
+            "Thank you for pledging {amount_text} to Discovery Legacy. Your belief in this work means more than we can say.",
+            "A pledge is a statement of your intention, not a payment, and you will not be asked to give until our bank account is open. We will write to you then with the details, and we will keep you updated as we get ready to open in 2027.",
+            "Until the IRS recognizes our application for tax-exempt status, we cannot tell you that gifts are tax-deductible. We will let you know when that changes.",
+        ],
+        "signoff": "With gratitude,",
+        "signer": "The Discovery Legacy Team",
+    },
     "video_call": {
         "title": "Video call link (Google Meet)",
         "audience": "Any contact",
@@ -1042,7 +1055,7 @@ GUIDE_LETTERS = {
         "signer": "{vol_name} and the Sojourn Team",
     },
     "guide_payment_reminder": {
-        "title": "Payment reminder (from the Guide)",
+        "title": "Payment reminder (from the Ambassador)",
         "audience": "People who have reserved but not paid",
         "greeting": "Hi",
         "subject": "A friendly reminder about your payment \u2013 {label}",
@@ -1095,7 +1108,7 @@ GUIDE_LETTERS = {
         "signer": "The Sojourn Team",
     },
 }
-GUIDE_FIELDS = ("when_text", "First Name", "first name", "label", "vol_name", "vfirst", "vphone", "link", "pw", "first", "First name", "Name", "name", "client", "page_link")
+GUIDE_FIELDS = ("when_text", "First Name", "first name", "label", "vol_name", "vfirst", "vphone", "link", "pw", "first", "First name", "Name", "name", "client", "page_link", "amount_text")
 ALL_LETTERS = {**SESSION_LETTERS, **GUIDE_LETTERS}
 
 
@@ -1197,7 +1210,7 @@ def render_spec(spec, fill, link=None):
 
 
 def guide_letter_content(key, first, label, vol_name, vphone, pw=None, link=None, **extra):
-    """(subject, html, text) for a Guide-call letter, using any saved edit and falling back to the original."""
+    """(subject, html, text) for an Ambassador-call letter, using any saved edit and falling back to the original."""
     vfirst = (vol_name or "").split()[0] if (vol_name or "").strip() else ""
     fill = {"first": first, "label": label, "vol_name": vol_name, "vfirst": vfirst, "vphone": vphone,
             "link": link or "", "pw": pw or "call or text", "client": "", "page_link": "", "when_text": ""}
