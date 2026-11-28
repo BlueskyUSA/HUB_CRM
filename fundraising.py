@@ -26,7 +26,7 @@ STATUSES = ("Pledged", "Given", "Withdrawn")
 ONCE_AMOUNTS = (500, 1000, 5000, 10000, 15000, 20000, 25000, 50000, 100000)
 MONTHLY_AMOUNTS = (25, 50, 100, 150, 250, 500, 1000, 1500, 2500)
 YEARS = (1, 2, 3, 5)
-USES = {"most": "Where needed most", "acquisition": "Acquisition repayment", "startup": "Startup and operations", "reserves": "Reserves"}
+USES = {"most": "Where needed most", "startup": "Startup and operations", "reserves": "Reserves"}
 
 _ready = False
 _cache = {"at": 0.0, "live": False}
