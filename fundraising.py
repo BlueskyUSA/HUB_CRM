@@ -23,9 +23,9 @@ EIN = "43-3125170"
 LLC_NAME = "Bluesky Life Seminars LLC"
 FORMED = "11/20/2026"
 STATUSES = ("Pledged", "Given", "Withdrawn")
-ONCE_AMOUNTS = (500, 1000, 5000, 10000, 15000, 20000, 25000, 50000, 100000)
-MONTHLY_AMOUNTS = (25, 50, 100, 150, 250, 500, 1000, 1500, 2500)
-YEARS = (1, 2, 3, 5)
+ONCE_AMOUNTS = (1000, 5000, 10000, 15000, 20000, 25000, 50000, 100000)
+MONTHLY_AMOUNTS = (25, 50, 100, 250, 500, 1000)
+YEARS = (1, 3, 5)
 USES = {"most": "Where needed most", "startup": "Startup and operations", "reserves": "Reserves"}
 
 _ready = False
@@ -206,7 +206,7 @@ def register(app, crm, owner_view, get_db, log_message=None):
             else:
                 return fail("Please choose how long you would like to give monthly, or choose To be determined.")
         if not f.get("understand"):
-            return fail("Please check the box to confirm you understand this is a voluntary, nonbinding pledge and not a payment.")
+            return fail("Please check the box to confirm that you understand this pledge is voluntary, nonbinding and not a payment.")
 
         plan = plan_text(kind, cents, months)
         conn = get_db()
