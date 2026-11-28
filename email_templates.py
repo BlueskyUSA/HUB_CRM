@@ -1013,6 +1013,19 @@ GUIDE_LETTERS = {
         "signoff": "Warmly,",
         "signer": "Kent Hafemann",
     },
+    "pledge_thanks": {
+        "title": "Thank you for your pledge (fundraising site)",
+        "audience": "People who pledge on the Discovery Legacy fundraising website",
+        "greeting": "Dear",
+        "subject": "Thank you for being a Founding Friend",
+        "paras": [
+            "Thank you for pledging {amount_text} to Discovery Legacy. Your belief in this work means more than we can say.",
+            "A pledge is a statement of your intention, not a payment, and you will not be asked to give until our bank account is open. We will write to you then with the details, and we will keep you updated as we get ready to open in 2027.",
+            "Until the IRS recognizes our application for tax-exempt status, we cannot tell you that gifts are tax-deductible. We will let you know when that changes.",
+        ],
+        "signoff": "With gratitude,",
+        "signer": "The Discovery Legacy Team",
+    },
     "video_call": {
         "title": "Video call link (Google Meet)",
         "audience": "Any contact",
@@ -1095,7 +1108,7 @@ GUIDE_LETTERS = {
         "signer": "The Sojourn Team",
     },
 }
-GUIDE_FIELDS = ("when_text", "First Name", "first name", "label", "vol_name", "vfirst", "vphone", "link", "pw", "first", "First name", "Name", "name", "client", "page_link")
+GUIDE_FIELDS = ("when_text", "First Name", "first name", "label", "vol_name", "vfirst", "vphone", "link", "pw", "first", "First name", "Name", "name", "client", "page_link", "amount_text")
 ALL_LETTERS = {**SESSION_LETTERS, **GUIDE_LETTERS}
 
 
