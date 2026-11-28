@@ -2,7 +2,7 @@
 {% block title %}Pledges — {{ program_name }}{% endblock %}
 {% block content %}
 <h1>Pledges</h1>
-<p class="muted">Pledges made on the Discovery Legacy fundraising site. A pledge is a statement of intent, not a payment. Only the Owner sees this page.</p>
+<p class="muted">Pledges made on the Discovery Legacy fundraising site. Pledges are nonbinding statements of intent. They are not payments and are not counted as received revenue. Only the Owner sees this page.</p>
 
 <div class="card">
   <h3 style="margin-top:0">The fundraising site is {% if live %}<span style="color:#1d6b3a">public</span>{% else %}<span style="color:#9a6a00">hidden</span>{% endif %}</h3>
@@ -77,7 +77,7 @@
     <td data-label="Name">{% if r.contact_id %}<a href="{{ url_for('.contact_detail', contact_id=r.contact_id) }}">{{ r.first_name }} {{ r.last_name or '' }}</a>{% else %}{{ r.first_name }} {{ r.last_name or '' }}{% endif %}</td>
     <td data-label="Pledge">{{ plan_text(r.kind, r.amount_cents, r.months) }}</td>
     <td data-label="Email">{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</td>
-    <td data-label="Note">{{ r.note or '' }}{% if not r.updates_ok %}<div class="muted" style="font-size:.8rem">Did not ask for updates.</div>{% endif %}</td>
+    <td data-label="Note">{% if r.preference %}Preferred use: {{ {'most':'Where needed most','acquisition':'Acquisition repayment','startup':'Startup and operations','reserves':'Reserves'}.get(r.preference, r.preference) }}<br>{% endif %}{% if r.convo %}<b>Asked for a personal conversation.</b><br>{% endif %}{{ r.note or '' }}{% if not r.updates_ok %}<div class="muted" style="font-size:.8rem">Did not ask for updates.</div>{% endif %}</td>
     <td data-label="Status">
       <form method="post" action="{{ url_for('.pledge_status', pledge_id=r.id) }}">
         <select name="status" onchange="this.form.submit()">{% for s in statuses %}<option {{ 'selected' if s == r.status }}>{{ s }}</option>{% endfor %}</select>
