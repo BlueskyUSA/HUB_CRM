@@ -4,6 +4,9 @@ from flask import render_template, request, redirect, url_for, session, flash
 
 
 def register(app, crm, true_owner_required, get_db):
+    import wording_check
+    wording_check.register(app, crm, true_owner_required, get_db)
+
     def ensure(conn):
         conn.execute("CREATE TABLE IF NOT EXISTS owner_notes (id INTEGER PRIMARY KEY, body TEXT, updated_at TEXT)")
         conn.commit()
