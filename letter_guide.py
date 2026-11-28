@@ -16,6 +16,7 @@ PURPOSE = {
     "needs_request": "Asks session team members about food and physical needs before a session.",
     "video_call": "Sends a Google Meet link so a conversation can happen by video.",
     "site_invitation": "Invites a friend to look at the website while it is still private, with a personal link made just for them.",
+    "pledge_invite": "Invites a friend to view the private pledge page, with your personal note at the top.",
     "pledge_thanks": "Thanks someone for pledging to Discovery Legacy, tells them what a pledge means and what happens next.",
     # Trainees
     "seminar_registration": "Gives the trainee their registration details for the training.",
