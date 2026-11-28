@@ -75,6 +75,7 @@
             <summary>Finance &#9662;</summary>
             {% if show_finance %}<a href="{{ url_for('.finance') }}" style="padding-left:30px">Finance overview</a>{% endif %}
             {% if show_donations %}<a href="{{ url_for('.donations_list') }}" style="padding-left:30px">Donations</a>{% endif %}
+            {% if session.is_owner and not session.is_admin %}<a href="{{ url_for('.pledges_page') }}" style="padding-left:30px">Pledges (Discovery Legacy)</a>{% endif %}
             {% if session.is_owner %}<a href="{{ url_for('.annual_report_hub') }}" style="padding-left:30px">Annual Reports</a>{% endif %}
             {% if session.is_owner or has_budgets_access %}
             <details class="subnav">
