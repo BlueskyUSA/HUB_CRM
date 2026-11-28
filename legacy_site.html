@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page == 'home' %}Discovery Legacy{% elif page == 'soon' %}Discovery Legacy{% else %}{{ {'why':'Why this matters','where':'Where your gift goes','pledge':'Become a Founding Friend','thanks':'Thank you','about':'About and transparency'}.get(page,'') }} | Discovery Legacy{% endif %}</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font:18px/1.65 Georgia,'Times New Roman',serif;color:#123e54;background:#fdfcf8}
+a{color:#006d82}
+.preview{background:#c9a24a;color:#123e54;text-align:center;padding:8px 14px;font:700 .9rem Arial,sans-serif}
+header.top{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;padding:18px 22px 0}
+.bar{max-width:1040px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.brand{font:italic 700 1.9rem Georgia,serif;color:#fff;text-decoration:none;line-height:1}
+.brand small{display:block;font:400 .72rem Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.8;margin-top:4px}
+nav a{color:#fff;text-decoration:none;font:600 .92rem Arial,sans-serif;margin-left:18px;opacity:.9}
+nav a:hover,nav a.on{opacity:1;border-bottom:2px solid #27c4c0}
+.waves{display:block;width:100%;height:34px;margin-top:14px}
+.hero{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;text-align:center;padding:40px 22px 70px}
+.hero h1{font:italic 700 clamp(2.4rem,6vw,4rem)/1.1 Georgia,serif;margin:0 0 12px}
+.hero p.sub{font:1.3rem/1.5 Georgia,serif;margin:0 auto 26px;max-width:640px;opacity:.95}
+main{max-width:760px;margin:0 auto;padding:44px 22px 30px}
+main.wide{max-width:900px}
+h2{font:700 clamp(1.7rem,3.4vw,2.3rem)/1.2 Georgia,serif;margin:0 0 6px;padding-bottom:10px;border-bottom:2px solid #c9a24a}
+h3{font:700 1.25rem Georgia,serif;margin:28px 0 6px}
+.btn{display:inline-block;background:#fff;color:#003b49;font:700 .95rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:15px 32px;border-radius:40px;text-decoration:none;border:0;cursor:pointer}
+.btn.dark{background:#006d82;color:#fff}
+.btn:hover{filter:brightness(.95)}
+ul.tick{padding-left:22px}ul.tick li{margin:8px 0}
+.note{background:#eef6f7;border-left:4px solid #006d82;padding:14px 18px;border-radius:6px;font:.95rem/1.55 Arial,sans-serif;margin:24px 0}
+form.card{background:#fff;border:1px solid #d5e6e8;border-radius:14px;padding:26px;margin-top:20px;box-shadow:0 8px 24px rgba(0,59,73,.07);font:16px/1.5 Arial,sans-serif}
+form.card label{display:block;font-weight:700;margin:16px 0 4px;color:#123e54}
+form.card label .opt{font-weight:400;color:#5c7a86}
+input[type=text],input[type=email],input[type=tel],input[type=number],select,textarea{width:100%;padding:11px 12px;border:1px solid #b9ced2;border-radius:8px;font:inherit;background:#fff}
+textarea{min-height:90px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.row{grid-template-columns:1fr}nav a{margin-left:12px}}
+.choice{display:flex;gap:18px;flex-wrap:wrap;margin-top:4px}
+.choice label{font-weight:400;margin:0;display:flex;align-items:center;gap:8px}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400!important}
+.check input{margin-top:5px}
+.err{background:#fdecea;border:1px solid #e0a8a2;color:#8a1f17;padding:12px 14px;border-radius:8px;margin-bottom:6px;font:1rem Arial,sans-serif}
+footer{background:#0b2f3a;color:#cfe2e6;padding:30px 22px;font:.88rem/1.6 Arial,sans-serif;text-align:center;margin-top:40px}
+footer a{color:#fff}
+.soon{min-height:100vh;background:linear-gradient(135deg,#003b49,#006d82);color:#fff;text-align:center;padding:12vh 24px;font-family:Georgia,serif}
+.soon h1{font:italic 700 clamp(2.6rem,7vw,4.2rem) Georgia,serif;margin:0 0 10px}
+.soon p{max-width:520px;margin:12px auto;font-size:1.2rem;opacity:.95}
+.soon a{color:#fff}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.cards div{background:#fff;border:1px solid #d5e6e8;border-radius:14px;padding:18px 20px;box-shadow:0 6px 18px rgba(0,59,73,.06)}
+.cards b{display:block;font:700 1.15rem Georgia,serif;color:#006d82;margin-bottom:4px}
+.cards span{font:.95rem/1.55 Arial,sans-serif}
+.figs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0 8px}
+.figs div{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;border-radius:14px;padding:22px;text-align:center}
+.figs strong{display:block;font:700 2.4rem Georgia,serif}
+.figs span{font:.9rem Arial,sans-serif;opacity:.92}
+.total{text-align:center;font:700 1.15rem Georgia,serif;margin:6px 0 4px}
+.small{font:.9rem/1.55 Arial,sans-serif;color:#456a77}
+.cta p{font:.95rem Arial,sans-serif;margin:10px 0 0;opacity:.92}
+@media(max-width:560px){.cards,.figs{grid-template-columns:1fr}}
+.flow{display:grid;grid-template-columns:1fr 84px 1fr 84px 1fr;align-items:stretch;gap:0;margin:22px 0}
+.flow .box{background:#fff;border:2px solid #006d82;border-radius:14px;padding:14px 12px;text-align:center;font:.92rem/1.45 Arial,sans-serif}
+.flow .box b{display:block;font:700 1.05rem Georgia,serif;color:#003b49;margin-bottom:4px}
+.flow .box.mid{border-color:#c9a24a}
+.flow .box.main{background:#eef6f7}
+.flow .arr{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#006d82;font:700 1.4rem Arial,sans-serif;text-align:center}
+.flow .arr small{font:.7rem Arial,sans-serif;color:#456a77;line-height:1.2}
+.flow .under{grid-column:1/-1;text-align:center;margin-top:14px;font:.92rem Arial,sans-serif;color:#003b49}
+.flow .under span{display:inline-block;background:#eef6f7;border:1px dashed #006d82;border-radius:10px;padding:8px 14px}
+@media(max-width:640px){.flow{grid-template-columns:1fr}.flow .arr{padding:6px 0;flex-direction:row;gap:8px}.flow .arr b.r{display:none}}
+</style>
+</head>
+<body>
+{% if page == 'soon' %}
+<div class="soon">
+  <h1>Discovery Legacy</h1>
+  <svg viewBox="0 0 320 34" width="260" style="display:block;margin:0 auto 18px" aria-hidden="true"><path d="M2 14 C42 -2 82 30 122 14 S202 -2 242 14 S300 26 318 14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M2 24 C42 8 82 38 122 24 S202 8 242 24 S300 34 318 24" fill="none" stroke="#27c4c0" stroke-width="4" stroke-linecap="round"/></svg>
+  <p>We are a Texas nonprofit corporation, and our website is coming soon.</p>
+  <p>Questions? Write to <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+</div>
+{% else %}
+{% if preview %}<div class="preview">Preview only. This site is not public yet. Only people signed in to the Hub can see it.</div>{% endif %}
+{% if guest_invite %}<div class="preview" style="background:#e6f3f5">This is a private invitation, made for you. Please don&rsquo;t share the link.</div>{% endif %}
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>
+    <nav>
+      <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this matters</a>
+      <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Where your gift goes</a>
+      <a href="{{ url_for('legacy_about') }}" class="{{ 'on' if page=='about' }}">About</a>
+      <a href="{{ url_for('legacy_pledge') }}" class="{{ 'on' if page=='pledge' }}">Pledge</a>
+    </nav>
+  </div>
+  <svg class="waves" viewBox="0 0 1040 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 C130 -2 260 30 390 14 S650 -2 780 14 S980 26 1040 14" fill="none" stroke="#fff" stroke-width="3"/><path d="M0 24 C130 8 260 38 390 24 S650 8 780 24 S980 34 1040 24" fill="none" stroke="#27c4c0" stroke-width="3"/></svg>
+</header>
+
+{% if page == 'home' %}
+<section class="hero">
+  <h1>A Legacy Beyond Our Lifetime.</h1>
+  <p class="sub">Together, we can build a program that touches lives, strengthens relationships, and reflects the love of God for generations to come.</p>
+  <div class="cta"><a class="btn" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a><p>A pledge of support. No payment required today.</p></div>
+</section>
+<main>
+  <h2>Some things are worth passing on.</h2>
+  <p>Many of us have experienced firsthand the impact Discovery! can have on a person&rsquo;s life. We have witnessed renewed relationships, greater personal freedom, deeper faith, and the joy of discovering possibilities we never imagined.</p>
+  <p>Now we have an opportunity to make that experience available to another generation. Our vision is not simply to bring Discovery! back to North Texas. It is to establish a program that will continue serving others long after its current leadership has stepped aside.</p>
+  <p><strong>Discovery Legacy</strong> is the nonprofit corporation. Once it has acquired the program rights and has permission to use the name, it intends to do business as <strong>Discovery!</strong></p>
+  <h3>Our Mission</h3>
+  <p>Reflect the love of God by providing a powerful, effective, and emotionally safe environment where individuals can identify and overcome life&rsquo;s challenges, discovering greater freedom, joy, peace, and love.</p>
+  <h3>What We Are Building Together</h3>
+  <div class="cards">
+    <div><b>A Program of Impact</b><span>Serving individuals, couples, families and communities.</span></div>
+    <div><b>Financial Sustainability</b><span>Building a responsible organization with healthy operating reserves.</span></div>
+    <div><b>Innovation and Community</b><span>Combining technology with the strength of human connection.</span></div>
+    <div><b>A Generational Legacy</b><span>Equipping future leaders to carry the mission forward.</span></div>
+  </div>
+  <h2 style="margin-top:34px">The future begins with a few people who believe.</h2>
+  <p>We invite you to consider becoming one of our Founding Friends.</p>
+  <p style="margin-top:24px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Make a pledge</a></p>
+  <p class="small">No funds are being collected at this time.</p>
+</main>
+
+{% elif page == 'why' %}
+<main>
+  <h2>Why this matters</h2>
+  <p>Most of us were never taught how to truly understand ourselves, navigate life&rsquo;s emotional challenges, or build deeply meaningful relationships with the people we love.</p>
+  <p>We learn how to earn a living, raise families, build careers, and meet life&rsquo;s responsibilities. Yet many of us find ourselves searching for something more &mdash; greater freedom, peace, joy, purpose, and connection.</p>
+  <p>At Discovery Legacy, we believe that every human being has inherent value and that our past does not have to determine our future.</p>
+  <h3>The Heart Behind Our Mission</h3>
+  <p>Our desire is to reflect the love of God in a practical and meaningful way, creating an environment where people from all walks of life feel welcomed, valued, and accepted.</p>
+  <p>Through immersive, experiential seminars, we invite individuals and couples to explore their beliefs, recognize patterns in their lives, discover new perspectives, and develop healthier ways of relating to themselves and others.</p>
+  <p>We want people to experience the possibilities that emerge when they begin to live with greater awareness, personal responsibility, grace, and courage.</p>
+  <h3>Looking Beyond Ourselves</h3>
+  <p>For Pamela and me, this is about much more than conducting seminars. It is about building a program that will continue to serve people long after we are gone.</p>
+  <p>We want to create an organization that is spiritually grounded, financially responsible, technologically innovative, and equipped to empower the next generation of leaders.</p>
+  <p>We believe that what we build today can become a gift to generations we may never meet. That is why we are inviting you to become part of this story.</p>
+  <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a></p>
+  <p class="small">Your pledge today will help us determine what is possible tomorrow.</p>
+  <div class="note">Discovery! programs are educational and experiential. They are not counseling, therapy, or mental-health treatment.</div>
+</main>
+
+{% elif page == 'where' %}
+<main>
+  <h2>Where your gift goes</h2>
+  <p><strong>Building a strong foundation for an enduring program.</strong> Your gift goes to Discovery Legacy, the nonprofit corporation that runs the programs. Here is exactly how the pieces fit together.</p>
+  <div class="figs">
+    <div><strong>$100,000</strong><span>Preliminary goal for startup funding, operating capital and reserves</span></div>
+    <div><strong>$10,000</strong><span>Preliminary goal for monthly support from Founding Friends</span></div>
+  </div>
+  <p class="small" style="text-align:center">All figures are preliminary goals, not guarantees.</p>
+
+  <h3>How the pieces fit together</h3>
+  <div class="flow">
+    <div class="box"><b>Kent and Pamela Hafemann</b>Founders. Prepared to fund the purchase of the Discovery! program rights.</div>
+    <div class="arr"><span>&rarr;</span><small>funds the purchase</small></div>
+    <div class="box mid"><b>{{ llc_name }}</b>A Texas company that would own the program rights, equipment and the Hub software.</div>
+    <div class="arr"><span>&rarr;</span><small>licenses them</small></div>
+    <div class="box main"><b>Discovery Legacy</b>The nonprofit corporation. Runs the programs and receives every gift and program fee.</div>
+    <div class="under"><span>Founding Friends and trainees give directly to <strong>Discovery Legacy</strong> only</span></div>
+  </div>
+  <ul class="tick">
+    <li><strong>Your gift goes only to Discovery Legacy.</strong> Never to the founders personally and never to {{ llc_name }}. Discovery Legacy will have its own bank account, books and records, kept by a bookkeeper and accountant.</li>
+    <li><strong>The program rights belong to the LLC, and the nonprofit holds a license.</strong> The proposed license would give Discovery Legacy exclusive rights to run the programs in Dallas, Fort Worth and surrounding counties for an initial six-year term, renewing automatically after that. The LLC could end it or decline to renew only for stated causes, such as an unpaid fee after notice or unmet quality standards. It is designed to continue if the LLC is sold or if either founder dies or can no longer serve.</li>
+    <li><strong>Discovery Legacy keeps its own money, donor and trainee records and program data.</strong> The LLC does not own them.</li>
+    <li><strong>Any payment from Discovery Legacy to the LLC or to a founder is a related-party arrangement.</strong> It will be reviewed and approved by independent directors with outside support for its fairness, disclosed accurately to the IRS, and described on this page and in our annual financial reports. The terms have not been decided.</li>
+  </ul>
+
+  <h3>Securing the Future of Discovery!</h3>
+  <p>Pamela and I are prepared to personally invest $250,000 to acquire the available Discovery! intellectual property rights, curricula, equipment and associated assets. Purchasing outright would avoid the risk of losing access under the seller&rsquo;s proposed installment agreement if payments are missed. The acquired assets would be held by {{ llc_name }}, a Texas company of Kent and Pamela Hafemann, and licensed to Discovery Legacy. The license would also include the Hub, the custom operating software we built to run registration, communications, volunteer coordination and records for Discovery! programs. Its value is part of the independent valuation that independent directors will review. We intend any ongoing licensing to carry no royalties or profit-based fees beyond reasonable, documented infrastructure and maintenance costs, unless independent directors approve otherwise on the basis of outside support. The purchase and the license are proposed, not signed, and all terms are subject to legal review.</p>
+  <p><strong>The Discovery! name.</strong> Discovery Legacy intends to do business as Discovery! once the rights have been acquired and it has permission to use the name. Until then it operates as Discovery Legacy.</p>
+
+  <h3>Establishing the Program</h3>
+  <p>Initial priorities include legal formation and federal tax-exemption application, approved documented startup reimbursements, marketing, technology, insurance, facilities, supplies and volunteer support. Our first planned seminar, The Art of Us, is tentatively scheduled for February 12&ndash;14, 2027, subject to readiness.</p>
+
+  <h3>Building Financial Strength and Sustainability</h3>
+  <p>Historically, Discovery! programs have relied on community contributions. The former Dallas program was not self-sustaining through earned revenue in the available 2015&ndash;2018 financial records. Reported profitability in 2019 and early 2020 has not been verified. We believe The Art of Us, priced at $1,299 per couple, could help support our other programs if enrollment and costs meet expectations. Financial sustainability is a goal, not a guarantee.</p>
+
+  <h3>Your Commitment Matters</h3>
+  <p>Monthly support provides dependable operating resources. Larger one-time gifts help build the reserves that let the program endure. We intend to publish annual financial reports. Every commitment matters. Today we are asking for pledges only, not payments. Federal tax-exempt recognition has not yet been obtained.</p>
+  <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a></p>
+</main>
+
+{% elif page == 'pledge' %}
+<main>
+  <h2>Become a Founding Friend</h2>
+  <p>Every enduring program begins with people who believe in its purpose before the vision becomes a reality.</p>
+  <p>Pamela and I are prepared to make a substantial personal financial commitment to secure the future of Discovery! in North Texas. We invite you to join us in establishing a program that is spiritually grounded, financially responsible, and capable of continuing long beyond our lifetime.</p>
+  <p>Whether through recurring monthly support or a substantial one-time contribution, your pledge can help us secure training resources, establish operating reserves and bring Discovery! to a new generation.</p>
+  <p>Every gift will go to Discovery Legacy, never to the founders personally and never to {{ llc_name }}. <a href="{{ url_for('legacy_where') }}">See how the pieces fit together.</a></p>
+  <p>Today, we are asking for your pledge, not your money. Your pledge is voluntary and nonbinding. No payment is required today. Once our legal and financial arrangements are in place, we will contact you with additional information and an opportunity to confirm your commitment.</p>
+  <p>With gratitude,<br><strong>Kent and Pamela Hafemann</strong></p>
+
+  <form class="card" method="post" action="{{ url_for('legacy_pledge') }}">
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    {{ bot_field() }}
+    <input type="hidden" name="inv" value="{{ inv or '' }}">
+    <div style="position:absolute;left:-9999px" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <div class="row">
+      <div><label for="fn">First name</label><input id="fn" type="text" name="first_name" value="{{ form.get('first_name','') }}" required></div>
+      <div><label for="ln">Last name</label><input id="ln" type="text" name="last_name" value="{{ form.get('last_name','') }}"></div>
+    </div>
+    <label for="em">Email</label><input id="em" type="email" name="email" value="{{ form.get('email','') }}" required>
+    <label for="ph">Cell phone <span class="opt">(optional)</span></label><input id="ph" type="tel" name="phone" value="{{ form.get('phone','') }}">
+
+    <label>Type of pledge</label>
+    <div class="choice">
+      <label><input type="radio" name="kind" value="once" {{ 'checked' if form.get('kind') == 'once' }}> One-time pledge</label>
+      <label><input type="radio" name="kind" value="monthly" {{ 'checked' if form.get('kind') == 'monthly' }}> Monthly pledge</label>
+    </div>
+
+    <div id="box-once">
+      <label for="ao">One-time amount</label>
+      <select id="ao" name="amount_once">
+        <option value="">Choose an amount</option>
+        {% for a in once_amounts %}<option value="{{ a }}" {{ 'selected' if form.get('amount_once') == a|string }}>${{ '{:,}'.format(a) }}</option>{% endfor %}
+        <option value="other" {{ 'selected' if form.get('amount_once') == 'other' }}>Other</option>
+      </select>
+    </div>
+    <div id="box-monthly">
+      <div class="row">
+        <div><label for="am">Monthly amount</label>
+          <select id="am" name="amount_monthly">
+            <option value="">Choose an amount</option>
+            {% for a in monthly_amounts %}<option value="{{ a }}" {{ 'selected' if form.get('amount_monthly') == a|string }}>${{ '{:,}'.format(a) }} a month</option>{% endfor %}
+            <option value="other" {{ 'selected' if form.get('amount_monthly') == 'other' }}>Other</option>
+          </select></div>
+        <div><label for="yr">For how long</label>
+          <select id="yr" name="years">
+            <option value="">Choose a length</option>
+            {% for y in years %}<option value="{{ y }}" {{ 'selected' if form.get('years') == y|string }}>{{ y }} year{{ 's' if y != 1 }}</option>{% endfor %}
+            <option value="tbd" {{ 'selected' if form.get('years') == 'tbd' }}>To be determined</option>
+          </select></div>
+      </div>
+    </div>
+    <div id="box-other"><label for="ot">Other amount ($)</label><input id="ot" type="text" inputmode="decimal" name="amount_other" value="{{ form.get('amount_other','') }}" placeholder="Enter an amount"></div>
+    <p id="tot" class="small" style="margin:8px 0 0"></p>
+
+    <label for="us">Preferred use <span class="opt">(optional; a preference only, subject to final approved arrangements)</span></label>
+    <select id="us" name="use">
+      <option value="">No preference</option>
+      {% for k, v in uses.items() %}<option value="{{ k }}" {{ 'selected' if form.get('use') == k }}>{{ v }}</option>{% endfor %}
+    </select>
+    <label for="nt">Message <span class="opt">(optional)</span></label>
+    <textarea id="nt" name="note">{{ form.get('note','') }}</textarea>
+    <label class="check"><input type="checkbox" name="convo" value="1" {{ 'checked' if form.get('convo') }}> <span>I would welcome a personal conversation about the vision, financial projections, structure and plans.</span></label>
+    <label class="check"><input type="checkbox" name="understand" value="1" {{ 'checked' if form.get('understand') }}> <span>I understand this is a voluntary, nonbinding pledge and not a payment.</span></label>
+    <label class="check"><input type="checkbox" name="updates_ok" value="1" {{ 'checked' if form.get('updates_ok') }}> <span>Please keep me updated about Discovery Legacy by email.</span></label>
+    <p style="margin:20px 0 0"><button class="btn dark" type="submit">Submit my pledge</button></p>
+    <p class="small" style="margin-bottom:0">No payment required. Federal tax-exempt recognition has not yet been obtained.</p>
+    <div class="note" style="margin-bottom:0"><strong>Privacy.</strong> We keep your name, contact details, pledge and message in our private records so we can thank you, answer you and follow up about Discovery Legacy. They are visible only to authorized Discovery Legacy staff and volunteers, and we do not sell them. We use trusted service providers (such as email delivery) to operate the site, so we cannot promise absolute confidentiality.</div>
+  </form>
+
+  <h3 style="margin-top:34px">An Opportunity to Make a Lasting Impact</h3>
+  <p>For those considering a substantial commitment, Pamela and I would welcome a personal conversation about our vision, financial projections, organizational structure and plans for the future. Request a personal conversation: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+  <script>
+  (function(){
+    var f=document.querySelector('form.card'),bo=document.getElementById('box-once'),bm=document.getElementById('box-monthly'),
+        bx=document.getElementById('box-other'),tot=document.getElementById('tot');
+    function money(n){return '$'+n.toLocaleString('en-US')}
+    function upd(){
+      var k=(f.querySelector('input[name=kind]:checked')||{}).value;
+      bo.style.display=(k==='once')?'block':'none'; bm.style.display=(k==='monthly')?'block':'none';
+      var ch=k==='once'?f.amount_once.value:(k==='monthly'?f.amount_monthly.value:'');
+      bx.style.display=(ch==='other')?'block':'none';
+      var amt=ch==='other'?parseFloat((f.amount_other.value||'').replace(/[^0-9.]/g,'')):parseInt(ch,10);
+      tot.textContent='';
+      if(k==='monthly'&&amt>0&&/^[0-9]+$/.test(f.years.value)){
+        var y=parseInt(f.years.value,10); tot.textContent='That is '+money(amt*12*y)+' over '+y+(y===1?' year.':' years.');
+      }
+    }
+    f.addEventListener('change',upd); f.addEventListener('input',upd); upd();
+  })();
+  </script>
+</main>
+
+{% elif page == 'thanks' %}
+<main>
+  <h2>Thank you</h2>
+  <p>Thank you for your willingness to become a Founding Friend{% if plan %}: <strong>{{ plan }}</strong>{% endif %}. Your expression of financial support means a great deal to us.</p>
+  <p>Your pledge is voluntary and nonbinding. No payment is requested at this time. We look forward to keeping you informed as we establish the program&rsquo;s legal, financial and operational foundation.</p>
+  <p>With gratitude,<br><strong>Kent and Pamela Hafemann</strong></p>
+  <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_home') }}">Back to the home page</a></p>
+</main>
+
+{% elif page == 'about' %}
+<main>
+  <h2>About and transparency</h2>
+  <p>Discovery Legacy was formed on November 20, 2026, as a Texas nonprofit corporation. We believe supporters deserve to understand how the organization is structured, how its resources are managed, and what we hope to achieve.</p>
+  <h3>Our Organizational Structure</h3>
+  <p>Discovery Legacy is the nonprofit operating entity responsible for seminars, community outreach, volunteers and the program&rsquo;s mission. It will receive all gifts and program fees into its own bank account.</p>
+  <p>{{ llc_name }} is the proposed privately owned Texas company of Kent and Pamela Hafemann that would hold the acquired Discovery! rights, equipment and Hub software, and license them to Discovery Legacy for Dallas&ndash;Fort Worth and surrounding counties. These arrangements have not been finalized. <a href="{{ url_for('legacy_where') }}">See the picture on the Where your gift goes page.</a></p>
+  <p>Because the founders lead Discovery Legacy and would own the LLC, any payment between the two is a related-party arrangement. Independent directors will review and approve it with outside support for its fairness, and we will disclose it in our annual financial reports. Our intention is to provide ongoing licensing without royalties or profit-based fees, subject to reimbursement of reasonable, documented costs and final agreements, unless independent directors approve otherwise.</p>
+  <h3>The Discovery! name</h3>
+  <p>Discovery Legacy intends to do business as <strong>Discovery!</strong> once it has acquired the program rights and has permission to use the name. Until then it operates under its legal name, Discovery Legacy.</p>
+  <h3>Governance and Financial Accountability</h3>
+  <p>Discovery Legacy is governed by a volunteer board and bylaws that include a conflict-of-interest policy. We intend to make these documents available upon request and publish annual financial reports. Related-party arrangements will require independent review and approval, including evaluation of fair value and the nonprofit&rsquo;s long-term interests. Our books will be kept by a bookkeeper and accountant firm using QuickBooks Online.</p>
+  <p>Our goal is to equip future leaders with secure access to intellectual property, software, equipment and other essential resources. Through HUB automation, trained volunteer Ambassadors and Sponsors, streamlined communications and contemporary marketing, we hope to reduce overhead and expand enrollment. Financial sustainability is not guaranteed.</p>
+  <h3>Federal Tax-Exempt Status</h3>
+  <p>Discovery Legacy intends to apply for recognition under Section 501(c)(3). Federal tax-exempt recognition has not yet been obtained. We are not representing future contributions as tax-deductible. We are accepting nonbinding pledges only; no funds are being collected.</p>
+  <p>Questions? Contact <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+</main>
+{% endif %}
+
+<footer>
+  &copy; Discovery Legacy &middot; A Texas nonprofit corporation<br>
+  Discovery Legacy intends to do business as Discovery! once it has acquired the program rights and has permission to use the name.<br>
+  Federal tax-exempt recognition has not yet been obtained &middot; <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+</footer>
+{% endif %}
+</body>
+</html>
