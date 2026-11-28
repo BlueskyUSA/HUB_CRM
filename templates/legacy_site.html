@@ -35,6 +35,11 @@ table.pt{width:100%;border-collapse:collapse;margin:16px 0 6px;font:1rem Arial,s
 table.pt th{background:#006d82;color:#fff;text-align:left;padding:10px 14px}
 table.pt td{padding:10px 14px;border-bottom:1px solid #d5e6e8;background:#fff}
 table.pt td:last-child,table.pt th:last-child{text-align:right}
+table.pt.num td:not(:first-child),table.pt.num th:not(:first-child){text-align:right}
+table.pt.num td:first-child{text-align:left}
+table.pt tr.tot td{font-weight:700;background:#eef6f7}
+table.pt.sess td:nth-child(2),table.pt.sess th:nth-child(2){text-align:left}
+@media(max-width:560px){table.pt.num{font-size:.82rem}table.pt.num th,table.pt.num td{padding:8px 6px}}
 ol.road{list-style:none;padding:0;margin:14px 0;counter-reset:s}
 ol.road li{counter-increment:s;position:relative;padding:12px 0 12px 52px;border-bottom:1px solid #e3eef0}
 ol.road li:before{content:counter(s);position:absolute;left:0;top:12px;width:36px;height:36px;border-radius:50%;background:#006d82;color:#fff;font:700 1rem Arial,sans-serif;display:flex;align-items:center;justify-content:center}
@@ -100,7 +105,6 @@ footer a{color:#fff}
   <div class="bar">
     <a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>
     <nav>
-      {% if page != 'home' %}<a class="tool" href="{{ url_for('legacy_home') }}" onclick="if(document.referrer&&history.length>1){history.back();return false}">&larr; Back</a>{% endif %}
       <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this matters</a>
       <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Our plan</a>
       <a href="{{ url_for('legacy_gift') }}" class="{{ 'on' if page=='gift' }}">Where your gift goes</a>
@@ -108,6 +112,7 @@ footer a{color:#fff}
       <a href="{{ url_for('legacy_banking') }}" class="{{ 'on' if page=='banking' }}">Banking and Financial Reporting</a>
       <a href="{{ url_for('legacy_about') }}" class="{{ 'on' if page=='about' }}">About</a>
       <a href="{{ url_for('legacy_pledge') }}" class="{{ 'on' if page=='pledge' }}">Pledge</a>
+      {% if page != 'home' %}<a class="tool" href="{{ url_for('legacy_home') }}" onclick="if(document.referrer&&history.length>1){history.back();return false}">&larr; Back</a>{% endif %}
       <a class="tool" href="{{ url_for('crm.login') }}">Team login</a>
     </nav>
   </div>
@@ -220,6 +225,72 @@ footer a{color:#fff}
   <h2>Banking and Financial Reporting</h2>
   <p>Discovery Legacy will keep its own bank account, books and records. Its books will be kept by a bookkeeper and accountant firm using QuickBooks Online.</p>
   <p>We intend to publish annual financial reports so that supporters can see how gifts are used.</p>
+
+  <h3 style="margin-top:34px">Preliminary 2027 operating budget</h3>
+  <p>This is a first-year planning estimate, not a forecast or a guarantee. We show three attendance levels so you can see the range. First, the fee for each program, then the trainings we plan to hold in 2027 and the attendance we expect at each.</p>
+  <h3>Program fees</h3>
+  <table class="pt">
+    <tr><th>Program</th><th>Expected fee</th></tr>
+    <tr><td>The Art of Us</td><td>$1,299 per couple (one payment covers both partners)</td></tr>
+    <tr><td>The Beginning</td><td>$600 per person</td></tr>
+    <tr><td>Awakening</td><td>$600 per person</td></tr>
+    <tr><td>Vision</td><td>$600 per person</td></tr>
+  </table>
+  <h3>Trainings and expected attendance</h3>
+  <table class="pt num sess">
+    <tr><th>Dates</th><th>Training</th><th>Lower</th><th>Expected</th><th>Higher</th></tr>
+    <tr><td>02/12–02/14/2027</td><td>The Art of Us</td><td>20 couples</td><td>30 couples</td><td>40 couples</td></tr>
+    <tr><td>04/16–04/18/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>04/16–04/18/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>04/16–04/18/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr><td>05/21–05/23/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>05/21–05/23/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>05/21–05/23/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr><td>06/11–06/13/2027</td><td>The Art of Us</td><td>20 couples</td><td>30 couples</td><td>40 couples</td></tr>
+    <tr><td>06/18–06/20/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>06/18–06/20/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>06/18–06/20/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr><td>07/23–07/25/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>07/23–07/25/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>07/23–07/25/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr><td>08/20–08/22/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>08/20–08/22/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>08/20–08/22/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr><td>09/03–09/05/2027</td><td>The Art of Us</td><td>20 couples</td><td>30 couples</td><td>40 couples</td></tr>
+    <tr><td>09/17–09/19/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>09/17–09/19/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>09/17–09/19/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr><td>10/22–10/24/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>10/22–10/24/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>10/22–10/24/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr><td>11/19–11/21/2027</td><td>The Beginning</td><td>15</td><td>25</td><td>35</td></tr>
+    <tr><td>11/19–11/21/2027</td><td>Awakening</td><td>12</td><td>20</td><td>30</td></tr>
+    <tr><td>11/19–11/21/2027</td><td>Vision</td><td>10</td><td>18</td><td>25</td></tr>
+    <tr class="tot"><td colspan="2">Total registration fees</td><td>$255,540</td><td>$419,310</td><td>$587,880</td></tr>
+  </table>
+  <p class="small">The Art of Us is counted in couples, one payment per couple. The other trainings are counted in people. The Renew and Spiritual retreats on our calendar are not included because they do not yet have prices or costs.</p>
+  <h3>The budget</h3>
+  <table class="pt num">
+    <tr><th></th><th>Lower attendance</th><th>Expected</th><th>Higher attendance</th></tr>
+    <tr><td>Seminar registration fees</td><td>$255,540</td><td>$419,310</td><td>$587,880</td></tr>
+    <tr><td>Seminar costs (hotel, meals, materials, card fees, contingency)</td><td>($213,453)</td><td>($269,325)</td><td>($326,824)</td></tr>
+    <tr class="tot"><td>Net from seminars</td><td>$42,087</td><td>$149,985</td><td>$261,056</td></tr>
+    <tr><td>Operations Director compensation</td><td>($60,000)</td><td>($60,000)</td><td>($60,000)</td></tr>
+    <tr><td>Insurance, software and Hub, storage, office</td><td>($7,215)</td><td>($7,215)</td><td>($7,215)</td></tr>
+    <tr><td>One-time startup (legal and IRS filing, equipment, shirts)</td><td>($10,067)</td><td>($10,067)</td><td>($10,067)</td></tr>
+    <tr><td>Acquisition payments (8 payments of $4,167)</td><td>($33,333)</td><td>($33,333)</td><td>($33,333)</td></tr>
+    <tr class="tot"><td>Result before donations</td><td>($68,528)</td><td>$39,370</td><td>$150,441</td></tr>
+    <tr><td>Founding Friend monthly pledges at the $10,000 goal</td><td>$120,000</td><td>$120,000</td><td>$120,000</td></tr>
+    <tr class="tot"><td>Result with pledges at goal</td><td>$51,472</td><td>$159,370</td><td>$270,441</td></tr>
+  </table>
+  <p class="small">Figures in parentheses are costs.</p>
+  <h3>What this budget assumes</h3>
+  <ul class="tick">
+    <li>Every training listed above is held. Costs come from our planning budgets, with a 5% contingency and card fees of 3% plus $0.30.</li>
+    <li>Acquisition payments begin 90 days after the first training, so eight fall in 2027. See <a href="{{ url_for('legacy_where') }}">Our plan</a>.</li>
+    <li>Pledges are counted at the full goal for all twelve months. Pledges are voluntary, and collection begins only after our tax-exemption application is filed, so actual gifts in 2027 may be lower.</li>
+    <li>Not yet included: accounting and bookkeeping fees, payroll taxes, and the Renew and Spiritual retreats. Compensation is a planning figure that will require board approval.</li>
+  </ul>
 </main>
 
 {% elif page == 'leadership' %}
