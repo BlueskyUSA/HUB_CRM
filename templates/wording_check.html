@@ -1,0 +1,25 @@
+{% extends "crm_base.html" %}
+{% block title %}Wording check: "Guide" — {{ program_name }}{% endblock %}
+{% block content %}
+<h1>Wording check: &ldquo;Guide&rdquo;</h1>
+<p class="muted" style="max-width:820px">Only you, the Owner, can see this page. It looks through the wording saved on the Hub (letters you edited, email blast drafts and volunteer suggestions) for the word &ldquo;Guide&rdquo; or &ldquo;Guides&rdquo;, which should now say &ldquo;Ambassador&rdquo; or &ldquo;Ambassadors&rdquo;. It only reads; it changes nothing. Use the Open button on each item to fix it.</p>
+
+{% if not items %}
+<div class="card" style="max-width:820px"><strong>All clear.</strong> No saved letter, email blast or suggestion contains &ldquo;Guide&rdquo; or &ldquo;Guides&rdquo;.</div>
+{% else %}
+<p><strong>{{ total }}</strong> place{{ '' if total == 1 else 's' }} in <strong>{{ items|length }}</strong> saved item{{ '' if items|length == 1 else 's' }}.
+  <span class="muted">A lowercase &ldquo;guide&rdquo; may be the ordinary word (&ldquo;guide them through registration&rdquo;), so it is shown in grey. Capitalised ones are shown in red.</span></p>
+{% for it in items %}
+<div class="card" style="max-width:820px; margin-bottom:12px">
+  <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start">
+    <div><strong>{{ it.label }}</strong><div class="muted">{{ it.where }}</div></div>
+    {% if it.url %}<a class="btn secondary" href="{{ it.url }}">Open</a>{% endif %}
+  </div>
+  {% for h in it.hits %}
+  <p style="margin:8px 0 0; font-size:.92rem"><span class="muted">{{ h.field }}:</span> {{ h.before }}<mark style="padding:0 3px; border-radius:3px; {{ 'background:#fde0e0; color:#b00020; font-weight:700' if h.cap else 'background:#eee; color:#555' }}">{{ h.word }}</mark>{{ h.after }}</p>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endif %}
+<p><a href="{{ url_for('.owners_corner') }}">&larr; Back to Owner's Corner</a></p>
+{% endblock %}
