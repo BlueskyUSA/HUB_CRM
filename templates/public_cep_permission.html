@@ -8,8 +8,8 @@
     <h2>Hi {{ vol.name.split()[0] }}!</h2>
     {% if vol.consent_at %}
       <p class="lead">Thank you. You gave your permission on <strong>{{ given_text }}</strong>, signing as <strong>{{ vol.consent_name }}</strong>. You are all set, and there is nothing more to do here.</p>
-      <p class="muted">If you ever want to withdraw your permission, just tell your Guide Team Captain.</p>
-      <p><a href="{{ url_for('public_cep_training') }}">Guide Training &rarr;</a></p>
+      <p class="muted">If you ever want to withdraw your permission, just tell your Ambassador Team Captain.</p>
+      <p><a href="{{ url_for('public_cep_training') }}">Ambassador Training &rarr;</a></p>
     {% else %}
       <p class="lead">Before you can respond to a &ldquo;Curious&rdquo; form request, Sojourn<span style="color:#FF0000">!</span> needs your permission to share your name, cell phone number and email address with the people who submit the &ldquo;Curious&rdquo; form. It takes about a minute, and you only do it once.</p>
       <div class="card" style="padding:20px; background:#fff; border-radius:14px; box-shadow:0 4px 16px rgba(0,0,0,.08); margin-bottom:20px">
@@ -26,7 +26,7 @@
         <div class="field"><label>Type your full name to sign *</label><input name="full_name" required maxlength="120" autocomplete="name" placeholder="Your full name"></div>
         <button class="pub-btn dark" type="submit">I agree</button>
       </form>
-      <p class="muted" style="margin-top:16px">If anything above is wrong, please tell your Guide Team Captain before you sign.</p>
+      <p class="muted" style="margin-top:16px">If anything above is wrong, please tell your Ambassador Team Captain before you sign.</p>
     {% endif %}
   </div>
 </section>

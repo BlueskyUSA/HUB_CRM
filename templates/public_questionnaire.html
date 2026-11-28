@@ -8,7 +8,7 @@
 <p>This link isn't valid or has expired. Please reach out to us directly and we'll send you a fresh one.</p>
 {% else %}
 {% if preview %}
-<p class="muted" style="margin:0 0 8px">Guides &middot; <a href="{{ url_for('public_cep_letters') }}">The letters we send to clients</a></p>
+<p class="muted" style="margin:0 0 8px">Ambassadors &middot; <a href="{{ url_for('public_cep_letters') }}">The letters we send to clients</a></p>
 <p style="margin:0 0 12px">{{ letter_buttons(letters, key, 'pub-btn secondary', 'pub-btn dark') }}</p>
 <p style="margin:0 0 12px"><a href="{{ url_for('public_cep_letter', key=('questionnaire-d1' if key == 'q-d1' else 'questionnaire')) }}">&larr; Back to the questionnaire email</a></p>
 <div class="card" style="border-left:6px solid #c9a227"><p style="margin:0"><strong>Read-only preview.</strong> This is exactly what each partner sees. Nothing can be typed or sent from here.</p></div>

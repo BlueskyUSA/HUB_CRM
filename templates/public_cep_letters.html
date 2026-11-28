@@ -6,7 +6,7 @@
 {% from "_letter_buttons.html" import letter_buttons %}
 <section class="pub-section">
   <div class="pub-container" style="max-width:760px">
-    <p class="muted" style="margin:0 0 6px">Guides &middot; <a href="{{ url_for('public_cep_training') }}">Training modules</a></p>
+    <p class="muted" style="margin:0 0 6px">Ambassadors &middot; <a href="{{ url_for('public_cep_training') }}">Training modules</a></p>
     {% for m in get_flashed_messages() %}<p class="flash">{{ m }}</p>{% endfor %}
     <h2>{{ title if current else 'The letters we send to clients' }}</h2>
     {% if not current %}

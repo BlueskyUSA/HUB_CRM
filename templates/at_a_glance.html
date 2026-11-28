@@ -14,7 +14,7 @@
   details.ag-prog>summary::-webkit-details-marker{display:none}
 </style>
 <h1>At a Glance</h1>
-<p class="muted">Where each program stands today ({{ as_of }}). Counts come from the Guides' request log, the rosters and the payment records. Nothing here changes anything.</p>
+<p class="muted">Where each program stands today ({{ as_of }}). Counts come from the Ambassadors' request log, the rosters and the payment records. Nothing here changes anything.</p>
 
 {% if people %}
 <details class="card ag-prog">
@@ -61,7 +61,7 @@
   {% endif %}
 
   <div class="ag-grid">
-    <div class="ag-tile"><div class="ag-num">{{ s.interested }}</div><div class="ag-lab">Asked to talk to a Guide</div></div>
+    <div class="ag-tile"><div class="ag-num">{{ s.interested }}</div><div class="ag-lab">Asked to talk to an Ambassador</div></div>
     <div class="ag-tile"><div class="ag-num">{{ s.reserved }}</div><div class="ag-lab">Reserved</div></div>
     <div class="ag-tile"><div class="ag-num">{{ s.q_done }}</div><div class="ag-lab">Questionnaire done</div></div>
     <div class="ag-tile"><div class="ag-num">{{ s.paid }}</div><div class="ag-lab">Paid</div></div>
@@ -71,15 +71,15 @@
 
   <h4 style="margin:12px 0 4px">The path, step by step</h4>
   {% set top = [s.interested, s.talked, s.linked, s.reserved, s.q_done, s.paid]|max or 1 %}
-  {% for nm, n in [('Asked to talk to a Guide', s.interested), ('Spoke with a Guide', s.talked), ('Reserve link sent', s.linked), ('Reserved', s.reserved), ('Questionnaire done', s.q_done), ('Paid', s.paid)] %}
+  {% for nm, n in [('Asked to talk to an Ambassador', s.interested), ('Spoke with an Ambassador', s.talked), ('Reserve link sent', s.linked), ('Reserved', s.reserved), ('Questionnaire done', s.q_done), ('Paid', s.paid)] %}
   <div class="ag-step"><span class="nm">{{ nm }}</span><span class="bar"><div style="width:{{ (100 * n / top)|round|int }}%"></div></span><span class="n">{{ n }}</span></div>
   {% endfor %}
-  {% if s.unclaimed %}<p style="color:#b3412f; font-weight:600; margin:8px 0 0">{{ s.unclaimed }} request{{ 's' if s.unclaimed != 1 }} waiting more than a day with no Guide picking up.</p>{% endif %}
+  {% if s.unclaimed %}<p style="color:#b3412f; font-weight:600; margin:8px 0 0">{{ s.unclaimed }} request{{ 's' if s.unclaimed != 1 }} waiting more than a day with no Ambassador picking up.</p>{% endif %}
 
-  <h4 style="margin:14px 0 4px">By Guide</h4>
+  <h4 style="margin:14px 0 4px">By Ambassador</h4>
   {% if s.guides %}
   <table class="stack">
-    <tr><th>Guide</th><th>Requests</th><th>Spoke</th><th>Link sent</th><th>Reserved</th><th>Paid</th></tr>
+    <tr><th>Ambassador</th><th>Requests</th><th>Spoke</th><th>Link sent</th><th>Reserved</th><th>Paid</th></tr>
     {% for g in s.guides %}<tr><td>{{ g.name }}</td><td data-label="Requests">{{ g.requests }}</td><td data-label="Spoke">{{ g.talked }}</td><td data-label="Link sent">{{ g.linked }}</td><td data-label="Reserved">{{ g.reserved }}</td><td data-label="Paid">{{ g.paid }}</td></tr>{% endfor %}
   </table>
   {% else %}<p class="muted">No requests yet.</p>{% endif %}

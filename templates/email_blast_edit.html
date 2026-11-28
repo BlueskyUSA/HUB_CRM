@@ -63,7 +63,7 @@
     <div class="field"><label>Contact list it goes to</label>
       <select name="list_id"><option value="">No list chosen</option>{% for l in lists %}<option value="{{ l.id }}" {{ 'selected' if l.id == a.list_id }}>{{ l.name }}</option>{% endfor %}</select>
       <div class="muted">Add people to the list from the Contacts pages. The blast uses whoever is on the list on the day you send it.</div></div>
-    {% else %}<p class="muted">This goes to everyone who is active on the Guides page.</p>{% endif %}
+    {% else %}<p class="muted">This goes to everyone who is active on the Ambassadors page.</p>{% endif %}
     <button class="btn" type="submit">Save</button>
   </form>
 </div>
