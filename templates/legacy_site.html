@@ -58,6 +58,7 @@ footer a{color:#fff}
 </div>
 {% else %}
 {% if preview %}<div class="preview">Preview only. This site is not public yet. Only people signed in to the Hub can see it.</div>{% endif %}
+{% if guest_invite %}<div class="preview" style="background:#e6f3f5">This is a private invitation, made for you. Please don&rsquo;t share the link.</div>{% endif %}
 <header class="top">
   <div class="bar">
     <a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>
@@ -111,6 +112,7 @@ footer a{color:#fff}
   <form class="card" method="post" action="{{ url_for('legacy_pledge') }}">
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
     {{ bot_field() }}
+    <input type="hidden" name="inv" value="{{ inv or '' }}">
     <div style="position:absolute;left:-9999px" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
     <div class="row">
       <div><label for="fn">First name</label><input id="fn" type="text" name="first_name" value="{{ form.get('first_name','') }}" required></div>
