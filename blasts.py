@@ -1,4 +1,4 @@
-"""Owner-only email blasts: one card per audience (a contact list, attendees, or the Guides). Each audience holds
+"""Owner-only email blasts: one card per audience (a contact list, attendees, or the Ambassadors). Each audience holds
 LETTERS: you write or upload a letter, edit it while it is a draft, send yourself a test, and send it (confirmed,
 paced, logged). Once a letter has been sent it is locked and shows the date it went out; start a new letter for the next one.
 
@@ -118,7 +118,7 @@ def ensure_tables(get_db):
                 ("Excitement blast: Kent's contacts", "excitement", None, EXCITEMENT_BLAST_SUBJECT, None, None, 10),
                 ("Excitement blast: Discovery Contact list", "excitement", list_id(cf.DISCOVERY_LIST), EXCITEMENT_BLAST_SUBJECT, None, None, 20),
                 ("Excitement blast: Entire Database", "excitement", None, EXCITEMENT_BLAST_SUBJECT, None, None, 25),
-                ("Discovery Guides", "guides", None, "", GUIDES_BODY, None, 30),
+                ("Discovery Ambassadors", "guides", None, "", GUIDES_BODY, None, 30),
                 ("Discovery volunteers", "text", list_id(cf.RESPONDED_LIST), "Exciting Changes to the Discovery! Program",
                  VOLUNTEERS_BODY, "/volunteer-helper/join", 40),
                 ("Volunteer staff", "text", list_id("Volunteer staff"), "", "", None, 50),
@@ -207,7 +207,7 @@ def _secret():
 
 
 def unsub_token(ref):
-    """ref > 0 is a contact id; ref < 0 is a Guide (call_volunteers id)."""
+    """ref > 0 is a contact id; ref < 0 is an Ambassador (call_volunteers id)."""
     if ref < 0:
         sig = hmac.new(_secret(), f"unsubg:{-ref}".encode(), hashlib.sha256).hexdigest()[:24]
         return f"g{-ref}-{sig}"
@@ -298,13 +298,13 @@ def standard_text():
 
 
 def build(letter, aud, first, contact_id, base_url):
-    """(subject, html, text) for one person. contact_id: 0 = preview, None = no unsubscribe line, <0 = a Guide."""
+    """(subject, html, text) for one person. contact_id: 0 = preview, None = no unsubscribe line, <0 = an Ambassador."""
     greet = first.strip() if first and first.strip() else "Friend"
     footer_h = footer_t = ""
     if contact_id is not None:
         u = "#" if contact_id == 0 else f"{base_url}/unsubscribe/{unsub_token(contact_id)}"
-        what = ("Unsubscribe from Guide announcements (you will still get alerts about requests)" if aud["kind"] == "guides" else "Unsubscribe")
-        why = ("You are receiving this because you are a Sojourn Guide." if aud["kind"] == "guides"
+        what = ("Unsubscribe from Ambassador announcements (you will still get alerts about requests)" if aud["kind"] == "guides" else "Unsubscribe")
+        why = ("You are receiving this because you are a Sojourn Ambassador." if aud["kind"] == "guides"
                else "You are receiving this because you are part of the Sojourn community.")
         footer_h = (f'<hr style="border:none;border-top:1px solid #ddd;margin:24px 0 10px">'
                     f'<p style="font-size:.8em;color:#777">{why} <a href="{u}">{what}</a><br>{_html.escape(MAILING_ADDRESS)}</p>')

@@ -34,11 +34,11 @@ BLOCKS = [
     ("money", "Money", "#b5651d", "Gifts and donations.", [
         ("donations", "One row per donation."),
     ]),
-    ("outreach", "Outreach and Volunteers", "#c0392b", "People asking to hear from us, the Guides who answer, and our emails.", [
+    ("outreach", "Outreach and Volunteers", "#c0392b", "People asking to hear from us, the Ambassadors who answer, and our emails.", [
         ("interest_log", "Each time someone used a Curious / interest form."),
         ("call_requests", "A request to be called or texted, and how it went."),
-        ("call_notices", "The alert sent to each Guide for a request."),
-        ("call_volunteers", "The Guides, their phones and permissions."),
+        ("call_notices", "The alert sent to each Ambassador for a request."),
+        ("call_volunteers", "The Ambassadors, their phones and permissions."),
         ("volunteer_helpers", "Volunteers with a personal page, and who brought them in."),
         ("blast_audiences", "The groups an email blast can go to, and the wording."),
         ("blast_sends", "Each blast that was sent."),
@@ -54,7 +54,7 @@ LINKS = [
     ("people", "enroll", "people enroll in sessions"),
     ("programs", "enroll", "sessions hold people and teams"),
     ("people", "money", "people give donations"),
-    ("people", "outreach", "requests and Guides are people"),
+    ("people", "outreach", "requests and Ambassadors are people"),
     ("people", "team", "a login can link to a person"),
 ]
 
@@ -88,7 +88,7 @@ FIXED_DESC = {
 TITLES = {
     "access_grants": "HUB Access",
     "cohorts": "Sessions (Cohorts)",
-    "call_volunteers": "Guides",
+    "call_volunteers": "Ambassadors",
     "blast_audiences": "Correspondence Groups",
     "blast_sends": "Correspondence Sends",
     "blast_recipients": "Correspondence Recipients",

@@ -60,7 +60,7 @@ def collect(conn, is_owner, is_lead, can_money, label_of, url_for, today=None):
                    WHERE COALESCE(r.status,'New') = 'New'
                    AND r.claimed_by IS NULL AND REPLACE(r.created_at, 'T', ' ') < ?""", (cutoff,)).fetchone()["n"]
             if n:
-                out.append(dict(level="urgent", text=f"{_plural(n, 'request')} from the website {'has' if n == 1 else 'have'} had no Guide response for over a day.",
+                out.append(dict(level="urgent", text=f"{_plural(n, 'request')} from the website {'has' if n == 1 else 'have'} had no Ambassador response for over a day.",
                                 url=url_for(".call_requests_queue"), cta="Open Call requests"))
         safe(call_requests)
 

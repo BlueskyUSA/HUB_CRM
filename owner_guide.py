@@ -19,7 +19,7 @@ SOFTWARE_SEED = [  # (name, what it is for, login address)
     ("Render", "Runs the Hub and the public site; go-live switches", "https://dashboard.render.com"),
     ("GitHub", "Holds the Hub's code (HUB_CRM)", "https://github.com/login"),
     ("Brevo", "Sends email and reports bounces", "https://app.brevo.com"),
-    ("Pushover", "Phone alerts for Guides", "https://pushover.net/login"),
+    ("Pushover", "Phone alerts for Ambassadors", "https://pushover.net/login"),
     ("QuickBooks Online", "Accounting", "https://qbo.intuit.com"),
     ("Claude", "Builds and updates the Hub", "https://claude.ai"),
     ("ChatGPT", "", "https://chatgpt.com"),

@@ -9768,8 +9768,6 @@ import testimonials
 testimonials.register(app, crm, leadership_required, get_db, send_email, full_name_sql, PROGRAM_NAME)
 import sitevisits
 sitevisits.register(app, crm, true_owner_required, get_db, full_name_sql, log_message=_log_contact_message)
-import fundraising
-fundraising.register(app, crm, true_owner_required, get_db, log_message=_log_contact_message)
 
 # ---------- volunteer chat: discussion board + live chat room ----------
 # Internal only. Open to every Team / Leadership / Owner login; Accounting & Legal

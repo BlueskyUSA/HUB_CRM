@@ -34,7 +34,7 @@ def suppressed_addresses(conn):
 
 
 def email_blocked(conn, email):
-    """True if this address must not be emailed one-to-one: unsubscribed/do-not-email on any contact, Guide opt-out,
+    """True if this address must not be emailed one-to-one: unsubscribed/do-not-email on any contact, Ambassador opt-out,
     spam complaint, or a typed-in block."""
     e = (email or "").strip().lower()
     if not e:

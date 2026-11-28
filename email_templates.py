@@ -1013,33 +1013,6 @@ GUIDE_LETTERS = {
         "signoff": "Warmly,",
         "signer": "Kent Hafemann",
     },
-    "pledge_invite": {
-        "title": "Invitation to pledge (fundraising site)",
-        "audience": "Friends you invite from the Pledges page to become Founding Friends of Discovery Legacy",
-        "greeting": "Dear",
-        "subject": "An invitation from Kent: Discovery Legacy",
-        "paras": [
-            "{note_text}",
-            "Discovery Legacy is a new Texas nonprofit corporation working to bring Discovery! back to North Texas. We are inviting a small circle of friends to become Founding Friends and help us start well. This page is private to you, so please don't share it.",
-            "{link}",
-            "A pledge is only a statement of your intention. It is not a payment, and you will not be asked to give until our bank account is open. If you have any questions, just reply to this email.",
-        ],
-        "button": "See the invitation",
-        "signoff": "With gratitude,",
-        "signer": "Kent Hafemann",
-    },
-    "pledge_thanks": {
-        "title": "Thank you for your pledge (fundraising site)",
-        "audience": "People who pledge on the Discovery Legacy fundraising website",
-        "greeting": "Dear",
-        "subject": "Thank You for Believing in the Future of Discovery!",
-        "paras": [
-            "Thank you for your willingness to become a Founding Friend of Discovery Legacy. Your expression of financial support means a great deal to Pamela and me. We believe we have an opportunity to build something that will touch lives and strengthen relationships for generations to come.",
-            "As a reminder, your pledge is voluntary and nonbinding. No payment is requested at this time. We look forward to keeping you informed as we establish the ministry's legal, financial and operational foundation.",
-        ],
-        "signoff": "With gratitude,",
-        "signer": "Kent and Pamela Hafemann, Discovery Legacy",
-    },
     "video_call": {
         "title": "Video call link (Google Meet)",
         "audience": "Any contact",
@@ -1122,7 +1095,7 @@ GUIDE_LETTERS = {
         "signer": "The Sojourn Team",
     },
 }
-GUIDE_FIELDS = ("when_text", "First Name", "first name", "label", "vol_name", "vfirst", "vphone", "link", "pw", "first", "First name", "Name", "name", "client", "page_link", "amount_text", "note_text")
+GUIDE_FIELDS = ("when_text", "First Name", "first name", "label", "vol_name", "vfirst", "vphone", "link", "pw", "first", "First name", "Name", "name", "client", "page_link")
 ALL_LETTERS = {**SESSION_LETTERS, **GUIDE_LETTERS}
 
 

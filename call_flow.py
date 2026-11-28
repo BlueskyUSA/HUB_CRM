@@ -5,7 +5,7 @@ How it works
   1. Someone fills in the short form (front page, program pages, or the Reserve form) and answers Yes/No to
      "Do we have permission to call and text you on your cell phone?"
   2. On Yes, a call request is saved and the volunteers for that program (set up on the Call volunteers page,
-     up to six per program, plus a Guide Team Captain) are alerted. Each alert has a personal link.
+     up to six per program, plus an Ambassador Team Captain) are alerted. Each alert has a personal link.
   3. The first volunteer to open their link and tap "I'll call within 2 hours" gets the request. The others see
      "already claimed". The interested person is then told the volunteer's name and number.
   4. After calling, the volunteer logs the outcome on the same link.
@@ -35,7 +35,7 @@ except Exception:  # pragma: no cover
     CHI = None
 
 POOLS = [
-    ("CAPTAIN", "Guide Team Captain (oversees the team)"),
+    ("CAPTAIN", "Ambassador Team Captain (oversees the team)"),
     ("D1", "The Beginning"),
     ("D4", "The Art of Us"),
     ("ALL", "Everything else (also the back-up if a program has no volunteers)"),
@@ -63,10 +63,10 @@ CONSENT_WORDING = CONSENT_QUESTION + " (" + CONSENT_FINE + ")"
 
 VOLUNTEER_CONSENT = (
     "I give Sojourn permission to share my name, my cell phone number and my email address with the people "
-    "who ask to hear from the Guides, and with the Guide Team Captain and other Guides. This may happen in a "
+    "who ask to hear from the Ambassadors, and with the Ambassador Team Captain and other Ambassadors. This may happen in a "
     "message, an email, a letter or on a web page. I am a volunteer, and I understand that the people I speak with will "
     "be given my name and cell phone number so they can recognize and reach me. Sojourn will not sell or rent "
-    "my information. I can withdraw this permission at any time by telling my Guide Team Captain, and Sojourn will "
+    "my information. I can withdraw this permission at any time by telling my Ambassador Team Captain, and Sojourn will "
     "then stop sharing my information with new people.")
 
 _ready = False
@@ -105,7 +105,7 @@ def alerts_live():
 
 
 def sponsor_live():
-    """Sponsor letters need the Guide-alerts switch AND SPONSOR_LIVE=1."""
+    """Sponsor letters need the Ambassador-alerts switch AND SPONSOR_LIVE=1."""
     return alerts_live() and (os.environ.get("SPONSOR_LIVE") or "").strip() == "1"
 
 
@@ -267,7 +267,7 @@ def ensure_tables(get_db):
 
 
 
-# ---------------------------------------------------------------- the letters people receive (one place, so the Guides can read exactly what is sent)
+# ---------------------------------------------------------------- the letters people receive (one place, so the Ambassadors can read exactly what is sent)
 def letter_curious(first, label, vol_name, vphone, pw):
     from email_templates import guide_letter_content
     return guide_letter_content("guide_curious", first, label, vol_name, vphone, pw=pw)
@@ -306,12 +306,12 @@ def letter_questionnaire(first, label, link, vol_name, vphone):
 
 
 CLIENT_LETTERS = [
-    ("curious", "Reply to \"I'm curious\"", "Sent automatically as soon as a Guide takes the request."),
+    ("curious", "Reply to \"I'm curious\"", "Sent automatically as soon as an Ambassador takes the request."),
     ("register", "Registration link", "Sent when the volunteer taps \"Email it\" in the Ready to register box. (If they tap \"Text it\", the same link goes by text from the volunteer's own phone.)"),
     ("confirm", "Trainee Registration Confirmation", "Sent automatically to both partners soon after they reserve a date."),
     ("questionnaire", "Questionnaire", "Sent when the volunteer taps \"Email it\" in the Send the questionnaire box. Each partner gets their own private link to the form shown below. The Art of Us and The Beginning use the same questionnaire for now."),
     ("venue", "Where we'll be and what's included", "The venue letter: hotel, what the $1,299 per couple includes, shuttle and check-out. Can be sent to registered couples or used when someone asks about the venue."),
-    ("payment", "Payment reminder", "No longer automatic. The Guide is nudged every 7 days while payment is late and sends the reminder if and when they choose."),
+    ("payment", "Payment reminder", "No longer automatic. The Ambassador is nudged every 7 days while payment is late and sends the reminder if and when they choose."),
 ]
 
 
@@ -348,7 +348,7 @@ def letter_venue(first, partner, vol_name, vphone, photo_url=None, room_url=None
 
 
 def welcome_video():
-    """Optional 'Welcome to the Guides' video. Set CEP_WELCOME_VIDEO to a YouTube/Vimeo/.mp4 link,
+    """Optional 'Welcome to the Ambassadors' video. Set CEP_WELCOME_VIDEO to a YouTube/Vimeo/.mp4 link,
     or upload static/cep-welcome.mp4. Returns {kind, src} or None."""
     import os, re as _re
     u = (os.environ.get("CEP_WELCOME_VIDEO") or "").strip()
@@ -366,7 +366,7 @@ def welcome_video():
 
 
 def sample_letter(key):
-    """(title, when, subject, html) for the Guides to read, with placeholders in [brackets]."""
+    """(title, when, subject, html) for the Ambassadors to read, with placeholders in [brackets]."""
     title, when = next(((t, w) for k, t, w in CLIENT_LETTERS if k == key), (None, None))
     if key == "questionnaire-d1":
         title, when = "Questionnaire \u2013 The Beginning", next(w for k, t, w in CLIENT_LETTERS if k == "questionnaire")
@@ -596,7 +596,7 @@ def questionnaire_links(conn, req, base_url):
 
 
 def client_progress(conn, req, base_url):
-    """What the Guide sees for one client: a checklist filled in from the data, and the single best next step."""
+    """What the Ambassador sees for one client: a checklist filled in from the data, and the single best next step."""
     steps = []
     talked = bool(req["outcome"])
     steps.append(("Talked with them", talked))
@@ -649,16 +649,31 @@ def client_progress(conn, req, base_url):
             "profile_link": prof["link"], "reserved": reserved, "paid": paid, "start": cohort_start}
 
 
-GUIDE_LIST = "Guides"
-LEAD_GUIDE_LIST = "Guide Team Captain"
+GUIDE_LIST = "Ambassadors"
+LEAD_GUIDE_LIST = "Ambassador Team Captain"
+
+
+def rename_guide_lists(conn):
+    """One-time-safe rename of the two volunteer contact lists to their Ambassador names, keeping every member. Skips a rename
+    if a list with the new name already exists. Never raises."""
+    try:
+        for old, new in (("Lead Guide", LEAD_GUIDE_LIST), ("Guide Team Captain", LEAD_GUIDE_LIST), ("Guides", GUIDE_LIST)):
+            conn.execute("UPDATE contact_lists SET name = ? WHERE name = ? AND NOT EXISTS (SELECT 1 FROM contact_lists WHERE name = ?)",
+                         (new, old, new))
+        conn.commit()
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        print(f"Couldn't rename the Ambassador lists: {e}", flush=True)
 
 
 def sync_guide_lists(conn):
-    """Keeps two contact lists up to date from the Guides page: 'Guides' and 'Guide Team Captain' (matched by email).
+    """Keeps two contact lists up to date from the Ambassadors page: 'Ambassadors' and 'Ambassador Team Captain' (matched by email).
     Use the Lists filter on Contacts to see them. Never raises."""
     try:
-        conn.execute("UPDATE contact_lists SET name = ? WHERE name = 'Lead Guide' AND NOT EXISTS (SELECT 1 FROM contact_lists WHERE name = ?)",
-                     (LEAD_GUIDE_LIST, LEAD_GUIDE_LIST))
+        rename_guide_lists(conn)
         g, l = list_id_for(conn, GUIDE_LIST), list_id_for(conn, LEAD_GUIDE_LIST)
         want = {g: set(), l: set()}
         for v in conn.execute("SELECT program_code, email FROM call_volunteers WHERE active = 1 AND program_code <> 'SPONSOR'").fetchall():
@@ -678,18 +693,18 @@ def sync_guide_lists(conn):
             conn.rollback()
         except Exception:
             pass
-        print(f"Couldn't update the Guide lists: {e}", flush=True)
+        print(f"Couldn't update the Ambassador lists: {e}", flush=True)
 
 
 def guide_for_email(conn, email):
-    """The active Guide whose email matches this contact's email, with a plain role label, or None."""
+    """The active Ambassador whose email matches this contact's email, with a plain role label, or None."""
     if not (email or "").strip():
         return None
     v = conn.execute("SELECT id, name, program_code FROM call_volunteers WHERE active = 1 AND LOWER(email) = LOWER(?) ORDER BY id LIMIT 1",
                      (email.strip(),)).fetchone()
     if not v:
         return None
-    return dict(id=v["id"], name=v["name"], role=("Sponsor" if v["program_code"] == "SPONSOR" else "Guide Team Captain" if v["program_code"] == "CAPTAIN" else "Guide"),
+    return dict(id=v["id"], name=v["name"], role=("Sponsor" if v["program_code"] == "SPONSOR" else "Ambassador Team Captain" if v["program_code"] == "CAPTAIN" else "Ambassador"),
                 group=dict(POOLS).get(v["program_code"], v["program_code"]))
 
 
@@ -1026,7 +1041,7 @@ def sweep(get_db, base_url):
 
 
 def _notify_milestones(get_db):
-    """Tell the Guide when the person they helped has registered, and again when they have paid."""
+    """Tell the Ambassador when the person they helped has registered, and again when they have paid."""
     conn = get_db()
     try:
         rows = conn.execute(
@@ -1074,7 +1089,7 @@ def _page_link(conn, request_id, volunteer_id):
 
 
 def _payment_nudges(conn):
-    """Every 7 days a registered client has not paid, the Guide gets a nudge. Sending the reminder is the Guide's choice."""
+    """Every 7 days a registered client has not paid, the Ambassador gets a nudge. Sending the reminder is the Ambassador's choice."""
     rows = conn.execute(
         """SELECT r.id, r.claimed_by, r.reserved_at, r.pay_nudge_at, r.contact_id, r.reserve_cohort_id, c.first_name
            FROM call_requests r JOIN contacts c ON c.id = r.contact_id
@@ -1166,7 +1181,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
 
     @app.route("/cep-training")
     def public_cep_training():
-        """The Guides' how-to guide. Not linked from the public site; the team reaches it from their call page."""
+        """The Ambassadors' how-to guide. Not linked from the public site; the team reaches it from their call page."""
         return render_template("public_cep_training.html")
 
     @app.route("/cep-permission/<token>", methods=["GET", "POST"])
@@ -1434,7 +1449,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
 
     @app.route("/call/<token>/help", methods=["POST"])
     def public_call_help(token):
-        """A Sponsor taps 'I need help speaking with them': the Guide Team Captain and Kent are told."""
+        """A Sponsor taps 'I need help speaking with them': the Ambassador Team Captain and Kent are told."""
         conn, n, req, vol, claimer = _load(token)
         try:
             if req["claimed_by"] != vol["id"] or req["source"] != "sponsor":
@@ -1447,7 +1462,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
                 caps = conn.execute("SELECT name, email, push_user_key FROM call_volunteers WHERE active = 1 AND program_code = 'CAPTAIN' ORDER BY id").fetchall()
                 subject = f"{vol['name']} needs help speaking with {who}"
                 body = (f"<p>{vol['name']} ({pretty_phone(vol['cell_phone'])}, {vol['email']}) is sponsoring <strong>{who}</strong> "
-                        f"and asked for an experienced volunteer to reach out to them. Please ask a Guide to call or text {vol['name'].split()[0]}.</p>")
+                        f"and asked for an experienced volunteer to reach out to them. Please ask an Ambassador to call or text {vol['name'].split()[0]}.</p>")
                 text = f"{vol['name']} ({pretty_phone(vol['cell_phone'])}, {vol['email']}) is sponsoring {who} and asked for an experienced volunteer to reach out to them."
                 targets = [(c["name"], c["email"], c["push_user_key"]) for c in caps] + [("Kent", _leadership_email(), None)]
                 for nm, em, pk in targets:
@@ -1507,7 +1522,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
 
     @app.route("/call/<token>/send/<kind>", methods=["POST"])
     def public_call_send_letter(token, kind):
-        """Guide taps 'Email it' for the profile, payment request or payment reminder; or 'sent by text' is noted."""
+        """Ambassador taps 'Email it' for the profile, payment request or payment reminder; or 'sent by text' is noted."""
         conn, n, req, vol, claimer = _load(token)
         try:
             if req["claimed_by"] != vol["id"]:
@@ -1705,7 +1720,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
     @crm.route("/call-requests/<int:request_id>/reassign", methods=["POST"])
     @guides_required
     def call_request_reassign(request_id):
-        """Hand a claimed request to a different Guide. The new Guide gets their own link by email."""
+        """Hand a claimed request to a different Ambassador. The new Ambassador gets their own link by email."""
         ensure_tables(get_db)
         conn = get_db()
         try:
@@ -1714,7 +1729,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
             vid = request.form.get("volunteer_id", type=int)
             vol = conn.execute("SELECT * FROM call_volunteers WHERE id = ? AND active = 1", (vid,)).fetchone() if vid else None
             if not req or req["status"] != "Claimed" or not vol:
-                flash("That request can't be handed over (it must be claimed, and the Guide must be active).")
+                flash("That request can't be handed over (it must be claimed, and the Ambassador must be active).")
                 return redirect(url_for(".call_requests_queue"))
             old = conn.execute("SELECT name FROM call_volunteers WHERE id = ?", (req["claimed_by"],)).fetchone()
             conn.execute("UPDATE call_requests SET claimed_by = ?, claimed_at = ? WHERE id = ? AND status = 'Claimed'",
@@ -1730,16 +1745,16 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
                 try:
                     _send(vol["email"], f"{who} is now yours to follow up with \u2013 {label}",
                           f"<p>Hi {first},</p><p>{who} asked to be reached about <strong>{label}</strong>"
-                          f"{(' and was being helped by ' + old['name']) if old else ''}. You are now their Guide. "
+                          f"{(' and was being helped by ' + old['name']) if old else ''}. You are now their Ambassador. "
                           f"Open your page to see the details, log your call and send the next link:<br><a href=\"{url}\">{url}</a></p>",
-                          f"Hi {first},\n\n{who} asked to be reached about {label}. You are now their Guide. Your page:\n{url}",
+                          f"Hi {first},\n\n{who} asked to be reached about {label}. You are now their Ambassador. Your page:\n{url}",
                           to_name=vol["name"])
                     sent = True
                 except Exception as e:
                     print(f"Hand-over email failed: {e}", flush=True)
             msg = f"{who} is now with {vol['name']}" + (f" (was {old['name']})." if old else ".")
             msg += " They were emailed their link." if sent else f" No email was sent (sending is off or it failed); give them this link: {url}"
-            msg += " Note: the person was already told the first Guide's name."
+            msg += " Note: the person was already told the first Ambassador's name."
             flash(msg)
         finally:
             conn.close()
@@ -1871,7 +1886,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
     @crm.route("/call-volunteers/<int:vid>/email-training", methods=["POST"])
     @leadership_required
     def call_volunteer_email_training(vid):
-        """Emails the whole Guide Training (all modules) to one Guide. Sent right away; deliberate click by Leadership."""
+        """Emails the whole Ambassador Training (all modules) to one Ambassador. Sent right away; deliberate click by Leadership."""
         import re as _re
         ensure_tables(get_db)
         conn = get_db()
@@ -1879,7 +1894,7 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
             v = conn.execute("SELECT id, name, email FROM call_volunteers WHERE id = ? AND active = 1", (vid,)).fetchone()
             back = request.form.get("back") or url_for(".call_volunteers_page")
             if not v or not (v["email"] or "").strip():
-                flash("That Guide has no email address on file.")
+                flash("That Ambassador has no email address on file.")
                 return redirect(back)
             base = _base_url()
             body = render_template("_guide_training_body.html", email_mode=True)
@@ -1887,18 +1902,18 @@ def register(app, crm, leadership_required, get_db, guides_required=None):
             body = _re.sub(r'class="cep-mod[^"]*"', 'style="border-top:2px solid #e3e8ee; padding:16px 0"', body)
             body = _re.sub(r'class="(goal|muted|cep-top)"', '', body)
             first = v["name"].split()[0]
-            html = (f"<p>Hi {first},</p><p>Here is the complete Guide Training for Sojourn, so you can read it at your own pace. "
+            html = (f"<p>Hi {first},</p><p>Here is the complete Ambassador Training for Sojourn, so you can read it at your own pace. "
                     f"You can also open it any time here: <a href=\"{base}/cep-training\">{base}/cep-training</a>.</p>{body}"
                     f"<p>Warmly,<br>The Sojourn Team</p>")
             text = _re.sub(r"<[^>]+>", "", _re.sub(r"</(p|li|h3|h4|div)>", "\n", html))
             text = _re.sub(r"\n{3,}", "\n\n", text)
             try:
-                _send(v["email"], "Your Sojourn Guide Training", html, text, to_name=v["name"])
+                _send(v["email"], "Your Sojourn Ambassador Training", html, text, to_name=v["name"])
             except Exception as e:
-                print(f"Couldn't email the Guide Training to {v['email']}: {e}", flush=True)
+                print(f"Couldn't email the Ambassador Training to {v['email']}: {e}", flush=True)
                 flash("The email didn't go through. Please try again in a moment.")
                 return redirect(back)
-            flash(f"The Guide Training was emailed to {v['name']} ({v['email']}).")
+            flash(f"The Ambassador Training was emailed to {v['name']} ({v['email']}).")
             return redirect(back)
         finally:
             conn.close()

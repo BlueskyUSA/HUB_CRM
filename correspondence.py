@@ -248,8 +248,6 @@ def catalog():
             E("needs_request", "Food and physical needs request (session team)", "By hand, from a session page: the \"Email the team members who haven't answered\" button. The Hub sends it and keeps a record.", "Team members on a session"),
             E("video_call", "Video call link (Google Meet)", "By hand, from a contact's record: \"Email the link\". The Hub sends it and keeps a record.", "Any contact"),
             E("site_invitation", "Invitation to the private website preview", "By hand, from a contact\u2019s record: \"Invite to the website\". The Hub makes their personal link, sends this and keeps a record. People who already have a Hub login are never sent one.", "Friends you invite while the site is private"),
-            E("pledge_thanks", "Thank you for your pledge (fundraising site)", "Automatically, the moment someone sends a pledge on the Discovery Legacy website (when letters are switched on). The Hub keeps a record on their contact.", "People who pledge on the fundraising site"),
-            E("pledge_invite", "Invitation to pledge (fundraising site)", "When you press Send on the Invite a friend box on the Pledges page. Your personal note is placed at the top.", "Friends you invite to become Founding Friends"),
          ]),
         ("trainees", "Trainee Correspondence",
          "Letters and questionnaires for the people registered for a session. Each session's page shows who has received each letter. The questionnaires are the forms trainees fill in on their private link; their questions are fixed in the program code for now, and making them editable per program is the next piece.", [
@@ -692,7 +690,7 @@ def register(app, crm, get_db, h):
                           location="the hotel", role="Lead Facilitator", duties=["Sound Equipment"], link="https://example.org/your-link",
                           partner="Jordan", amount="$1,299 per couple")
     GUIDE_SAMPLE = dict(first="Alex", label="The Art of Us", vol_name="Pat Smith", vfirst="Pat", vphone="469-555-0100",
-                        link="https://example.org/your-link", pw="call or text", client="Jordan Lee", page_link="https://example.org/your-page", when_text=" on Thursday at 2:00 pm", amount_text="$100 a month for 12 months", note_text="I wanted you to be one of the first to hear about something that matters a great deal to me.")
+                        link="https://example.org/your-link", pw="call or text", client="Jordan Lee", page_link="https://example.org/your-page", when_text=" on Thursday at 2:00 pm")
     FIELD_HELP = {
         "First Name": "the person's first name",
         "when_text": "\" on [day and time]\" when you type one, otherwise nothing",
@@ -704,7 +702,7 @@ def register(app, crm, get_db, h):
         "duties": "the person's assignment", "amount_sentence": "the fee sentence", "partner_sentence": "the partner sentence",
         "friday_end": "the Friday end time for that program (blank if none is set)",
         "label": "the name of the training", "vol_name": "the Ambassador's full name", "vfirst": "the Ambassador's first name",
-        "note_text": "your personal note from the Invite a friend box (or a short default sentence)", "amount_text": "what they pledged, such as \"$100 a month for 12 months\"", "vphone": "the Ambassador's phone number", "pw": "\"call\", \"text\" or \"call or text\"",
+        "vphone": "the Ambassador's phone number", "pw": "\"call\", \"text\" or \"call or text\"",
     }
 
     def _problem(key, subject, body, signoff="", signer=""):

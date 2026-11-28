@@ -1,5 +1,5 @@
 """At a Glance: one page that shows, for each upcoming training, how many are interested, reserved, ready and paid,
-how many seats are left against the goal, how each Guide is doing, and who needs a nudge."""
+how many seats are left against the goal, how each Ambassador is doing, and who needs a nudge."""
 from datetime import date, datetime
 from flask import render_template, session
 

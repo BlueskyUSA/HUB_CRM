@@ -1,5 +1,5 @@
 """Sponsors: a volunteer who wants to sponsor someone fills out a form on the website and gets a private page,
-the same page a Guide uses (/call/<token>), to manage the person they sponsor.
+the same page an Ambassador uses (/call/<token>), to manage the person they sponsor.
 
 Steps:  /sponsor            -> ONE short form: the volunteer's own details, the person they want to sponsor, and a permission box.
                                We then email the volunteer a letter (editable under Correspondence): complete your profile (and add a
@@ -8,9 +8,9 @@ Steps:  /sponsor            -> ONE short form: the volunteer's own details, the 
         The private page (/call/<token>) opens only after the volunteer's profile and photo are complete; until then it shows
         what is still needed.
         /sponsor-training   -> a short guide for Sponsors.
-Behind the scenes a Sponsor is a row in call_volunteers with program_code 'SPONSOR' (never part of the Guide alert groups),
+Behind the scenes a Sponsor is a row in call_volunteers with program_code 'SPONSOR' (never part of the Ambassador alert groups),
 and the sponsored person is a call_requests row already claimed by that Sponsor, so checklist, letters, payment nudges and
-milestone notices all work exactly as they do for Guides."""
+milestone notices all work exactly as they do for Ambassadors."""
 import secrets
 
 from flask import render_template, request, redirect, url_for, abort
