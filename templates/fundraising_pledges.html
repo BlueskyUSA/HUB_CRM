@@ -2,7 +2,7 @@
 {% block title %}Pledges — {{ program_name }}{% endblock %}
 {% block content %}
 <h1>Pledges</h1>
-<p class="muted">Pledges made on the Discovery Legacy fundraising site. Pledges are nonbinding statements of intent. They are not payments and are not counted as received revenue. Only the Owner sees this page.</p>
+<p class="muted">Pledges made on the Discovery Legacy fundraising site. A pledge is a statement of intent, not a payment. Only the Owner sees this page.</p>
 
 <div class="card">
   <h3 style="margin-top:0">The fundraising site is {% if live %}<span style="color:#1d6b3a">public</span>{% else %}<span style="color:#9a6a00">hidden</span>{% endif %}</h3>
@@ -16,49 +16,6 @@
   </form>
   <p class="muted" style="margin-bottom:0;font-size:.88rem">Web addresses that show the site at their own front page: {{ hosts|join(', ') }}. To add another, put it in Render&rsquo;s Environment as LEGACY_HOSTS (separate several with commas).</p>
 </div>
-
-{% if new_link %}
-<div class="card" style="border-left:4px solid #27c4c0">
-  <h3 style="margin-top:0">Personal link for {{ new_name }}</h3>
-  <p class="muted" style="margin-top:0">This link opens the pledge page for {{ new_name }} only, even while the site is hidden. Copy it and send it yourself if you like.</p>
-  <input type="text" readonly value="{{ new_link }}" onclick="this.select()" style="width:100%">
-</div>
-{% endif %}
-
-<div class="card">
-  <h3 style="margin-top:0">Invite a friend</h3>
-  <p class="muted" style="margin-top:0">Makes a private link to the pledge page. If your friend is already a contact, the Hub uses that contact; if not, it adds one.</p>
-  <form method="post" action="{{ url_for('.pledge_invite') }}">
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <input type="text" name="first_name" placeholder="First name" required style="flex:1;min-width:140px">
-      <input type="text" name="last_name" placeholder="Last name" style="flex:1;min-width:140px">
-      <input type="email" name="email" placeholder="Email" style="flex:2;min-width:220px">
-    </div>
-    <textarea name="note" placeholder="A personal note from you (optional). It goes at the top of the email." style="width:100%;margin-top:10px;min-height:80px"></textarea>
-    <div style="margin-top:10px;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
-      <label><input type="radio" name="how" value="email" checked> Send by email from the Hub</label>
-      <label><input type="radio" name="how" value="link"> Just make the link (I will send it)</label>
-      <button class="btn" type="submit">Go</button>
-    </div>
-  </form>
-</div>
-
-{% if invites %}
-<div class="card">
-  <h3 style="margin-top:0">Invitations</h3>
-  <table class="stack" style="width:100%">
-    <tr><th>Date</th><th>Name</th><th>How</th><th>Status</th></tr>
-    {% for i in invites %}
-    <tr>
-      <td data-label="Date">{{ i.created_at[5:7] }}/{{ i.created_at[8:10] }}/{{ i.created_at[0:4] }}</td>
-      <td data-label="Name">{% if i.contact_id %}<a href="{{ url_for('.contact_detail', contact_id=i.contact_id) }}">{{ i.first_name }}</a>{% else %}{{ i.first_name }}{% endif %}{% if i.email %}<div class="muted" style="font-size:.8rem">{{ i.email }}</div>{% endif %}</td>
-      <td data-label="How">{{ 'Emailed' if i.how == 'email' else 'Link' }}</td>
-      <td data-label="Status">{% if i.pledge_id %}<b style="color:#1d6b3a">Pledged</b>{% elif i.opened_at %}Opened{% else %}Invited{% endif %}</td>
-    </tr>
-    {% endfor %}
-  </table>
-</div>
-{% endif %}
 
 <div class="card">
   <h3 style="margin-top:0">Totals</h3>
@@ -77,7 +34,7 @@
     <td data-label="Name">{% if r.contact_id %}<a href="{{ url_for('.contact_detail', contact_id=r.contact_id) }}">{{ r.first_name }} {{ r.last_name or '' }}</a>{% else %}{{ r.first_name }} {{ r.last_name or '' }}{% endif %}</td>
     <td data-label="Pledge">{{ plan_text(r.kind, r.amount_cents, r.months) }}</td>
     <td data-label="Email">{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</td>
-    <td data-label="Note">{% if r.preference %}Preferred use: {{ {'most':'Where needed most','acquisition':'Acquisition repayment','startup':'Startup and operations','reserves':'Reserves'}.get(r.preference, r.preference) }}<br>{% endif %}{% if r.convo %}<b>Asked for a personal conversation.</b><br>{% endif %}{{ r.note or '' }}{% if not r.updates_ok %}<div class="muted" style="font-size:.8rem">Did not ask for updates.</div>{% endif %}</td>
+    <td data-label="Note">{{ r.note or '' }}{% if not r.updates_ok %}<div class="muted" style="font-size:.8rem">Did not ask for updates.</div>{% endif %}</td>
     <td data-label="Status">
       <form method="post" action="{{ url_for('.pledge_status', pledge_id=r.id) }}">
         <select name="status" onchange="this.form.submit()">{% for s in statuses %}<option {{ 'selected' if s == r.status }}>{{ s }}</option>{% endfor %}</select>
