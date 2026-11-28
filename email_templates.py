@@ -1020,7 +1020,7 @@ GUIDE_LETTERS = {
         "subject": "An invitation from Kent: Discovery Legacy",
         "paras": [
             "{note_text}",
-            "Discovery Legacy is a new Texas nonprofit corporation that is bringing the Discovery weekend programs back to Dallas\u2013Fort Worth. We are inviting a small circle of friends to become Founding Friends and help us start well. This page is private to you, so please don't share it.",
+            "Discovery Legacy is a new Texas nonprofit corporation working to bring Discovery! back to North Texas. We are inviting a small circle of friends to become Founding Friends and help us start well. This page is private to you, so please don't share it.",
             "{link}",
             "A pledge is only a statement of your intention. It is not a payment, and you will not be asked to give until our bank account is open. If you have any questions, just reply to this email.",
         ],
@@ -1032,14 +1032,13 @@ GUIDE_LETTERS = {
         "title": "Thank you for your pledge (fundraising site)",
         "audience": "People who pledge on the Discovery Legacy fundraising website",
         "greeting": "Dear",
-        "subject": "Thank you for being a Founding Friend",
+        "subject": "Thank You for Believing in the Future of Discovery!",
         "paras": [
-            "Thank you for pledging {amount_text} to Discovery Legacy. Your belief in this work means more than we can say.",
-            "A pledge is a statement of your intention, not a payment, and you will not be asked to give until our bank account is open. We will write to you then with the details, and we will keep you updated as we get ready to open in 2027.",
-            "Until the IRS recognizes our application for tax-exempt status, we cannot tell you that gifts are tax-deductible. We will let you know when that changes.",
+            "Thank you for your willingness to become a Founding Friend of Discovery Legacy. Your expression of financial support means a great deal to Pamela and me. We believe we have an opportunity to build something that will touch lives and strengthen relationships for generations to come.",
+            "As a reminder, your pledge is voluntary and nonbinding. No payment is requested at this time. We look forward to keeping you informed as we establish the ministry's legal, financial and operational foundation.",
         ],
         "signoff": "With gratitude,",
-        "signer": "The Discovery Legacy Team",
+        "signer": "Kent and Pamela Hafemann, Discovery Legacy",
     },
     "video_call": {
         "title": "Video call link (Google Meet)",

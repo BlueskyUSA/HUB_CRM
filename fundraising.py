@@ -11,7 +11,7 @@ import os
 import re
 import secrets
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from flask import abort, flash, make_response, redirect, render_template, request, session, url_for
@@ -20,8 +20,13 @@ CT = ZoneInfo("America/Chicago")
 DEFAULT_HOSTS = {"discoverylegacy.org", "www.discoverylegacy.org", "discoverylegacy.com", "www.discoverylegacy.com"}
 CONTACT_EMAIL = "kent@discoverylegacy.org"
 EIN = "43-3125170"
+LLC_NAME = "Bluesky Life Seminars LLC"
 FORMED = "11/20/2026"
 STATUSES = ("Pledged", "Given", "Withdrawn")
+ONCE_AMOUNTS = (500, 1000, 5000, 10000, 15000, 20000, 25000, 50000, 100000)
+MONTHLY_AMOUNTS = (25, 50, 100, 150, 250, 500, 1000, 1500, 2500)
+YEARS = (1, 2, 3, 5)
+USES = {"most": "Where needed most", "acquisition": "Acquisition repayment", "startup": "Startup and operations", "reserves": "Reserves"}
 
 _ready = False
 _cache = {"at": 0.0, "live": False}
@@ -41,11 +46,17 @@ def money(cents):
     return f"${cents // 100:,}" if cents % 100 == 0 else f"${cents / 100:,.2f}"
 
 
+def years_text(months):
+    y = int(months or 0) // 12
+    return f"{y} year{'s' if y != 1 else ''}"
+
+
 def plan_text(kind, cents, months):
+    """The pledge in words. A total is shown only when the monthly pledge has a fixed length."""
     if kind == "monthly":
         if months:
-            return f"{money(cents)} a month for {months} month{'s' if months != 1 else ''}"
-        return f"{money(cents)} a month, until I change it"
+            return f"{money(cents)} a month for {years_text(months)} ({money(int(cents) * int(months))} in total)"
+        return f"{money(cents)} a month, length to be determined"
     return f"{money(cents)}, one time"
 
 
@@ -56,7 +67,16 @@ def _ensure(conn):
     conn.execute("""CREATE TABLE IF NOT EXISTS pledges (
         id SERIAL PRIMARY KEY, contact_id INTEGER, first_name TEXT NOT NULL, last_name TEXT, email TEXT NOT NULL, phone TEXT,
         kind TEXT NOT NULL, amount_cents INTEGER NOT NULL, months INTEGER, note TEXT, updates_ok INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'Pledged', created_at TEXT NOT NULL)""")
+        status TEXT NOT NULL DEFAULT 'Pledged', created_at TEXT NOT NULL, preference TEXT, convo INTEGER NOT NULL DEFAULT 0)""")
+    for col in ("preference TEXT", "convo INTEGER NOT NULL DEFAULT 0"):
+        try:
+            conn.execute(f"ALTER TABLE pledges ADD COLUMN IF NOT EXISTS {col}")
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
     conn.execute("""CREATE TABLE IF NOT EXISTS pledge_invites (
         id SERIAL PRIMARY KEY, token TEXT NOT NULL, contact_id INTEGER, first_name TEXT NOT NULL, email TEXT, note TEXT,
         how TEXT NOT NULL, created_at TEXT NOT NULL, opened_at TEXT, pledge_id INTEGER)""")
@@ -105,7 +125,7 @@ def register(app, crm, owner_view, get_db, log_message=None):
             resp.headers["X-Robots-Tag"] = "noindex, nofollow"
             return resp
         resp = make_response(render_template("legacy_site.html", page=name, preview=(staff and not live), guest_invite=(guest and not live and not staff),
-                                             contact_email=CONTACT_EMAIL, ein=EIN, formed=FORMED, **ctx))
+                                             contact_email=CONTACT_EMAIL, ein=EIN, formed=FORMED, llc_name=LLC_NAME, **ctx))
         if not live or guest:
             resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resp
@@ -134,18 +154,24 @@ def register(app, crm, owner_view, get_db, log_message=None):
     @app.route("/legacy/pledge", methods=["GET", "POST"])
     def legacy_pledge():
         if request.method == "GET":
-            return _page("pledge", form=session.get("legacy_prefill") or {}, error=None, inv=session.get("legacy_inv", ""))
+            return _page("pledge", form=session.get("legacy_prefill") or {}, error=None, inv=session.get("legacy_inv", ""),
+                         once_amounts=ONCE_AMOUNTS, monthly_amounts=MONTHLY_AMOUNTS, years=YEARS, uses=USES)
+        if not (_live() or session.get("staff_id") or session.get("legacy_guest")):
+            return _page("pledge")        # the site is hidden: show "coming soon" and take nothing
         f = request.form
         first = (f.get("first_name") or "").strip()[:80]
         last = (f.get("last_name") or "").strip()[:80] or None
         email = (f.get("email") or "").strip()[:200]
         phone = (f.get("phone") or "").strip()[:40]
-        note = (f.get("note") or "").strip()[:1000]
-        kind = "monthly" if f.get("kind") == "monthly" else "once"
+        note = (f.get("note") or "").strip()[:1500]
+        kind = f.get("kind")
         updates_ok = 1 if f.get("updates_ok") else 0
+        convo = 1 if f.get("convo") else 0
+        use = f.get("use") if f.get("use") in USES else None
 
         def fail(msg):
-            return _page("pledge", form=f, error=msg, inv=f.get("inv", ""))
+            return _page("pledge", form=f, error=msg, inv=f.get("inv", ""), once_amounts=ONCE_AMOUNTS,
+                         monthly_amounts=MONTHLY_AMOUNTS, years=YEARS, uses=USES)
 
         import botguard
         ok_bot, bot_msg = botguard.check(get_db, "pledge", f, email=email, ip_limit=6, email_limit=3)
@@ -153,29 +179,54 @@ def register(app, crm, owner_view, get_db, log_message=None):
             if bot_msg is None:       # the hidden spam-trap field was filled: pretend it worked
                 return redirect(url_for("legacy_thanks"))
             return fail(bot_msg)
-        if not first or not email or "@" not in email:
+        if not first or not email or "@" not in email or "." not in email.split("@")[-1]:
             return fail("Please enter your first name and a valid email address.")
-        raw = re.sub(r"[^0-9.]", "", f.get("amount") or "")
-        try:
-            cents = int(round(float(raw) * 100)) if raw else 0
-        except ValueError:
-            cents = 0
+        if kind not in ("once", "monthly"):
+            return fail("Please choose a one-time or a monthly pledge.")
+        choice = (f.get("amount_once") if kind == "once" else f.get("amount_monthly")) or ""
+        allowed = ONCE_AMOUNTS if kind == "once" else MONTHLY_AMOUNTS
+        cents = 0
+        if choice == "other":
+            raw = re.sub(r"[^0-9.]", "", f.get("amount_other") or "")
+            try:
+                cents = int(round(float(raw) * 100)) if raw else 0
+            except ValueError:
+                cents = 0
+        elif choice.isdigit() and int(choice) in allowed:
+            cents = int(choice) * 100
         if cents < 100 or cents > 100_000_000:
-            return fail("Please enter the amount you would like to pledge, in dollars.")
+            return fail("Please choose an amount, or choose Other and enter an amount greater than zero.")
         months = 0
         if kind == "monthly":
-            m = (f.get("months") or "").strip()
-            months = int(m) if m.isdigit() and 1 <= int(m) <= 120 else 0
+            yv = f.get("years") or ""
+            if yv == "tbd":
+                months = 0
+            elif yv.isdigit() and int(yv) in YEARS:
+                months = int(yv) * 12
+            else:
+                return fail("Please choose how long you would like to give monthly, or choose To be determined.")
         if not f.get("understand"):
-            return fail("Please check the box to confirm you understand this is a pledge of intent, not a payment.")
+            return fail("Please check the box to confirm you understand this is a voluntary, nonbinding pledge and not a payment.")
 
         plan = plan_text(kind, cents, months)
         conn = get_db()
         try:
             _ensure(conn)
-            line = f"Pledged to Discovery Legacy: {plan}. (Submitted via the Discovery Legacy website on {_now():%m/%d/%Y}.)"
+            # the same person sending the same pledge twice in a day is one pledge
+            since = (_now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+            dup = conn.execute("SELECT id FROM pledges WHERE lower(email) = lower(?) AND kind = ? AND amount_cents = ? AND created_at >= ? LIMIT 1",
+                               (email, kind, cents, since)).fetchone()
+            if dup:
+                conn.close()
+                session.pop("legacy_inv", None); session.pop("legacy_prefill", None)
+                return redirect(url_for("legacy_thanks", p=plan))
+            line = f"Nonbinding pledge to Discovery Legacy (not received revenue): {plan}. (Submitted on the Discovery Legacy website on {_now():%m/%d/%Y}.)"
+            if use:
+                line += f" Preferred use: {USES[use]}."
+            if convo:
+                line += " Asked for a personal conversation."
             if note:
-                line += f" Note: {note}"
+                line += f" Message: {note}"
             existing = conn.execute("SELECT id, notes FROM contacts WHERE lower(email) = lower(?) ORDER BY id LIMIT 1", (email,)).fetchone()
             if existing:
                 cid = existing["id"]
@@ -188,9 +239,9 @@ def register(app, crm, owner_view, get_db, log_message=None):
                 cid = cur.lastrowid
             conn.execute(
                 """INSERT INTO pledges (contact_id, first_name, last_name, email, phone, kind, amount_cents, months, note,
-                                        updates_ok, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                                        updates_ok, status, created_at, preference, convo) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (cid, first, last, email, phone or None, kind, cents, months or None, note or None, updates_ok, "Pledged",
-                 _now().strftime("%Y-%m-%d %H:%M:%S")))
+                 _now().strftime("%Y-%m-%d %H:%M:%S"), use, convo))
             inv_token = (f.get("inv") or "").strip()
             if inv_token:
                 pid = conn.execute("SELECT id FROM pledges WHERE contact_id = ? ORDER BY id DESC LIMIT 1", (cid,)).fetchone()
@@ -206,12 +257,15 @@ def register(app, crm, owner_view, get_db, log_message=None):
                 except Exception:
                     pass
         except Exception as e:
-            conn.rollback()
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             print(f"Pledge failed: {e!r}", flush=True)
             conn.close()
-            return fail("Sorry, something went wrong on our end. Please try again in a moment.")
+            return fail("Sorry, your pledge could not be saved. Please try again in a moment.")
         conn.close()
-        # The thank-you letter (its wording is on the Correspondence page). Sent only when letters are switched on.
+        # The thank-you letter (its wording is on the Correspondence page). Sent only after the pledge is saved and letters are on.
         try:
             import correspondence
             import email_templates as T
