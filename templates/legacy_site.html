@@ -58,6 +58,16 @@ footer a{color:#fff}
 .small{font:.9rem/1.55 Arial,sans-serif;color:#456a77}
 .cta p{font:.95rem Arial,sans-serif;margin:10px 0 0;opacity:.92}
 @media(max-width:560px){.cards,.figs{grid-template-columns:1fr}}
+.flow{display:grid;grid-template-columns:1fr 84px 1fr 84px 1fr;align-items:stretch;gap:0;margin:22px 0}
+.flow .box{background:#fff;border:2px solid #006d82;border-radius:14px;padding:14px 12px;text-align:center;font:.92rem/1.45 Arial,sans-serif}
+.flow .box b{display:block;font:700 1.05rem Georgia,serif;color:#003b49;margin-bottom:4px}
+.flow .box.mid{border-color:#c9a24a}
+.flow .box.main{background:#eef6f7}
+.flow .arr{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#006d82;font:700 1.4rem Arial,sans-serif;text-align:center}
+.flow .arr small{font:.7rem Arial,sans-serif;color:#456a77;line-height:1.2}
+.flow .under{grid-column:1/-1;text-align:center;margin-top:14px;font:.92rem Arial,sans-serif;color:#003b49}
+.flow .under span{display:inline-block;background:#eef6f7;border:1px dashed #006d82;border-radius:10px;padding:8px 14px}
+@media(max-width:640px){.flow{grid-template-columns:1fr}.flow .arr{padding:6px 0;flex-direction:row;gap:8px}.flow .arr b.r{display:none}}
 </style>
 </head>
 <body>
@@ -94,6 +104,7 @@ footer a{color:#fff}
   <h2>Some things are worth passing on.</h2>
   <p>Many of us have experienced firsthand the impact Discovery! can have on a person&rsquo;s life. We have witnessed renewed relationships, greater personal freedom, deeper faith, and the joy of discovering possibilities we never imagined.</p>
   <p>Now we have an opportunity to make that experience available to another generation. Our vision is not simply to bring Discovery! back to North Texas. It is to establish a ministry that will continue serving others long after its current leadership has stepped aside.</p>
+  <p><strong>Discovery Legacy</strong> is the nonprofit corporation. Once it has acquired the program rights and has permission to use the name, it intends to do business as <strong>Discovery!</strong></p>
   <h3>Our Mission</h3>
   <p>Reflect the love of God by providing a powerful, effective, and emotionally safe environment where individuals can identify and overcome life&rsquo;s challenges, discovering greater freedom, joy, peace, and love.</p>
   <h3>What We Are Building Together</h3>
@@ -131,17 +142,32 @@ footer a{color:#fff}
 {% elif page == 'where' %}
 <main>
   <h2>Where your gift goes</h2>
-  <p><strong>Building a strong foundation for an enduring ministry.</strong> Our preliminary capital objective is $350,000: $250,000 in acquisition principal and $100,000 in startup funding, operating capital and reserves. Interest and future operating shortfalls are additional.</p>
+  <p><strong>Building a strong foundation for an enduring ministry.</strong> Your gift goes to Discovery Legacy, the nonprofit corporation that runs the programs. Here is exactly how the pieces fit together.</p>
   <div class="figs">
-    <div><strong>$250,000</strong><span>Acquisition principal</span></div>
-    <div><strong>$100,000</strong><span>Startup funding, operating capital and reserves</span></div>
+    <div><strong>$100,000</strong><span>Preliminary goal for startup funding, operating capital and reserves</span></div>
+    <div><strong>$10,000</strong><span>Preliminary goal for monthly support from Founding Friends</span></div>
   </div>
-  <p class="total">Preliminary combined target: $350,000</p>
-  <p class="small" style="text-align:center">Excludes interest and future operating shortfalls. All figures are preliminary.</p>
+  <p class="small" style="text-align:center">All figures are preliminary goals, not guarantees.</p>
+
+  <h3>How the pieces fit together</h3>
+  <div class="flow">
+    <div class="box"><b>Kent and Pamela Hafemann</b>Founders. Prepared to fund the purchase of the Discovery! program rights.</div>
+    <div class="arr"><span>&rarr;</span><small>funds the purchase</small></div>
+    <div class="box mid"><b>{{ llc_name }}</b>A Texas company that would own the program rights, equipment and the Hub software.</div>
+    <div class="arr"><span>&rarr;</span><small>licenses them</small></div>
+    <div class="box main"><b>Discovery Legacy</b>The nonprofit corporation. Runs the programs and receives every gift and program fee.</div>
+    <div class="under"><span>Founding Friends and trainees give directly to <strong>Discovery Legacy</strong> only</span></div>
+  </div>
+  <ul class="tick">
+    <li><strong>Your gift goes only to Discovery Legacy.</strong> Never to the founders personally and never to {{ llc_name }}. Discovery Legacy will have its own bank account, books and records, kept by a bookkeeper and accountant.</li>
+    <li><strong>The program rights belong to the LLC, and the nonprofit holds a license.</strong> The proposed license would give Discovery Legacy exclusive rights to run the programs in Dallas, Fort Worth and surrounding counties, for as long as it operates them. It is designed to continue if the LLC is sold or if either founder dies or can no longer serve.</li>
+    <li><strong>Discovery Legacy keeps its own money, donor and trainee records and program data.</strong> The LLC does not own them.</li>
+    <li><strong>Any payment from Discovery Legacy to the LLC or to a founder is a related-party arrangement.</strong> It will be reviewed and approved by independent directors with outside support for its fairness, disclosed accurately to the IRS, and described on this page and in our annual financial reports. The terms have not been decided.</li>
+  </ul>
 
   <h3>Securing the Future of Discovery!</h3>
-  <p>Pamela and I are prepared to personally invest $250,000 to acquire the available Discovery! intellectual property rights, curricula, equipment and associated assets. Purchasing outright would avoid the risk of losing access under the seller&rsquo;s proposed installment agreement if payments are missed.</p>
-  <p>The acquired assets would be held by {{ llc_name }}, a Texas company owned by Pamela and me, and licensed to Discovery Legacy for Dallas, Fort Worth and surrounding counties. Under the proposed arrangement, the nonprofit would repay our investment plus a 7% annual return on the outstanding balance. Ownership would remain with our LLC after repayment. We intend to provide ongoing licensing without royalties or profit-based fees, other than reasonable, documented infrastructure and maintenance costs. All terms are subject to legal review and independent board approval.</p>
+  <p>Pamela and I are prepared to personally invest $250,000 to acquire the available Discovery! intellectual property rights, curricula, equipment and associated assets. Purchasing outright would avoid the risk of losing access under the seller&rsquo;s proposed installment agreement if payments are missed. The acquired assets would be held by {{ llc_name }}, a Texas company of Kent and Pamela Hafemann, and licensed to Discovery Legacy. We intend any ongoing licensing to carry no royalties or profit-based fees beyond reasonable, documented infrastructure and maintenance costs, unless independent directors approve otherwise on the basis of outside support. The purchase and the license are proposed, not signed, and all terms are subject to legal review.</p>
+  <p><strong>The Discovery! name.</strong> Discovery Legacy intends to do business as Discovery! once the rights have been acquired and it has permission to use the name. Until then it operates as Discovery Legacy.</p>
 
   <h3>Establishing the Ministry</h3>
   <p>Initial priorities include legal formation and federal tax-exemption application, approved documented startup reimbursements, marketing, technology, insurance, facilities, supplies and volunteer support. Our first planned seminar, The Art of Us, is tentatively scheduled for February 12&ndash;14, 2027, subject to readiness.</p>
@@ -149,8 +175,8 @@ footer a{color:#fff}
   <h3>Building Financial Strength and Sustainability</h3>
   <p>Historically, Discovery! programs have relied on community contributions. The former Dallas program was not self-sustaining through earned revenue in the available 2015&ndash;2018 financial records. Reported profitability in 2019 and early 2020 has not been verified. We believe The Art of Us, priced at $1,299 per couple, could help support our other programs if enrollment and costs meet expectations. Financial sustainability is a goal, not a guarantee.</p>
 
-  <h3>Your Commitment Can Accelerate Our Vision</h3>
-  <p>Larger one-time contributions could accelerate repayment and reduce interest costs. Monthly support could provide dependable operating resources. We intend to publish annual financial reports. Every commitment matters. Today we are asking for pledges only, not payments. Federal tax-exempt recognition has not yet been obtained.</p>
+  <h3>Your Commitment Matters</h3>
+  <p>Monthly support provides dependable operating resources. Larger one-time gifts help build the reserves that let the ministry endure. We intend to publish annual financial reports. Every commitment matters. Today we are asking for pledges only, not payments. Federal tax-exempt recognition has not yet been obtained.</p>
   <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a></p>
 </main>
 
@@ -159,7 +185,8 @@ footer a{color:#fff}
   <h2>Become a Founding Friend</h2>
   <p>Every enduring ministry begins with people who believe in its purpose before the vision becomes a reality.</p>
   <p>Pamela and I are prepared to make a substantial personal financial commitment to secure the future of Discovery! in North Texas. We invite you to join us in establishing a ministry that is spiritually grounded, financially responsible, and capable of continuing long beyond our lifetime.</p>
-  <p>Whether through recurring monthly support or a substantial one-time contribution, your pledge can help us secure training resources, establish operating reserves and bring Discovery! to a new generation. Larger commitments could accelerate repayment of our proposed acquisition investment and reduce interest expenses.</p>
+  <p>Whether through recurring monthly support or a substantial one-time contribution, your pledge can help us secure training resources, establish operating reserves and bring Discovery! to a new generation.</p>
+  <p>Every gift will go to Discovery Legacy, never to the founders personally and never to {{ llc_name }}. <a href="{{ url_for('legacy_where') }}">See how the pieces fit together.</a></p>
   <p>Today, we are asking for your pledge, not your money. Your pledge is voluntary and nonbinding. No payment is required today. Once our legal and financial arrangements are in place, we will contact you with additional information and an opportunity to confirm your commitment.</p>
   <p>With gratitude,<br><strong>Kent and Pamela Hafemann</strong></p>
 
@@ -260,10 +287,13 @@ footer a{color:#fff}
   <h2>About and transparency</h2>
   <p>Discovery Legacy was formed on November 20, 2026, as a Texas nonprofit corporation. We believe supporters deserve to understand how the organization is structured, how its resources are managed, and what we hope to achieve.</p>
   <h3>Our Organizational Structure</h3>
-  <p>{{ llc_name }} is the proposed privately owned Texas company of Kent and Pamela Hafemann that would hold the acquired Discovery! rights and associated assets. Discovery Legacy is the nonprofit operating entity responsible for seminars, community outreach, volunteers and the ministry&rsquo;s mission.</p>
-  <p>The proposed $250,000 acquisition repayment, plus a 7% annual return on the outstanding balance, would be paid by Discovery Legacy to the founders under a related-party arrangement. The LLC would retain ownership after repayment. Our intention is to provide ongoing licensing in Dallas&ndash;Fort Worth and surrounding counties without profit-based fees or royalties, subject to reimbursement of reasonable, documented costs and final agreements. These arrangements have not been finalized.</p>
+  <p>Discovery Legacy is the nonprofit operating entity responsible for seminars, community outreach, volunteers and the ministry&rsquo;s mission. It will receive all gifts and program fees into its own bank account.</p>
+  <p>{{ llc_name }} is the proposed privately owned Texas company of Kent and Pamela Hafemann that would hold the acquired Discovery! rights, equipment and Hub software, and license them to Discovery Legacy for Dallas&ndash;Fort Worth and surrounding counties. These arrangements have not been finalized. <a href="{{ url_for('legacy_where') }}">See the picture on the Where your gift goes page.</a></p>
+  <p>Because the founders lead Discovery Legacy and would own the LLC, any payment between the two is a related-party arrangement. Independent directors will review and approve it with outside support for its fairness, and we will disclose it in our annual financial reports. Our intention is to provide ongoing licensing without royalties or profit-based fees, subject to reimbursement of reasonable, documented costs and final agreements, unless independent directors approve otherwise.</p>
+  <h3>The Discovery! name</h3>
+  <p>Discovery Legacy intends to do business as <strong>Discovery!</strong> once it has acquired the program rights and has permission to use the name. Until then it operates under its legal name, Discovery Legacy.</p>
   <h3>Governance and Financial Accountability</h3>
-  <p>Discovery Legacy is governed by a volunteer board and bylaws that include a conflict-of-interest policy. We intend to make these documents available upon request and publish annual financial reports. Related-party arrangements will require independent review and approval, including evaluation of fair value and the nonprofit&rsquo;s long-term interests.</p>
+  <p>Discovery Legacy is governed by a volunteer board and bylaws that include a conflict-of-interest policy. We intend to make these documents available upon request and publish annual financial reports. Related-party arrangements will require independent review and approval, including evaluation of fair value and the nonprofit&rsquo;s long-term interests. Our books will be kept by a bookkeeper and accountant firm using QuickBooks Online.</p>
   <p>Our goal is to equip future leaders with secure access to intellectual property, software, equipment and other essential resources. Through HUB automation, trained volunteer Ambassadors and Sponsors, streamlined communications and contemporary marketing, we hope to reduce overhead and expand enrollment. Financial sustainability is not guaranteed.</p>
   <h3>Federal Tax-Exempt Status</h3>
   <p>Discovery Legacy intends to apply for recognition under Section 501(c)(3). Federal tax-exempt recognition has not yet been obtained. We are not representing future contributions as tax-deductible. We are accepting nonbinding pledges only; no funds are being collected.</p>
@@ -273,6 +303,7 @@ footer a{color:#fff}
 
 <footer>
   &copy; Discovery Legacy &middot; A Texas nonprofit corporation<br>
+  Discovery Legacy intends to do business as Discovery! once it has acquired the program rights and has permission to use the name.<br>
   Federal tax-exempt recognition has not yet been obtained &middot; <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
 </footer>
 {% endif %}
