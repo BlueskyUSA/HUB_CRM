@@ -12,13 +12,9 @@ a{color:#006d82}
 header.top{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;padding:18px 22px 0}
 @media(min-width:641px){header.top{position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.18)}}
 .bar{max-width:1300px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.brand{font:italic 700 1.9rem Georgia,serif;color:#fff;text-decoration:none;line-height:1}
-.brand small{display:block;font:400 .72rem Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.8;margin-top:4px}
-.wmk{display:inline-block;font:italic 700 2.3rem/1 'Times New Roman',Times,serif;color:#fff}
-.wmk em{color:#f00;font-style:italic}
-.wvs{display:block;width:3.4em;height:.32em;margin:.06em 0 0 .3em;overflow:visible}
-.brand small.slogan{text-transform:none;letter-spacing:.02em;font:italic 400 .85rem Georgia,serif;opacity:.92;margin-top:6px}
-nav a{color:#fff;text-decoration:none;font:600 .84rem Arial,sans-serif;margin-left:12px;opacity:.9;display:inline-block;line-height:1.9}
+.brand{font:italic 700 1.7rem Georgia,serif;color:#fff;text-decoration:none;line-height:1}
+.brand small{display:block;font:400 .72rem Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;opacity:.8;margin-top:4px}
+nav a{color:#fff;text-decoration:none;font:600 .82rem Arial,sans-serif;margin-left:10px;opacity:.9;display:inline-block;line-height:1.9}
 nav a:hover,nav a.on{opacity:1;border-bottom:2px solid #27c4c0}
 nav a.tool{border:1px solid rgba(255,255,255,.6);border-radius:20px;padding:3px 11px;opacity:1;font-size:.82rem}
 nav a.tool:hover{background:rgba(255,255,255,.15);border-bottom:1px solid rgba(255,255,255,.6)}
@@ -107,8 +103,7 @@ footer a{color:#fff}
 {% if guest_invite %}<div class="preview" style="background:#e6f3f5">This is a private invitation, made for you. Please don&rsquo;t share the link.</div>{% endif %}
 <header class="top">
   <div class="bar">
-    {% if page == 'pledge' %}<a class="brand" href="{{ url_for('legacy_home') }}" aria-label="Discovery!"><span class="wmk">Discovery<em>!</em><svg class="wvs" viewBox="324 220 552 126" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M 330 268 C 420 228, 500 308, 600 268 S 780 228, 870 268" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="M 330 298 C 420 338, 500 258, 600 298 S 780 338, 870 298" fill="none" stroke="#27C4C0" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></span><small class="slogan">Together, building a future for Discovery!</small></a>
-    {% else %}<a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>{% endif %}
+    <a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>
     <nav>
       <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this matters</a>
       <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Our plan</a>
