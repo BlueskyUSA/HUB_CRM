@@ -139,9 +139,21 @@ def register(app, crm, owner_view, get_db, log_message=None):
     def legacy_why():
         return _page("why")
 
-    @app.route("/legacy/where-your-gift-goes")
+    @app.route("/legacy/our-plan")
     def legacy_where():
         return _page("where")
+
+    @app.route("/legacy/where-your-gift-goes")
+    def legacy_gift():
+        return _page("gift")
+
+    @app.route("/legacy/leadership")
+    def legacy_leadership():
+        return _page("leadership")
+
+    @app.route("/legacy/banking-and-financial-reporting")
+    def legacy_banking():
+        return _page("banking")
 
     @app.route("/legacy/about")
     def legacy_about():
