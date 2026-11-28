@@ -14,10 +14,12 @@ header.top{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;padding
 .bar{max-width:1300px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .brand{font:italic 700 1.7rem Georgia,serif;color:#fff;text-decoration:none;line-height:1}
 .brand small{display:block;font:400 .72rem Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;opacity:.8;margin-top:4px}
-nav a{color:#fff;text-decoration:none;font:600 .82rem Arial,sans-serif;margin-left:10px;opacity:.9;display:inline-block;line-height:1.9}
-nav a:hover,nav a.on{opacity:1;border-bottom:2px solid #27c4c0}
-nav a.tool{border:1px solid rgba(255,255,255,.6);border-radius:20px;padding:3px 11px;opacity:1;font-size:.82rem}
-nav a.tool:hover{background:rgba(255,255,255,.15);border-bottom:1px solid rgba(255,255,255,.6)}
+nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 15px}
+nav a{color:#fff;text-decoration:none;font:700 1.08rem/1.2 Arial,sans-serif;opacity:.92;display:block;text-align:center;padding:4px 0}
+nav a:hover,nav a.on{opacity:1;border-bottom:3px solid #27c4c0;padding-bottom:1px}
+nav a.tool{border:1px solid rgba(255,255,255,.65);border-radius:26px;padding:9px 18px;opacity:1;font-size:1rem;max-width:none}
+nav a.tool:hover{background:rgba(255,255,255,.15);border-bottom:1px solid rgba(255,255,255,.65);padding-bottom:9px}
+@media(max-width:700px){nav{justify-content:flex-start;gap:2px 16px}nav a{font-size:1.02rem}br.d{display:none}nav a.tool{padding:7px 15px}}
 .waves{display:block;width:100%;height:34px;margin-top:14px}
 .hero{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;text-align:center;padding:40px 22px 70px}
 .hero h1{font:italic 700 clamp(2.4rem,6vw,4rem)/1.1 Georgia,serif;margin:0 0 12px}
@@ -105,11 +107,11 @@ footer a{color:#fff}
   <div class="bar">
     <a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>
     <nav>
-      <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this matters</a>
+      <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this<br class="d"> matters</a>
       <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Our plan</a>
-      <a href="{{ url_for('legacy_gift') }}" class="{{ 'on' if page=='gift' }}">Where your gift goes</a>
+      <a href="{{ url_for('legacy_gift') }}" class="{{ 'on' if page=='gift' }}">Where your<br class="d"> gift goes</a>
       <a href="{{ url_for('legacy_leadership') }}" class="{{ 'on' if page=='leadership' }}">Leadership</a>
-      <a href="{{ url_for('legacy_banking') }}" class="{{ 'on' if page=='banking' }}">Banking and Financial Reporting</a>
+      <a href="{{ url_for('legacy_banking') }}" class="{{ 'on' if page=='banking' }}">Banking and<br class="d"> Finances</a>
       <a href="{{ url_for('legacy_about') }}" class="{{ 'on' if page=='about' }}">About</a>
       <a href="{{ url_for('legacy_pledge') }}" class="{{ 'on' if page=='pledge' }}">Pledge</a>
       {% if page != 'home' %}<a class="tool" href="{{ url_for('legacy_home') }}" onclick="if(document.referrer&&history.length>1){history.back();return false}">&larr; Back</a>{% endif %}
