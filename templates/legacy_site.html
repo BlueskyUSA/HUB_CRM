@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% if page == 'home' %}Discovery Legacy{% elif page == 'soon' %}Discovery Legacy{% else %}{{ {'why':'Why this matters','where':'Where your gift goes','pledge':'Become a Founding Friend','thanks':'Thank you','about':'About and transparency'}.get(page,'') }} | Discovery Legacy{% endif %}</title>
+<title>{% if page == 'home' %}Discovery Legacy{% elif page == 'soon' %}Discovery Legacy{% else %}{{ {'why':'Why this matters','where':'Our plan','gift':'Where your gift goes','leadership':'Leadership','banking':'Banking and Financial Reporting','pledge':'Become a Founding Friend','thanks':'Thank you','about':'About and transparency'}.get(page,'') }} | Discovery Legacy{% endif %}</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font:18px/1.65 Georgia,'Times New Roman',serif;color:#123e54;background:#fdfcf8}
@@ -14,7 +14,7 @@ header.top{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;padding
 .bar{max-width:1040px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .brand{font:italic 700 1.9rem Georgia,serif;color:#fff;text-decoration:none;line-height:1}
 .brand small{display:block;font:400 .72rem Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.8;margin-top:4px}
-nav a{color:#fff;text-decoration:none;font:600 .92rem Arial,sans-serif;margin-left:18px;opacity:.9}
+nav a{color:#fff;text-decoration:none;font:600 .88rem Arial,sans-serif;margin-left:14px;opacity:.9;display:inline-block;line-height:1.9}
 nav a:hover,nav a.on{opacity:1;border-bottom:2px solid #27c4c0}
 nav a.tool{border:1px solid rgba(255,255,255,.6);border-radius:20px;padding:4px 13px;opacity:1;font-size:.85rem}
 nav a.tool:hover{background:rgba(255,255,255,.15);border-bottom:1px solid rgba(255,255,255,.6)}
@@ -102,7 +102,10 @@ footer a{color:#fff}
     <nav>
       {% if page != 'home' %}<a class="tool" href="{{ url_for('legacy_home') }}" onclick="if(document.referrer&&history.length>1){history.back();return false}">&larr; Back</a>{% endif %}
       <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this matters</a>
-      <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Where your gift goes</a>
+      <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Our plan</a>
+      <a href="{{ url_for('legacy_gift') }}" class="{{ 'on' if page=='gift' }}">Where your gift goes</a>
+      <a href="{{ url_for('legacy_leadership') }}" class="{{ 'on' if page=='leadership' }}">Leadership</a>
+      <a href="{{ url_for('legacy_banking') }}" class="{{ 'on' if page=='banking' }}">Banking and Financial Reporting</a>
       <a href="{{ url_for('legacy_about') }}" class="{{ 'on' if page=='about' }}">About</a>
       <a href="{{ url_for('legacy_pledge') }}" class="{{ 'on' if page=='pledge' }}">Pledge</a>
       <a class="tool" href="{{ url_for('crm.login') }}">Team login</a>
@@ -157,9 +160,7 @@ footer a{color:#fff}
 
 {% elif page == 'where' %}
 <main>
-  <h2>Where your gift goes</h2>
-
-  <h3>Our plan</h3>
+  <h2>Our plan</h2>
   <p>Here is the path we intend to follow, from pledges to a program that endures. No agreement has been signed, and the details may change.</p>
 
   <h3>1. Establish a Foundation of Financial Support</h3>
@@ -203,24 +204,28 @@ footer a{color:#fff}
     <li>Provides future generations of leadership with secure access to the intellectual property and resources necessary to continue the mission of Discovery!</li>
   </ul>
   <p>Our goal is not simply to reopen Discovery! in North Texas, but to establish a program capable of serving individuals, couples, families and communities for generations to come.</p>
+</main>
 
-  <ul class="tick">
-    <li><strong>Your gift goes only to Discovery Legacy.</strong> Never to the founders personally and never to {{ llc_name }}. Discovery Legacy will have its own bank account, books and records, kept by a bookkeeper and accountant.</li>
-    <li><strong>The program rights belong to the LLC, and the nonprofit holds a license.</strong> The proposed license would give Discovery Legacy exclusive rights to run the programs in Dallas, Fort Worth and surrounding counties for an initial six-year term, renewing automatically after that. The LLC could end it or decline to renew only for stated causes, such as an unpaid fee after notice or unmet quality standards. It is designed to continue if the LLC is sold or if either founder dies or can no longer serve.</li>
-    <li><strong>Discovery Legacy keeps its own money, donor and trainee records and program data.</strong> The LLC does not own them.</li>
-    <li><strong>Any payment from Discovery Legacy to the LLC or to a founder is a related-party arrangement.</strong> It will be reviewed and approved by independent directors with outside support for its fairness, disclosed accurately to the IRS, and described on this page and in our annual financial reports. The terms have not been decided.</li>
-  </ul>
-
-
-  <h3>Establishing the Program</h3>
-  <p>Initial priorities include legal formation and federal tax-exemption application, approved documented startup reimbursements, marketing, technology, insurance, facilities, supplies and volunteer support. Our first planned seminar, The Art of Us, is tentatively scheduled for February 12&ndash;14, 2027, subject to readiness.</p>
-
-  <h3>Building Financial Strength and Sustainability</h3>
-  <p>Historically, Discovery! programs have relied on community contributions. The former Dallas program was not self-sustaining through earned revenue in the available 2015&ndash;2018 financial records. Reported profitability in 2019 and early 2020 has not been verified. We believe The Art of Us, priced at $1,299 per couple, could help support our other programs if enrollment and costs meet expectations. Financial sustainability is a goal, not a guarantee.</p>
-
-  <h3>Your Commitment Matters</h3>
-  <p>Monthly support provides dependable operating resources. Larger one-time gifts help build the reserves that let the program endure. We intend to publish annual financial reports. Every commitment matters. Today we are asking for pledges only, not payments. Federal tax-exempt recognition has not yet been obtained.</p>
+{% elif page == 'gift' %}
+<main>
+  <h2>Where your gift goes</h2>
+  <p>Illustrative allocation at the full $10,000 monthly goal: approximately $4,167 toward acquisition payments and $5,833 toward operations and reserves. This assumes $250,000 paid over 60 months without interest or additional fees; actual terms and budget remain subject to approval.</p>
+  <p>Substantial one-time contributions could help retire the acquisition obligation sooner (subject to the final purchase agreement), reduce financial risk and strengthen the program&rsquo;s financial foundation.</p>
+  <p>Every gift will go to Discovery Legacy, never to the founders personally.</p>
   <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a></p>
+</main>
+
+{% elif page == 'banking' %}
+<main>
+  <h2>Banking and Financial Reporting</h2>
+  <p>Discovery Legacy will keep its own bank account, books and records. Its books will be kept by a bookkeeper and accountant firm using QuickBooks Online.</p>
+  <p>We intend to publish annual financial reports so that supporters can see how gifts are used.</p>
+</main>
+
+{% elif page == 'leadership' %}
+<main>
+  <h2>Leadership</h2>
+  <p>Our leadership team and board of directors will be introduced on this page.</p>
 </main>
 
 {% elif page == 'pledge' %}
@@ -255,7 +260,7 @@ footer a{color:#fff}
 
   <h3>Where your monthly support goes</h3>
   <p>Illustrative allocation at the full $10,000 monthly goal: approximately $4,167 toward acquisition payments and $5,833 toward operations and reserves. This assumes $250,000 paid over 60 months without interest or additional fees; actual terms and budget remain subject to approval.</p>
-  <p>Substantial one-time contributions could help retire the acquisition obligation sooner (subject to the final purchase agreement), reduce financial risk and strengthen the program&rsquo;s financial foundation. <a href="{{ url_for('legacy_where') }}">See where your gift goes.</a></p>
+  <p>Substantial one-time contributions could help retire the acquisition obligation sooner (subject to the final purchase agreement), reduce financial risk and strengthen the program&rsquo;s financial foundation. <a href="{{ url_for('legacy_where') }}">See our plan.</a></p>
 
   <p class="invest">&ldquo;Someone invested in your journey. Would you consider investing in someone else&rsquo;s?&rdquo;</p>
   <p style="text-align:center">Together, we can make Discovery! available to generations of people we may never meet.</p>
