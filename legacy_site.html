@@ -10,11 +10,14 @@ body{margin:0;font:18px/1.65 Georgia,'Times New Roman',serif;color:#123e54;backg
 a{color:#006d82}
 .preview{background:#c9a24a;color:#123e54;text-align:center;padding:8px 14px;font:700 .9rem Arial,sans-serif}
 header.top{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;padding:18px 22px 0}
+@media(min-width:641px){header.top{position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.18)}}
 .bar{max-width:1040px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .brand{font:italic 700 1.9rem Georgia,serif;color:#fff;text-decoration:none;line-height:1}
 .brand small{display:block;font:400 .72rem Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.8;margin-top:4px}
 nav a{color:#fff;text-decoration:none;font:600 .92rem Arial,sans-serif;margin-left:18px;opacity:.9}
 nav a:hover,nav a.on{opacity:1;border-bottom:2px solid #27c4c0}
+nav a.tool{border:1px solid rgba(255,255,255,.6);border-radius:20px;padding:4px 13px;opacity:1;font-size:.85rem}
+nav a.tool:hover{background:rgba(255,255,255,.15);border-bottom:1px solid rgba(255,255,255,.6)}
 .waves{display:block;width:100%;height:34px;margin-top:14px}
 .hero{background:linear-gradient(135deg,#003b49,#006d82);color:#fff;text-align:center;padding:40px 22px 70px}
 .hero h1{font:italic 700 clamp(2.4rem,6vw,4rem)/1.1 Georgia,serif;margin:0 0 12px}
@@ -25,6 +28,17 @@ h2{font:700 clamp(1.7rem,3.4vw,2.3rem)/1.2 Georgia,serif;margin:0 0 6px;padding-
 h3{font:700 1.25rem Georgia,serif;margin:28px 0 6px}
 .btn{display:inline-block;background:#fff;color:#003b49;font:700 .95rem Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:15px 32px;border-radius:40px;text-decoration:none;border:0;cursor:pointer}
 .btn.dark{background:#006d82;color:#fff}
+.hero.pg{padding:44px 22px 56px}.hero.pg h1{font-size:clamp(2rem,5vw,3.1rem)}
+.eyebrow{font:700 .82rem Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;opacity:.85;margin:0 0 12px}
+.hero p.ask{font:italic 700 1.25rem Georgia,serif;margin:0 auto 24px}
+table.pt{width:100%;border-collapse:collapse;margin:16px 0 6px;font:1rem Arial,sans-serif}
+table.pt th{background:#006d82;color:#fff;text-align:left;padding:10px 14px}
+table.pt td{padding:10px 14px;border-bottom:1px solid #d5e6e8;background:#fff}
+table.pt td:last-child,table.pt th:last-child{text-align:right}
+ol.road{list-style:none;padding:0;margin:14px 0;counter-reset:s}
+ol.road li{counter-increment:s;position:relative;padding:12px 0 12px 52px;border-bottom:1px solid #e3eef0}
+ol.road li:before{content:counter(s);position:absolute;left:0;top:12px;width:36px;height:36px;border-radius:50%;background:#006d82;color:#fff;font:700 1rem Arial,sans-serif;display:flex;align-items:center;justify-content:center}
+.invest{font:italic 700 1.35rem/1.45 Georgia,serif;text-align:center;margin:30px 0 8px;color:#003b49}
 .btn:hover{filter:brightness(.95)}
 ul.tick{padding-left:22px}ul.tick li{margin:8px 0}
 .note{background:#eef6f7;border-left:4px solid #006d82;padding:14px 18px;border-radius:6px;font:.95rem/1.55 Arial,sans-serif;margin:24px 0}
@@ -77,6 +91,7 @@ footer a{color:#fff}
   <svg viewBox="0 0 320 34" width="260" style="display:block;margin:0 auto 18px" aria-hidden="true"><path d="M2 14 C42 -2 82 30 122 14 S202 -2 242 14 S300 26 318 14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M2 24 C42 8 82 38 122 24 S202 8 242 24 S300 34 318 24" fill="none" stroke="#27c4c0" stroke-width="4" stroke-linecap="round"/></svg>
   <p>We are a Texas nonprofit corporation, and our website is coming soon.</p>
   <p>Questions? Write to <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+  <p style="font-size:.85rem;opacity:.8"><a href="{{ url_for('crm.login') }}">Team login</a></p>
 </div>
 {% else %}
 {% if preview %}<div class="preview">Preview only. This site is not public yet. Only people signed in to the Hub can see it.</div>{% endif %}
@@ -85,10 +100,12 @@ footer a{color:#fff}
   <div class="bar">
     <a class="brand" href="{{ url_for('legacy_home') }}">Discovery Legacy<small>A Texas nonprofit corporation</small></a>
     <nav>
+      {% if page != 'home' %}<a class="tool" href="{{ url_for('legacy_home') }}" onclick="if(document.referrer&&history.length>1){history.back();return false}">&larr; Back</a>{% endif %}
       <a href="{{ url_for('legacy_why') }}" class="{{ 'on' if page=='why' }}">Why this matters</a>
       <a href="{{ url_for('legacy_where') }}" class="{{ 'on' if page=='where' }}">Where your gift goes</a>
       <a href="{{ url_for('legacy_about') }}" class="{{ 'on' if page=='about' }}">About</a>
       <a href="{{ url_for('legacy_pledge') }}" class="{{ 'on' if page=='pledge' }}">Pledge</a>
+      <a class="tool" href="{{ url_for('crm.login') }}">Team login</a>
     </nav>
   </div>
   <svg class="waves" viewBox="0 0 1040 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 C130 -2 260 30 390 14 S650 -2 780 14 S980 26 1040 14" fill="none" stroke="#fff" stroke-width="3"/><path d="M0 24 C130 8 260 38 390 24 S650 8 780 24 S980 34 1040 24" fill="none" stroke="#27c4c0" stroke-width="3"/></svg>
@@ -104,7 +121,6 @@ footer a{color:#fff}
   <h2>Some things are worth passing on.</h2>
   <p>Many of us have experienced firsthand the impact Discovery! can have on a person&rsquo;s life. We have witnessed renewed relationships, greater personal freedom, deeper faith, and the joy of discovering possibilities we never imagined.</p>
   <p>Now we have an opportunity to make that experience available to another generation. Our vision is not simply to bring Discovery! back to North Texas. It is to establish a program that will continue serving others long after its current leadership has stepped aside.</p>
-  <p><strong>Discovery Legacy</strong> is the nonprofit corporation. Once it has acquired the program rights and has permission to use the name, it intends to do business as <strong>Discovery!</strong></p>
   <h3>Our Mission</h3>
   <p>Reflect the love of God by providing a powerful, effective, and emotionally safe environment where individuals can identify and overcome life&rsquo;s challenges, discovering greater freedom, joy, peace, and love.</p>
   <h3>What We Are Building Together</h3>
@@ -131,7 +147,7 @@ footer a{color:#fff}
   <p>Through immersive, experiential seminars, we invite individuals and couples to explore their beliefs, recognize patterns in their lives, discover new perspectives, and develop healthier ways of relating to themselves and others.</p>
   <p>We want people to experience the possibilities that emerge when they begin to live with greater awareness, personal responsibility, grace, and courage.</p>
   <h3>Looking Beyond Ourselves</h3>
-  <p>For Pamela and me, this is about much more than conducting seminars. It is about building a program that will continue to serve people long after we are gone.</p>
+  <p>Our objective for Discovery! is much more than conducting seminars. It is about building a program that will continue to serve people long after we are gone.</p>
   <p>We want to create an organization that is spiritually grounded, financially responsible, technologically innovative, and equipped to empower the next generation of leaders.</p>
   <p>We believe that what we build today can become a gift to generations we may never meet. That is why we are inviting you to become part of this story.</p>
   <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_pledge') }}">Become a Founding Friend</a></p>
@@ -142,22 +158,53 @@ footer a{color:#fff}
 {% elif page == 'where' %}
 <main>
   <h2>Where your gift goes</h2>
-  <p><strong>Building a strong foundation for an enduring program.</strong> Your gift goes to Discovery Legacy, the nonprofit corporation that runs the programs. Here is exactly how the pieces fit together.</p>
-  <div class="figs">
-    <div><strong>$100,000</strong><span>Preliminary goal for startup funding, operating capital and reserves</span></div>
-    <div><strong>$10,000</strong><span>Preliminary goal for monthly support from Founding Friends</span></div>
-  </div>
-  <p class="small" style="text-align:center">All figures are preliminary goals, not guarantees.</p>
 
-  <h3>How the pieces fit together</h3>
-  <div class="flow">
-    <div class="box"><b>Kent and Pamela Hafemann</b>Founders. Prepared to fund the purchase of the Discovery! program rights.</div>
-    <div class="arr"><span>&rarr;</span><small>funds the purchase</small></div>
-    <div class="box mid"><b>{{ llc_name }}</b>A Texas company that would own the program rights, equipment and the Hub software.</div>
-    <div class="arr"><span>&rarr;</span><small>licenses them</small></div>
-    <div class="box main"><b>Discovery Legacy</b>The nonprofit corporation. Runs the programs and receives every gift and program fee.</div>
-    <div class="under"><span>Founding Friends and trainees give directly to <strong>Discovery Legacy</strong> only</span></div>
-  </div>
+  <h3>Our plan</h3>
+  <p>Here is the path we intend to follow, from pledges to a program that endures. No agreement has been signed, and the details may change.</p>
+
+  <h3>1. Establish a Foundation of Financial Support</h3>
+  <p>Secure recurring monthly pledges from the Discovery! volunteer community totaling a minimum of $10,000 per month. No funds are required at this time; we are initially seeking nonbinding commitments of financial support.</p>
+  <p>This could be achieved through any combination of pledges, such as:</p>
+  <ul class="tick">
+    <li>100 volunteers pledging $100 per month.</li>
+    <li>200 volunteers pledging $50 per month.</li>
+    <li>400 volunteers pledging $25 per month.</li>
+  </ul>
+  <p>Establishing this level of financial support will provide greater confidence in our ability to meet the acquisition obligation, fund operations, and build adequate financial reserves.</p>
+
+  <h3>2. Finalize the Acquisition Agreement</h3>
+  <p>Once sufficient pledges have been secured, finalize an agreement to license and acquire the Discovery! intellectual property (IP) and associated assets for a total purchase price of $250,000. The proposed acquisition terms are:</p>
+  <ul class="tick">
+    <li>The purchase will be seller-financed through monthly payments of approximately $4,167 over five years.</li>
+    <li>Monthly payments will begin 90 days after the first Discovery! training is completed.</li>
+    <li>Ownership of the acquired intellectual property will remain with the current owner until the purchase price has been paid in full.</li>
+    <li>Upon full payment, Discovery Legacy will have acquired ownership of the intellectual property and associated assets covered by the agreement.</li>
+    <li>If a monthly payment is missed, Discovery Legacy will have 30 days to cure the default. Failure to do so will result in termination of the agreement and loss of the licensing rights necessary to continue operating Discovery! programs.</li>
+  </ul>
+  <div class="note"><strong>Important.</strong> The proposed acquisition is seller-financed and has not been finalized. Under the terms currently contemplated, a payment default that remains uncured after a 30-day cure period could result in loss of licensing rights and affect our ability to continue offering the seminars. Final terms, ownership arrangements and remedies are subject to the executed agreement. Pledges are voluntary and are not guaranteed revenue.</div>
+
+  <h3>3. Secure Initial Startup Funding</h3>
+  <p>After the acquisition and licensing agreement is signed, secure approximately $5,000 in short-term, non-interest-bearing loans from individuals willing to help with the initial organizational expenses. These funds will not be treated as tax-deductible charitable contributions and are intended to be repaid by Discovery Legacy as its financial resources permit. The expected use of these funds:</p>
+  <ul class="tick">
+    <li><strong>$4,000, legal expenses:</strong> attorney fees to prepare, file and process the application for federal tax-exempt recognition under Section 501(c)(3).</li>
+    <li><strong>$1,000, startup expenses:</strong> reimbursement of documented software expenses, government filing fees and other organizational costs incurred to date.</li>
+  </ul>
+
+  <h3>4. Activate Monthly Financial Commitments</h3>
+  <p>After the Section 501(c)(3) application is filed and the necessary banking and financial infrastructure is in place, begin collecting the monthly contributions that have been pledged. If the IRS approves the application with an effective date covering those contributions, they may qualify as tax-deductible charitable contributions, subject to applicable federal tax laws.</p>
+  <p>Until federal tax-exempt recognition has been obtained, contributors will be advised that the deductibility of their contributions is not assured. If the IRS denies the application, contributions may not qualify for a charitable tax deduction.</p>
+
+  <h3>5. Establish Long-Term Financial Sustainability</h3>
+  <p>Our ultimate objective is to establish a financially responsible and enduring program that:</p>
+  <ul class="tick">
+    <li>Meets its acquisition and operating obligations.</li>
+    <li>Generates sufficient operating surpluses to support its programs.</li>
+    <li>Builds adequate financial reserves.</li>
+    <li>Reduces its dependence on charitable contributions over time, where possible.</li>
+    <li>Provides future generations of leadership with secure access to the intellectual property and resources necessary to continue the mission of Discovery!</li>
+  </ul>
+  <p>Our goal is not simply to reopen Discovery! in North Texas, but to establish a program capable of serving individuals, couples, families and communities for generations to come.</p>
+
   <ul class="tick">
     <li><strong>Your gift goes only to Discovery Legacy.</strong> Never to the founders personally and never to {{ llc_name }}. Discovery Legacy will have its own bank account, books and records, kept by a bookkeeper and accountant.</li>
     <li><strong>The program rights belong to the LLC, and the nonprofit holds a license.</strong> The proposed license would give Discovery Legacy exclusive rights to run the programs in Dallas, Fort Worth and surrounding counties for an initial six-year term, renewing automatically after that. The LLC could end it or decline to renew only for stated causes, such as an unpaid fee after notice or unmet quality standards. It is designed to continue if the LLC is sold or if either founder dies or can no longer serve.</li>
@@ -165,9 +212,6 @@ footer a{color:#fff}
     <li><strong>Any payment from Discovery Legacy to the LLC or to a founder is a related-party arrangement.</strong> It will be reviewed and approved by independent directors with outside support for its fairness, disclosed accurately to the IRS, and described on this page and in our annual financial reports. The terms have not been decided.</li>
   </ul>
 
-  <h3>Securing the Future of Discovery!</h3>
-  <p>Pamela and I are prepared to personally invest $250,000 to acquire the available Discovery! intellectual property rights, curricula, equipment and associated assets. Purchasing outright would avoid the risk of losing access under the seller&rsquo;s proposed installment agreement if payments are missed. The acquired assets would be held by {{ llc_name }}, a Texas company of Kent and Pamela Hafemann, and licensed to Discovery Legacy. The license would also include the Hub, the custom operating software we built to run registration, communications, volunteer coordination and records for Discovery! programs. Its value is part of the independent valuation that independent directors will review. We intend any ongoing licensing to carry no royalties or profit-based fees beyond reasonable, documented infrastructure and maintenance costs, unless independent directors approve otherwise on the basis of outside support. The purchase and the license are proposed, not signed, and all terms are subject to legal review.</p>
-  <p><strong>The Discovery! name.</strong> Discovery Legacy intends to do business as Discovery! once the rights have been acquired and it has permission to use the name. Until then it operates as Discovery Legacy.</p>
 
   <h3>Establishing the Program</h3>
   <p>Initial priorities include legal formation and federal tax-exemption application, approved documented startup reimbursements, marketing, technology, insurance, facilities, supplies and volunteer support. Our first planned seminar, The Art of Us, is tentatively scheduled for February 12&ndash;14, 2027, subject to readiness.</p>
@@ -181,15 +225,43 @@ footer a{color:#fff}
 </main>
 
 {% elif page == 'pledge' %}
+<section class="hero pg">
+  <p class="eyebrow">Become a Founding Friend</p>
+  <h1>Reopening Discovery! begins with a community pledge.</h1>
+  <p class="sub">Together, we can bring Discovery! back to North Texas and build a program that will serve generations to come.</p>
+  <p class="ask">Today, we are asking for your pledge, not your money.</p>
+  <div class="cta"><a class="btn" href="#make-your-pledge">Make your pledge</a></div>
+</section>
 <main>
-  <h2>Become a Founding Friend</h2>
-  <p>Every enduring program begins with people who believe in its purpose before the vision becomes a reality.</p>
-  <p>Pamela and I are prepared to make a substantial personal financial commitment to secure the future of Discovery! in North Texas. We invite you to join us in establishing a program that is spiritually grounded, financially responsible, and capable of continuing long beyond our lifetime.</p>
-  <p>Whether through recurring monthly support or a substantial one-time contribution, your pledge can help us secure training resources, establish operating reserves and bring Discovery! to a new generation.</p>
-  <p>Every gift will go to Discovery Legacy, never to the founders personally and never to {{ llc_name }}. <a href="{{ url_for('legacy_where') }}">See how the pieces fit together.</a></p>
-  <p>Today, we are asking for your pledge, not your money. Your pledge is voluntary and nonbinding. No payment is required today. Once our legal and financial arrangements are in place, we will contact you with additional information and an opportunity to confirm your commitment.</p>
-  <p>With gratitude,<br><strong>Kent and Pamela Hafemann</strong></p>
+  <h2>Our immediate objective</h2>
+  <p>Before we can confidently move forward with reopening Discovery!, we need to establish a dependable foundation of financial support from our volunteer community. Our initial goal is $10,000 in monthly pledges &mdash; $120,000 in annual commitments &mdash; to support the proposed acquisition of the intellectual property, ongoing operations and financial reserves.</p>
 
+  <h3>How pledges make this possible</h3>
+  <table class="pt">
+    <tr><th>Volunteers</th><th>Monthly pledge each</th><th>Monthly total</th></tr>
+    <tr><td>100</td><td>$100</td><td>$10,000</td></tr>
+    <tr><td>200</td><td>$50</td><td>$10,000</td></tr>
+    <tr><td>400</td><td>$25</td><td>$10,000</td></tr>
+  </table>
+  <p class="small">These are illustrative combinations, not actual commitments. Every pledge, regardless of size, helps us build a dependable foundation.</p>
+
+  <h3>What happens next?</h3>
+  <ol class="road">
+    <li><strong>Gather our Founding Friends.</strong> Secure $10,000 in monthly pledges before undertaking the proposed acquisition.</li>
+    <li><strong>Secure the future of Discovery!</strong> Finalize the proposed $250,000 seller-financed acquisition, with the goal of Discovery Legacy ultimately owning the intellectual property outright.</li>
+    <li><strong>Establish our legal and financial foundation.</strong> Complete our organizing steps, including the board&rsquo;s first meeting, our bank account and bookkeeping, and arrange approximately $5,000 in startup loans for the legal fees of the federal tax-exemption application and documented startup expenses.</li>
+    <li><strong>Activate financial commitments.</strong> After filing the federal tax-exemption application and establishing appropriate financial infrastructure, invite supporters to fulfill their pledges, subject to legal review. Reimburse approved, documented startup expenses or repay authorized startup loans under their agreed terms.</li>
+    <li><strong>Build an enduring program.</strong> Launch seminars, build reserves and work toward long-term financial sustainability.</li>
+  </ol>
+
+  <h3>Where your monthly support goes</h3>
+  <p>Illustrative allocation at the full $10,000 monthly goal: approximately $4,167 toward acquisition payments and $5,833 toward operations and reserves. This assumes $250,000 paid over 60 months without interest or additional fees; actual terms and budget remain subject to approval.</p>
+  <p>Substantial one-time contributions could help retire the acquisition obligation sooner (subject to the final purchase agreement), reduce financial risk and strengthen the program&rsquo;s financial foundation. <a href="{{ url_for('legacy_where') }}">See where your gift goes.</a></p>
+
+  <p class="invest">&ldquo;Someone invested in your journey. Would you consider investing in someone else&rsquo;s?&rdquo;</p>
+  <p style="text-align:center">Together, we can make Discovery! available to generations of people we may never meet.</p>
+
+  <h2 id="make-your-pledge" style="margin-top:38px">Make your pledge</h2>
   <form class="card" method="post" action="{{ url_for('legacy_pledge') }}">
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
     {{ bot_field() }}
@@ -242,13 +314,14 @@ footer a{color:#fff}
     </select>
     <label for="nt">Message <span class="opt">(optional)</span></label>
     <textarea id="nt" name="note">{{ form.get('note','') }}</textarea>
-    <label class="check"><input type="checkbox" name="convo" value="1" {{ 'checked' if form.get('convo') }}> <span>I would welcome a personal conversation about the vision, financial projections, structure and plans.</span></label>
-    <label class="check"><input type="checkbox" name="understand" value="1" {{ 'checked' if form.get('understand') }}> <span>I understand this is a voluntary, nonbinding pledge and not a payment.</span></label>
+    <label class="check"><input type="checkbox" name="convo" value="1" {{ 'checked' if form.get('convo') }}> <span>I would welcome a personal conversation with Kent and Pamela about the vision, financial projections, structure and plans.</span></label>
+    <label class="check"><input type="checkbox" name="understand" value="1" {{ 'checked' if form.get('understand') }}> <span>I understand that this pledge is voluntary, nonbinding and not a payment.</span></label>
     <label class="check"><input type="checkbox" name="updates_ok" value="1" {{ 'checked' if form.get('updates_ok') }}> <span>Please keep me updated about Discovery Legacy by email.</span></label>
-    <p style="margin:20px 0 0"><button class="btn dark" type="submit">Submit my pledge</button></p>
-    <p class="small" style="margin-bottom:0">No payment required. Federal tax-exempt recognition has not yet been obtained.</p>
+    <p style="margin:20px 0 0"><button class="btn dark" type="submit">Send My Pledge</button></p>
     <div class="note" style="margin-bottom:0"><strong>Privacy.</strong> We keep your name, contact details, pledge and message in our private records so we can thank you, answer you and follow up about Discovery Legacy. They are visible only to authorized Discovery Legacy staff and volunteers, and we do not sell them. We use trusted service providers (such as email delivery) to operate the site, so we cannot promise absolute confidentiality.</div>
   </form>
+
+  <div class="note"><strong>Please note.</strong> No payment is required today. Discovery Legacy has not yet obtained federal tax-exempt recognition, and the tax deductibility of future contributions is not guaranteed. Every gift will go to Discovery Legacy, never to the founders personally.</div>
 
   <h3 style="margin-top:34px">An Opportunity to Make a Lasting Impact</h3>
   <p>For those considering a substantial commitment, Pamela and I would welcome a personal conversation about our vision, financial projections, organizational structure and plans for the future. Request a personal conversation: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
@@ -264,8 +337,11 @@ footer a{color:#fff}
       bx.style.display=(ch==='other')?'block':'none';
       var amt=ch==='other'?parseFloat((f.amount_other.value||'').replace(/[^0-9.]/g,'')):parseInt(ch,10);
       tot.textContent='';
-      if(k==='monthly'&&amt>0&&/^[0-9]+$/.test(f.years.value)){
-        var y=parseInt(f.years.value,10); tot.textContent='That is '+money(amt*12*y)+' over '+y+(y===1?' year.':' years.');
+      if(amt>0&&k==='once'){ tot.textContent='Your pledge: '+money(amt)+', one time.'; }
+      if(amt>0&&k==='monthly'){
+        if(/^[0-9]+$/.test(f.years.value)){
+          var y=parseInt(f.years.value,10); tot.textContent='Your pledge: '+money(amt)+' a month for '+y+(y===1?' year':' years')+', '+money(amt*12*y)+' in all.';
+        } else if(f.years.value==='tbd'){ tot.textContent='Your pledge: '+money(amt)+' a month, length to be determined.'; }
       }
     }
     f.addEventListener('change',upd); f.addEventListener('input',upd); upd();
@@ -275,8 +351,8 @@ footer a{color:#fff}
 
 {% elif page == 'thanks' %}
 <main>
-  <h2>Thank you</h2>
-  <p>Thank you for your willingness to become a Founding Friend{% if plan %}: <strong>{{ plan }}</strong>{% endif %}. Your expression of financial support means a great deal to us.</p>
+  <h2>Thank you for believing in the future of Discovery!</h2>
+  <p><strong>No payment has been collected.</strong>{% if plan %} Your pledge: <strong>{{ plan }}</strong>.{% endif %}</p>
   <p>Your pledge is voluntary and nonbinding. No payment is requested at this time. We look forward to keeping you informed as we establish the program&rsquo;s legal, financial and operational foundation.</p>
   <p>With gratitude,<br><strong>Kent and Pamela Hafemann</strong></p>
   <p style="margin-top:30px"><a class="btn dark" href="{{ url_for('legacy_home') }}">Back to the home page</a></p>
